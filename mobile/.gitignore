@@ -37,6 +37,6 @@ yarn-error.*
 *.tsbuildinfo
 
 
-# generated native folders
+# carpetas nativas (se crean con prebuild)
 /ios
 /android
