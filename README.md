@@ -22,6 +22,7 @@ Sprint 1: frontend en React Native con datos estáticos.
 - Íconos de `@expo/vector-icons` (Material Icons)
 - `react-native-svg` + `react-native-qrcode-svg` para generar el QR de identificación
 - `expo-location` + `react-native-maps` para el GPS y el mapa
+- `expo-camera` + `expo-haptics` para el lector de QR, la linterna y la vibración
 
 ## Branding
 
@@ -59,7 +60,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Perfil de la mascota | Lista |
 | Carnet Sanitario | Lista |
 | Perdidos | Lista |
-| Reportar mascota perdida | En construcción |
+| Reportar mascota perdida | Lista |
 | Agenda | En construcción |
 | Mi Perfil | En construcción |
 
@@ -72,6 +73,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 5. **Perfil de la mascota**: foto, raza y edad; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada.
 6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo pendiente e historial con estado, fecha y profesional. "Agregar Registro" abre un formulario (tipo, estado, nombre, fecha con máscara dd/mm/aaaa y veterinario) que valida que lo aplicado no tenga fecha futura y lo pendiente no sea pasado.
 7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). El FAB mostaza abre el reporte. Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
+8. **Reportar mascota perdida** (modal): escáner del QR de la chapita (autocompleta nombre, raza, señas y foto de la mascota), foto desde la galería, nombre, raza, descripción, etiquetas y un mini mapa con el pin precargado con el GPS, que se puede arrastrar o mover tocando el mapa, con la dirección legible debajo. Si se abre desde el perfil de una mascota, llega precargado. "Marcar como Perdido" valida, publica el reporte, vibra, cierra el modal y muestra el nuevo marker seleccionado en Perdidos.
 
 ## Componentes nativos
 
@@ -102,6 +104,13 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - **Permiso:** ubicación "mientras se usa la app" (`locationWhenInUsePermission`), declarada con el plugin de `expo-location` en `app.json`. No se pide ubicación en segundo plano porque la app solo la necesita con la pantalla abierta. Si se niega, el mapa arranca centrado en CABA y un `PermissionNotice` ofrece volver a pedirla o abrir los ajustes.
 - **Por qué:** cuando una mascota se pierde, lo que importa es la cercanía. Con la posición del usuario el mapa muestra primero los reportes de su zona, y al reportar se registra el punto exacto de extravío en vez de depender de una dirección escrita a mano. Se usa una consulta puntual (no `watchPositionAsync`) porque no hace falta seguir al usuario en tiempo real y así se ahorra batería.
 
+### 3. Cámara (lector de QR y linterna) — `expo-camera` + `expo-haptics`
+
+- **Dónde:** modal Reportar mascota perdida. Implementado en `src/components/reporte/EscanerQr.tsx`.
+- **Qué hace:** monta un `CameraView` con `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}` y `onBarcodeScanned`. Cuando lee un código con formato `DOGGY-XXXX-NOMBRE`, busca la mascota en el estado global y autocompleta el formulario. Tras la primera lectura se bloquean las siguientes (el lector dispara varias veces por segundo mientras el QR está en cuadro) y la cámara se desmonta. Permite prender el flash como linterna (`enableTorch`) para leer chapitas de noche, cambiar a la cámara frontal (`facing`) y leer un QR desde una imagen de la galería con `scanFromURLAsync`. Cada lectura se confirma con `Haptics.notificationAsync` (éxito o error).
+- **Permiso:** cámara, pedido con `useCameraPermissions` recién cuando el usuario toca "Escanear" y declarado con el plugin de `expo-camera` en `app.json` (sin micrófono, porque no se graba audio). Si se niega, se muestra un `PermissionNotice` y queda la alternativa de subir una foto del QR.
+- **Por qué:** quien encuentra un perro suele estar en la calle, apurado y con una mano ocupada. Escanear la chapita identifica a la mascota y trae sus datos en un segundo, sin tipear un código. La cámara solo se enciende a pedido y se apaga al leer para no gastar batería.
+
 ## Componentes reutilizables
 
 - `ScreenContainer`: safe area, fondo y scroll con ajuste al teclado.
@@ -126,6 +135,9 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/NuevoRegistroForm`: piezas del carnet sanitario.
 - `perdidos/MapaReportes`: mapa con markers y método `centrar` por ref (con una versión `.web.tsx` que muestra un aviso, porque react-native-maps no funciona en el navegador).
 - `perdidos/ReporteCard`, `perdidos/ReporteMarker`: card y pin de cada reporte.
+- `reporte/EscanerQr`: escáner de QR con linterna, cámara frontal y lectura desde imagen.
+- `reporte/MapaSelector`: mini mapa con pin arrastrable (con versión `.web.tsx`).
+- `reporte/EtiquetasInput`: chips de etiquetas con alta y baja.
 
 ## Estructura
 
