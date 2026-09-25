@@ -49,22 +49,31 @@ npx expo start
 
 Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (Android).
 
-## Pantallas
+## Pantallas y flujo de navegación
 
-| Pantalla | Estado |
-| --- | --- |
-| Login | Lista |
-| Registro | Lista |
-| Mis Mascotas | Lista |
-| Agregar mascota | Lista |
-| Perfil de la mascota | Lista |
-| Carnet Sanitario | Lista |
-| Perdidos | Lista |
-| Reportar mascota perdida | Lista |
-| Agenda | Lista |
-| Mi Perfil | Lista |
+```
+Login ──► Registro
+  │
+  ▼  (router.replace: "atrás" no vuelve al login)
+Tabs
+ ├─ Mascotas ───┬─► Agregar mascota
+ │              └─► Perfil de la mascota ─┬─► Carnet Sanitario ─► (modal) Nuevo registro
+ │                                        ├─► tab Agenda
+ │                                        └─► (modal) Reportar como perdida
+ ├─ Perdidos ───┬─► Mapa / Lista
+ │              └─► (modal) Reportar ─► vuelve a Perdidos con el nuevo marker
+ ├─ Agenda ─────── (modal) Nuevo turno
+ └─ Perfil ─────┬─► (modal) Editar datos personales
+                ├─► Mis reportes activos ─► tab Perdidos
+                └─► Cerrar sesión ─► Login
+```
 
-## Flujo actual
+- **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y el modal `reportar` (`presentation: 'modal'`).
+- **Bottom Tabs** (`app/(tabs)/_layout.tsx`): Mascotas, Perdidos, Agenda y Perfil, con una barra propia que marca la tab activa con una píldora.
+- **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`) y carnet (`[id]/carnet`), con la barra de tabs visible.
+- Las acciones que dependen del backend (descargar QR, editar turnos, asignar cuidadores, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
+
+### Detalle por pantalla
 
 1. **Login**: email y contraseña con validación local. "Ingresar" entra a la tab Mascotas.
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
@@ -81,23 +90,10 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 
 ### 1. Fototeca (galería de imágenes) — `expo-image-picker`
 
-- **Dónde:** alta de mascota (y más adelante reporte de perdida y foto de perfil). Implementado en `src/hooks/useFototeca.ts`.
+- **Dónde:** alta de mascota, foto del reporte de perdida, lectura de un QR desde una captura y foto de perfil. Implementado en `src/hooks/useFototeca.ts`.
 - **Qué hace:** abre el selector nativo de imágenes del sistema operativo (`launchImageLibraryAsync`) con recorte cuadrado (`allowsEditing`, `aspect: [1, 1]`) y compresión (`quality: 0.7`), y devuelve la URI local del archivo elegido.
 - **Permiso:** acceso a la biblioteca de fotos (`NSPhotoLibraryUsageDescription` en iOS), declarado con el plugin de `expo-image-picker` en `app.json` y un texto en español que explica para qué se usa. En tiempo de ejecución se sigue el flujo consultar (`getMediaLibraryPermissionsAsync`) → pedir (`requestMediaLibraryPermissionsAsync`) → evaluar el resultado. Si el usuario lo niega y `canAskAgain` es `false`, la pantalla muestra un `PermissionNotice` que explica el motivo y ofrece `Linking.openSettings()`.
 - **Por qué:** la foto es el dato que más ayuda a que un vecino reconozca a una mascota perdida. Tomarla de la galería evita obligar al usuario a sacar una foto nueva en el momento y reutiliza fotos que ya tiene de su mascota.
-
-## Datos y arquitectura
-
-La app ya está separada en capas para sumar el backend sin tocar las pantallas:
-
-```
-Pantalla → AppContext (estado global) → services → [hoy: datos en memoria | Sprint 2: fetch a la API]
-```
-
-- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
-- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026).
-- `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
-- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
 
 ### 2. GPS / Geolocalización — `expo-location` + `react-native-maps`
 
@@ -113,11 +109,24 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - **Permiso:** cámara, pedido con `useCameraPermissions` recién cuando el usuario toca "Escanear" y declarado con el plugin de `expo-camera` en `app.json` (sin micrófono, porque no se graba audio). Si se niega, se muestra un `PermissionNotice` y queda la alternativa de subir una foto del QR.
 - **Por qué:** quien encuentra un perro suele estar en la calle, apurado y con una mano ocupada. Escanear la chapita identifica a la mascota y trae sus datos en un segundo, sin tipear un código. La cámara solo se enciende a pedido y se apaga al leer para no gastar batería.
 
+## Datos y arquitectura
+
+La app ya está separada en capas para sumar el backend sin tocar las pantallas:
+
+```
+Pantalla → AppContext (estado global) → services → [hoy: datos en memoria | Sprint 2: fetch a la API]
+```
+
+- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
+- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026).
+- `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
+- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
+
 ## Componentes reutilizables
 
 - `ScreenContainer`: safe area, fondo y scroll con ajuste al teclado.
 - `Input`: label, ícono, foco, error y modo contraseña.
-- `PrimaryButton`: variantes primaria (teal), secundaria (mostaza) y outline.
+- `PrimaryButton`: variantes primaria (teal), secundaria (mostaza), outline, tonal y de peligro, en dos tamaños.
 - `BackButton`: volver al stack anterior, en tono claro u oscuro.
 - `TabBar`: barra inferior con la píldora de tab activa.
 - `AppHeader`: marca y avatar del usuario con acceso al perfil.
@@ -132,7 +141,7 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `Badge`: etiqueta de estado ("Placa & Collar", "Aplicada", "URGENTE").
 - `SectionCard`: card de sección con decoración, acción y pie con link.
 - `QrIdentificacion`: card con el QR de la mascota y las acciones de compartir y descargar.
-- `SegmentedControl`: pestañas con subrayado para filtrar listas.
+- `SegmentedControl`: pestañas con subrayado o en píldora (Mapa / Lista).
 - `FormModal`: hoja modal que sube desde abajo para formularios cortos.
 - `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/NuevoRegistroForm`: piezas del carnet sanitario.
 - `perdidos/MapaReportes`: mapa con markers y método `centrar` por ref (con una versión `.web.tsx` que muestra un aviso, porque react-native-maps no funciona en el navegador).
@@ -172,5 +181,14 @@ doggy/
         └── config.ts        URL de la API (EXPO_PUBLIC_API_URL)
 ```
 
-En el Sprint 2 se suma una carpeta `backend/` al lado de `mobile/`, con
-Express + Prisma + SQLite.
+## Próximos sprints
+
+- **Sprint 2 — Backend:** se suma `backend/` al lado de `mobile/` con Express + TypeScript + Prisma + SQLite, siguiendo la arquitectura en capas vista en la práctica (Expo → HTTP → Express → Prisma → SQLite). Los modelos de `src/types/models.ts` pasan a ser el `schema.prisma` y cada función de `src/services/` reemplaza la simulación por ``pedirJson(`${API_URL}/api/...`)``, que ya revisa `response.ok` y devuelve el error del servidor. Las pantallas y el contexto no cambian.
+- **Configuración:** la URL del backend se lee de la variable `EXPO_PUBLIC_API_URL` (ver `src/config.ts`). Para probar desde el celular hay que usar la IP local de la PC, no `localhost`:
+
+  ```bash
+  # mobile/.env
+  EXPO_PUBLIC_API_URL=http://192.168.0.10:3000
+  ```
+
+- **Pendientes que dependen del backend:** login real con token, persistencia de mascotas, reportes y turnos, subida de fotos, edición y baja de turnos, invitación de cuidadores, recordatorios por notificaciones push y descarga del QR como imagen.
