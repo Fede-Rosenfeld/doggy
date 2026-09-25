@@ -333,7 +333,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'space-between',
     padding: spacing.stackSm,
-    backgroundColor: colors.inverseSurface,
+    // Teal casi negro de la paleta: se ve como "pantalla apagada" sin salirse de la marca.
+    backgroundColor: colors.onPrimaryFixed,
   },
   reposo: {
     ...StyleSheet.absoluteFill,
@@ -439,6 +440,8 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   filaInferior: {
+    // Siempre abajo, esté o no la cámara encendida.
+    marginTop: 'auto',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.sm,

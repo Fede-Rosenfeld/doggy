@@ -33,6 +33,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
+    padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: sizes.borderWidth,
     borderColor: colors.outlineVariant,
@@ -45,5 +46,6 @@ const styles = StyleSheet.create({
   ayuda: {
     ...typography.bodySm,
     color: colors.onSurfaceVariant,
+    textAlign: 'center',
   },
 });
