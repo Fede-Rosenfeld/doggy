@@ -3,7 +3,8 @@
  *
  * Label arriba, ícono a la izquierda, borde teal claro con foco y mensaje de
  * error debajo. Con `password` oculta el texto y agrega el botón de
- * mostrar/ocultar. Acepta el resto de las props de TextInput.
+ * mostrar/ocultar. Con `multiline` crece para textos largos (señas, descripciones).
+ * Acepta el resto de las props de TextInput.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { ComponentProps, forwardRef, useState } from 'react';
@@ -57,6 +58,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
       <View
         style={[
           styles.field,
+          inputProps.multiline && styles.fieldMultiline,
           focused && styles.fieldFocused,
           !!error && styles.fieldError,
         ]}
@@ -70,7 +72,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
         )}
         <TextInput
           ref={ref}
-          style={styles.input}
+          style={[styles.input, inputProps.multiline && styles.inputMultiline]}
           placeholderTextColor={colors.outline}
           secureTextEntry={password && hidden}
           onFocus={handleFocus}
@@ -120,6 +122,12 @@ const styles = StyleSheet.create({
     borderColor: colors.outlineVariant,
     backgroundColor: colors.surface,
   },
+  fieldMultiline: {
+    height: undefined,
+    minHeight: sizes.inputHeight * 2,
+    alignItems: 'flex-start',
+    paddingVertical: spacing.stackSm,
+  },
   fieldFocused: {
     borderColor: colors.tealLight,
     borderWidth: sizes.borderWidthFocus,
@@ -136,6 +144,13 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     // En web el navegador agrega su propio contorno de foco; el borde del campo ya lo indica.
     outlineWidth: 0,
+  },
+  inputMultiline: {
+    height: undefined,
+    minHeight: sizes.inputHeight * 2 - spacing.stackSm * 2,
+    // Android centra el texto por defecto en los campos de varias líneas.
+    textAlignVertical: 'top',
+    paddingTop: 0,
   },
   error: {
     ...typography.bodySm,
