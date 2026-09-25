@@ -15,7 +15,8 @@ import { colors, radius, sizes, spacing, typography } from '@/theme';
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
 type Props = Omit<TextInputProps, 'secureTextEntry' | 'style'> & {
-  label: string;
+  /** Texto arriba del campo; si no viene (por ejemplo, un buscador) se usa el placeholder como nombre accesible. */
+  label?: string;
   icon?: IconName;
   /** Mensaje de error; si viene, el borde se pinta de rojo. */
   error?: string;
@@ -54,7 +55,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
   // --- Render ---
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      {label && <Text style={styles.label}>{label}</Text>}
       <View
         style={[
           styles.field,
@@ -77,7 +78,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
           secureTextEntry={password && hidden}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          accessibilityLabel={label}
+          accessibilityLabel={label ?? inputProps.placeholder}
           {...inputProps}
         />
         {password && (
