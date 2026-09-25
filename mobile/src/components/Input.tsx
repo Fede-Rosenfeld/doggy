@@ -140,6 +140,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    // Sin esto, en pantallas angostas el campo no se achica y empuja el ícono afuera.
+    minWidth: 0,
     height: '100%',
     ...typography.bodyMd,
     color: colors.onSurface,

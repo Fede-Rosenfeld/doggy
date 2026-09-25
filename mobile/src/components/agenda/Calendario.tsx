@@ -63,7 +63,15 @@ export function Calendario({
       <View style={styles.header}>
         <View style={styles.titulo}>
           <MaterialIcons name="calendar-month" size={sizes.iconMd - 2} color={colors.primary} />
-          <Text style={styles.tituloTexto}>{tituloMes(anio, mes)}</Text>
+          <Text
+            style={styles.tituloTexto}
+            numberOfLines={1}
+            // En pantallas chicas "Septiembre 2026" se achica en vez de pisar las flechas.
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
+            {tituloMes(anio, mes)}
+          </Text>
         </View>
         <View style={styles.flechas}>
           <BotonMes icon="chevron-left" label="Mes anterior" onPress={() => onCambiarMes(-1)} />
@@ -181,8 +189,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   titulo: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -191,6 +201,7 @@ const styles = StyleSheet.create({
     ...typography.headlineMd,
     fontFamily: typography.headlineLg.fontFamily,
     color: colors.onSurface,
+    flexShrink: 1,
   },
   flechas: {
     flexDirection: 'row',
