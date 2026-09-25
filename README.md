@@ -20,6 +20,7 @@ Sprint 1: frontend en React Native con datos estáticos.
 - `StyleSheet` + Flexbox, sin librerías de UI
 - Tipografías Quicksand y Plus Jakarta Sans (`@expo-google-fonts`)
 - Íconos de `@expo/vector-icons` (Material Icons)
+- `react-native-svg` + `react-native-qrcode-svg` para generar el QR de identificación
 
 ## Branding
 
@@ -54,7 +55,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Registro | Lista |
 | Mis Mascotas | Lista |
 | Agregar mascota | Lista |
-| Perfil de la mascota | En construcción |
+| Perfil de la mascota | Lista |
 | Carnet Sanitario | En construcción |
 | Perdidos | En construcción |
 | Reportar mascota perdida | En construcción |
@@ -67,6 +68,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
 4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
+5. **Perfil de la mascota**: foto, raza y edad; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada.
 
 ## Componentes nativos
 
@@ -106,6 +108,9 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `Chip`: píldora informativa o seleccionable.
 - `FotoEditable`: foto circular con botón de cámara para elegir imagen.
 - `PermissionNotice`: aviso de permiso denegado con acceso a los ajustes.
+- `Badge`: etiqueta de estado ("Placa & Collar", "Aplicada", "URGENTE").
+- `SectionCard`: card de sección con decoración, acción y pie con link.
+- `QrIdentificacion`: card con el QR de la mascota y las acciones de compartir y descargar.
 
 ## Estructura
 
