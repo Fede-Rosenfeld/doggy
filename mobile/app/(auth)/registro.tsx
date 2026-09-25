@@ -17,6 +17,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { useApp } from '@/context/AppContext';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
+import { volver } from '@/utils/navegacion';
 import {
   PASSWORD_MIN,
   validarConfirmacion,
@@ -104,13 +105,7 @@ export default function RegistroScreen() {
   };
 
   /** Vuelve al login (o lo abre si no hay historial). */
-  const handleIngresar = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/login');
-    }
-  };
+  const handleIngresar = () => volver('/login');
 
   // --- Render ---
   return (

@@ -6,10 +6,11 @@
  * Tiene dos tonos: claro para fondos teal y oscuro para el fondo crema.
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { Href, router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { colors, radius, sizes } from '@/theme';
+import { volver } from '@/utils/navegacion';
 
 type Props = {
   /** Ruta a la que ir si no hay pantalla anterior. */
@@ -27,13 +28,7 @@ export function BackButton({ fallback = '/login', tone = 'dark' }: Props) {
   const iconColor = tone === 'light' ? colors.onPrimary : colors.primaryContainer;
 
   /** Vuelve atrás o, si no se puede, va a la ruta de respaldo. */
-  const handlePress = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace(fallback);
-    }
-  };
+  const handlePress = () => volver(fallback);
 
   return (
     <Pressable
