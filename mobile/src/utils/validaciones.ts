@@ -68,3 +68,19 @@ export function validarConfirmacion(password: string, confirmacion: string): str
   if (password !== confirmacion) return 'Las contraseñas no coinciden.';
   return undefined;
 }
+
+/** Edad máxima razonable de una mascota, en años. */
+export const EDAD_MAXIMA = 30;
+
+/**
+ * Valida la edad en años: obligatoria, entera y dentro de un rango razonable.
+ * @param texto lo que escribió el usuario
+ * @returns mensaje de error o undefined
+ */
+export function validarEdad(texto: string): string | undefined {
+  const valor = texto.trim();
+  if (!valor) return 'Ingresá la edad.';
+  if (!/^\d+$/.test(valor)) return 'Solo números.';
+  if (Number(valor) > EDAD_MAXIMA) return `Máximo ${EDAD_MAXIMA}.`;
+  return undefined;
+}
