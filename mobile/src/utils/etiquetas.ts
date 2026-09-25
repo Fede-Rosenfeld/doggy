@@ -23,15 +23,35 @@ export const TIPOS_REGISTRO: {
   singular: string;
   /** Título de la lista en el carnet. */
   historial: string;
+  /** Título de la card del pendiente más próximo. */
+  proximo: string;
+  /** Título del estado vacío. */
+  vacio: string;
 }[] = [
-  { valor: 'vacuna', pestana: 'Vacunas', singular: 'Vacuna', historial: 'Historial de Vacunación' },
+  {
+    valor: 'vacuna',
+    pestana: 'Vacunas',
+    singular: 'Vacuna',
+    historial: 'Historial de Vacunación',
+    proximo: 'Próximo refuerzo',
+    vacio: 'Sin vacunas registradas',
+  },
   {
     valor: 'desparasitacion',
     pestana: 'Desparasitación',
     singular: 'Desparasitación',
     historial: 'Historial de Desparasitación',
+    proximo: 'Próxima dosis',
+    vacio: 'Sin desparasitaciones registradas',
   },
-  { valor: 'otro', pestana: 'Otros', singular: 'Otro', historial: 'Otros registros' },
+  {
+    valor: 'otro',
+    pestana: 'Otros',
+    singular: 'Otro',
+    historial: 'Otros registros',
+    proximo: 'Próximo control',
+    vacio: 'Sin otros registros',
+  },
 ];
 
 /** Textos de los estados de un registro. */

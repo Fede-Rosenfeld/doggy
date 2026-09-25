@@ -10,21 +10,24 @@ import { formatearFecha } from '@/utils/fechas';
 
 type Props = {
   registro: RegistroSanitario;
+  /** Título de la card; cambia según el tipo ("Próximo refuerzo", "Próxima dosis"...). */
+  titulo?: string;
 };
 
 /**
  * Card del próximo refuerzo.
  * @param props.registro registro pendiente a destacar
+ * @param props.titulo título de la card
  * @returns la card
  */
-export function ProximoRefuerzoCard({ registro }: Props) {
+export function ProximoRefuerzoCard({ registro, titulo = 'Próximo refuerzo' }: Props) {
   return (
     <View style={styles.card} accessibilityRole="summary">
       <View style={styles.icono}>
         <MaterialIcons name="vaccines" size={sizes.iconMd} color={colors.tertiaryContainer} />
       </View>
       <View style={styles.textos}>
-        <Text style={styles.label}>PRÓXIMO REFUERZO</Text>
+        <Text style={styles.label}>{titulo.toUpperCase()}</Text>
         <Text style={styles.nombre}>{registro.nombre}</Text>
         <View style={styles.fecha}>
           <MaterialIcons name="calendar-today" size={sizes.iconSm} color={colors.onTertiaryFixedVariant} />
