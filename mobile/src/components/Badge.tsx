@@ -15,6 +15,8 @@ type Props = {
   label: string;
   tone?: BadgeTone;
   icon?: IconName;
+  /** Muestra un punto de color antes del texto (como en "• Aplicada"). */
+  dot?: boolean;
 };
 
 /** Fondo y texto de cada tono. */
@@ -32,10 +34,11 @@ const ICONO = 12;
  * @param props ver `Props`
  * @returns el badge
  */
-export function Badge({ label, tone = 'teal', icon }: Props) {
+export function Badge({ label, tone = 'teal', icon, dot = false }: Props) {
   const colores = TONOS[tone];
   return (
     <View style={[styles.badge, { backgroundColor: colores.bg }]}>
+      {dot && <View style={[styles.dot, { backgroundColor: colores.text }]} />}
       {icon && <MaterialIcons name={icon} size={ICONO} color={colores.text} />}
       <Text style={[styles.label, { color: colores.text }]}>{label}</Text>
     </View>
@@ -51,6 +54,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs / 2,
+    borderRadius: radius.full,
+  },
+  dot: {
+    width: 6,
+    height: 6,
     borderRadius: radius.full,
   },
   label: {

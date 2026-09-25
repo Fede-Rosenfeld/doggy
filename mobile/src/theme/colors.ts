@@ -70,6 +70,8 @@ const brand = {
   secondaryContainer20: 'rgba(143, 245, 224, 0.20)',
   /** Mostaza oscuro con transparencia, para la decoración de la card de turnos. */
   tertiaryContainer10: 'rgba(151, 98, 0, 0.10)',
+  /** Velo oscuro detrás de los modales. */
+  scrim: 'rgba(30, 27, 22, 0.45)',
   /** CTA críticos, FAB de reportar, alertas de perdidos y barras de progreso. */
   mustard: '#E8A33D',
   /** Mostaza presionada. */
