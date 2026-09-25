@@ -42,7 +42,14 @@ export function FotoEditable({
       style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
     >
       <View style={styles.foto}>
-        <Avatar foto={foto} nombre={nombre || 'Mascota'} size={size} borderColor={colors.white} />
+        {foto ? (
+          <Avatar foto={foto} nombre={nombre || 'Mascota'} size={size} borderColor={colors.white} />
+        ) : (
+          // Sin foto todavía: un círculo vacío que invita a elegir una.
+          <View style={[styles.vacio, { width: size, height: size }]}>
+            <MaterialIcons name="add-a-photo" size={size * 0.3} color={colors.tealLight} />
+          </View>
+        )}
       </View>
       <View style={styles.boton}>
         {cargando ? (
@@ -66,6 +73,15 @@ const styles = StyleSheet.create({
   foto: {
     borderRadius: radius.full,
     ...shadows.level2,
+  },
+  vacio: {
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.tealLight10,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.tealLight,
   },
   boton: {
     position: 'absolute',
