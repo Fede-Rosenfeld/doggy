@@ -4,7 +4,8 @@
  * Carga las fuentes de la marca (Quicksand y Plus Jakarta Sans) y mantiene
  * la splash visible hasta que terminan de cargar, para que ninguna pantalla
  * se dibuje con la tipografía del sistema. Define el Stack raíz con los
- * grupos de autenticación y tabs, y el modal de reporte.
+ * grupos de autenticación y tabs, y el modal de reporte, todo dentro del
+ * provider del estado global.
  */
 import { Quicksand_600SemiBold } from '@expo-google-fonts/quicksand/600SemiBold';
 import { Quicksand_700Bold } from '@expo-google-fonts/quicksand/700Bold';
@@ -17,6 +18,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { AppProvider } from '@/context/AppContext';
 import { colors } from '@/theme';
 
 // La splash queda visible hasta que se llame a hideAsync.
@@ -47,7 +49,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <AppProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -61,6 +63,6 @@ export default function RootLayout() {
         {/* El reporte se abre desde abajo, por encima de las tabs. */}
         <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
       </Stack>
-    </>
+    </AppProvider>
   );
 }
