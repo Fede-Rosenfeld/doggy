@@ -62,7 +62,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Perdidos | Lista |
 | Reportar mascota perdida | Lista |
 | Agenda | Lista |
-| Mi Perfil | En construcción |
+| Mi Perfil | Lista |
 
 ## Flujo actual
 
@@ -75,6 +75,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). El FAB mostaza abre el reporte. Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
 8. **Reportar mascota perdida** (modal): escáner del QR de la chapita (autocompleta nombre, raza, señas y foto de la mascota), foto desde la galería, nombre, raza, descripción, etiquetas y un mini mapa con el pin precargado con el GPS, que se puede arrastrar o mover tocando el mapa, con la dirección legible debajo. Si se abre desde el perfil de una mascota, llega precargado. "Marcar como Perdido" valida, publica el reporte, vibra, cierra el modal y muestra el nuevo marker seleccionado en Perdidos.
 9. **Agenda**: calendario mensual hecho a mano con `Date` (semana de lunes a domingo, navegación entre meses, día seleccionado, "Hoy" marcado y puntos de color por categoría en los días con turnos). Al tocar un día vibra suave (`Haptics.selectionAsync`) y lista sus turnos con hora, categoría, mascota, motivo y lugar. "Nuevo turno" abre un formulario (mascota, categoría, fecha, hora, motivo y lugar) que valida que el turno sea a futuro.
+10. **Mi Perfil**: foto de perfil editable desde la galería, nombre, ubicación y cantidad de mascotas registradas (calculada desde el estado global). "Editar datos personales" abre un formulario (nombre, apellido, ubicación, email, teléfono de emergencia y WhatsApp). Card de contacto de emergencia, familia y cuidadores agrupados por mascota, menú (notificaciones, mis reportes activos con el conteo real, ayuda y guía de paseos) y "Cerrar sesión", que vuelve al login sin dejar historial.
 
 ## Componentes nativos
 
@@ -141,6 +142,9 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `reporte/EtiquetasInput`: chips de etiquetas con alta y baja.
 - `agenda/Calendario`: calendario mensual con puntos por categoría y leyenda (la lógica de fechas está documentada en `src/utils/calendario.ts`).
 - `agenda/TurnoCard`, `agenda/NuevoTurnoForm`: card y formulario de turnos.
+- `MenuRow`: fila de menú con ícono, badge, flecha o un elemento propio (Switch).
+- `SectionTitle`: título de sección con ícono en círculo y badge.
+- `perfil/ContactoEmergencia`, `perfil/CuidadoresMascota`, `perfil/EditarPerfilForm`: piezas del perfil de usuario.
 
 ## Estructura
 
