@@ -15,7 +15,6 @@ const FOTOS_LOCALES = {
   milo: require('@/assets/images/milo.jpg'),
   simba: require('@/assets/images/simba.jpg'),
   'sin-collar': require('@/assets/images/sin-collar.jpg'),
-  nieve: require('@/assets/images/nieve.jpg'),
   sofia: require('@/assets/images/sofia.jpg'),
   carlos: require('@/assets/images/carlos.jpg'),
 } satisfies Record<string, ImageSourcePropType>;

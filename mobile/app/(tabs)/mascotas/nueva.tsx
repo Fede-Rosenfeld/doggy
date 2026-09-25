@@ -1,15 +1,14 @@
 /**
  * Pantalla Agregar mascota.
  *
- * Formulario de alta: foto (elegida de la fototeca del dispositivo), nombre,
- * especie, tamaño, raza, edad y señas particulares. Al guardar, el service le
+ * Formulario de alta de un perro: foto (elegida de la fototeca del
+ * dispositivo), nombre, raza, edad y señas particulares. Al guardar, el service le
  * asigna el ID único DOGGY-XXXX-NOMBRE que después se usa en el QR, y se
  * vuelve al listado, donde la mascota ya aparece.
  */
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Chip } from '@/components/Chip';
 import { FotoEditable } from '@/components/FotoEditable';
 import { Input } from '@/components/Input';
 import { PermissionNotice } from '@/components/PermissionNotice';
@@ -19,8 +18,6 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApp } from '@/context/AppContext';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
-import type { Especie, Tamano } from '@/types/models';
-import { ESPECIES, TAMANOS } from '@/utils/etiquetas';
 import { volver } from '@/utils/navegacion';
 import { validarEdad, validarRequerido } from '@/utils/validaciones';
 
@@ -29,8 +26,6 @@ type Formulario = {
   raza: string;
   edad: string;
   senas: string;
-  especie: Especie;
-  tamano: Tamano;
   foto: string | null;
 };
 
@@ -42,8 +37,6 @@ const FORM_INICIAL: Formulario = {
   raza: '',
   edad: '',
   senas: '',
-  especie: 'perro',
-  tamano: 'mediano',
   foto: null,
 };
 
@@ -110,8 +103,6 @@ export default function NuevaMascotaScreen() {
         raza: form.raza.trim(),
         edad: Number(form.edad),
         senas: form.senas.trim(),
-        especie: form.especie,
-        tamano: form.tamano,
         foto: form.foto,
       });
       volver('/mascotas');
@@ -167,34 +158,6 @@ export default function NuevaMascotaScreen() {
           onSubmitEditing={() => razaRef.current?.focus()}
           submitBehavior="submit"
         />
-
-        <View style={styles.grupo}>
-          <Text style={styles.grupoLabel}>Especie</Text>
-          <View style={styles.chips}>
-            {ESPECIES.map((e) => (
-              <Chip
-                key={e.valor}
-                label={e.label}
-                selected={form.especie === e.valor}
-                onPress={() => setForm((prev) => ({ ...prev, especie: e.valor }))}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.grupo}>
-          <Text style={styles.grupoLabel}>Tamaño</Text>
-          <View style={styles.chips}>
-            {TAMANOS.map((t) => (
-              <Chip
-                key={t.valor}
-                label={t.label}
-                selected={form.tamano === t.valor}
-                onPress={() => setForm((prev) => ({ ...prev, tamano: t.valor }))}
-              />
-            ))}
-          </View>
-        </View>
 
         <View style={styles.fila}>
           <View style={styles.filaRaza}>
@@ -267,18 +230,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceContainerLowest,
     ...shadows.level1,
-  },
-  grupo: {
-    gap: spacing.base,
-  },
-  grupoLabel: {
-    ...typography.labelMd,
-    color: colors.onSurfaceVariant,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
   },
   fila: {
     flexDirection: 'row',

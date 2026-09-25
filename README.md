@@ -66,7 +66,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 1. **Login**: email y contraseña con validación local. "Ingresar" entra a la tab Mascotas.
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
-4. **Agregar mascota**: foto desde la galería, nombre, especie, tamaño, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
+4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
 
 ## Componentes nativos
 

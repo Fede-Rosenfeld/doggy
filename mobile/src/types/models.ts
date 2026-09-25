@@ -21,19 +21,14 @@ export type Usuario = {
   whatsappHabilitado: boolean;
 };
 
-export type Especie = 'perro' | 'gato';
-export type Tamano = 'pequeno' | 'mediano' | 'grande';
-
-/** Mascota registrada por el usuario. */
+/** Perro registrado por el usuario (Doggy es solo para perros). */
 export type Mascota = {
   id: number;
   tutorId: number;
   nombre: string;
-  especie: Especie;
   raza: string;
   /** Edad en años. */
   edad: number;
-  tamano: Tamano;
   /** ID único que se codifica en el QR de la chapita: DOGGY-XXXX-NOMBRE. */
   codigo: string;
   /** Señas particulares para reconocerla. */
@@ -73,7 +68,7 @@ export type Turno = {
 
 export type EstadoReporte = 'perdido' | 'encontrado';
 
-/** Reporte de una mascota perdida o encontrada en la vía pública. */
+/** Reporte de un perro perdido o encontrado en la vía pública. */
 export type ReportePerdida = {
   id: number;
   /** Mascota registrada en la app, o null si la reportó alguien que la encontró. */
@@ -82,9 +77,7 @@ export type ReportePerdida = {
   autorId: number;
   estado: EstadoReporte;
   nombre: string;
-  especie: Especie;
   raza: string;
-  tamano: Tamano;
   descripcion: string;
   foto: string | null;
   /** Etiquetas libres ("Collar rojo", "Asustadizo"). En Prisma va a ser una tabla aparte. */

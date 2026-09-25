@@ -1,5 +1,5 @@
 /**
- * Chip tipo píldora para categorías (raza, edad, tamaño, especie).
+ * Chip tipo píldora para categorías (raza, edad, etiquetas).
  *
  * Por defecto es informativo: fondo teal claro al 10 % y texto teal. Si se le
  * pasa `onPress` se vuelve seleccionable y con `selected` se rellena de teal.
