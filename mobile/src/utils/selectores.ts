@@ -3,7 +3,14 @@
  * (por ejemplo, la última vacuna de una mascota). Así no se guarda en el
  * estado nada que se pueda calcular.
  */
-import type { Mascota, RegistroSanitario, TipoRegistro, Turno } from '@/types/models';
+import type {
+  EstadoReporte,
+  Mascota,
+  RegistroSanitario,
+  ReportePerdida,
+  TipoRegistro,
+  Turno,
+} from '@/types/models';
 import { parsearFecha } from './fechas';
 
 /**
@@ -75,4 +82,40 @@ export function proximoRefuerzo(registros: RegistroSanitario[]): RegistroSanitar
   return registros
     .filter((r) => r.estado === 'pendiente')
     .sort((a, b) => parsearFecha(a.fecha).getTime() - parsearFecha(b.fecha).getTime())[0];
+}
+
+/** Filtro de estado de la pantalla Perdidos. */
+export type FiltroEstado = 'todos' | EstadoReporte;
+
+/**
+ * Quita tildes y pasa a minúsculas para comparar textos de búsqueda.
+ * @param texto texto original
+ * @returns texto normalizado
+ */
+function normalizar(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * Filtra reportes por texto (nombre o zona) y por estado, del más reciente al más viejo.
+ * @param reportes todos los reportes
+ * @param busqueda texto buscado
+ * @param estado filtro de estado
+ * @returns los reportes que coinciden
+ */
+export function filtrarReportes(
+  reportes: ReportePerdida[],
+  busqueda: string,
+  estado: FiltroEstado,
+): ReportePerdida[] {
+  const termino = normalizar(busqueda.trim());
+  return reportes
+    .filter((r) => estado === 'todos' || r.estado === estado)
+    .filter(
+      (r) => !termino || normalizar(r.nombre).includes(termino) || normalizar(r.zona).includes(termino),
+    )
+    .sort((a, b) => parsearFecha(b.fecha).getTime() - parsearFecha(a.fecha).getTime());
 }

@@ -87,3 +87,24 @@ export function hoy(): Date {
   const ahora = new Date();
   return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
 }
+
+const MINUTO_MS = 60 * 1000;
+const HORA_MS = 60 * MINUTO_MS;
+const DIA_MS = 24 * HORA_MS;
+
+/**
+ * Texto relativo de cuánto pasó desde una fecha: "Hace 5 min", "Hace 2h",
+ * "Ayer", "Hace 3 días" o la fecha si pasó más de una semana.
+ * @param iso fecha del evento
+ * @param ahora fecha de referencia
+ * @returns el texto para mostrar
+ */
+export function tiempoTranscurrido(iso: string, ahora: Date = new Date()): string {
+  const fecha = parsearFecha(iso);
+  const diferencia = ahora.getTime() - fecha.getTime();
+  if (diferencia < HORA_MS) return `Hace ${Math.max(1, Math.round(diferencia / MINUTO_MS))} min`;
+  if (diferencia < DIA_MS) return `Hace ${Math.round(diferencia / HORA_MS)}h`;
+  if (diferencia < 2 * DIA_MS) return 'Ayer';
+  if (diferencia < 7 * DIA_MS) return `Hace ${Math.floor(diferencia / DIA_MS)} días`;
+  return formatearFecha(iso);
+}
