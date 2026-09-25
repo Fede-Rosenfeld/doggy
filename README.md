@@ -61,7 +61,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Carnet Sanitario | Lista |
 | Perdidos | Lista |
 | Reportar mascota perdida | Lista |
-| Agenda | En construcción |
+| Agenda | Lista |
 | Mi Perfil | En construcción |
 
 ## Flujo actual
@@ -74,6 +74,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo pendiente e historial con estado, fecha y profesional. "Agregar Registro" abre un formulario (tipo, estado, nombre, fecha con máscara dd/mm/aaaa y veterinario) que valida que lo aplicado no tenga fecha futura y lo pendiente no sea pasado.
 7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). El FAB mostaza abre el reporte. Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
 8. **Reportar mascota perdida** (modal): escáner del QR de la chapita (autocompleta nombre, raza, señas y foto de la mascota), foto desde la galería, nombre, raza, descripción, etiquetas y un mini mapa con el pin precargado con el GPS, que se puede arrastrar o mover tocando el mapa, con la dirección legible debajo. Si se abre desde el perfil de una mascota, llega precargado. "Marcar como Perdido" valida, publica el reporte, vibra, cierra el modal y muestra el nuevo marker seleccionado en Perdidos.
+9. **Agenda**: calendario mensual hecho a mano con `Date` (semana de lunes a domingo, navegación entre meses, día seleccionado, "Hoy" marcado y puntos de color por categoría en los días con turnos). Al tocar un día vibra suave (`Haptics.selectionAsync`) y lista sus turnos con hora, categoría, mascota, motivo y lugar. "Nuevo turno" abre un formulario (mascota, categoría, fecha, hora, motivo y lugar) que valida que el turno sea a futuro.
 
 ## Componentes nativos
 
@@ -138,6 +139,8 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `reporte/EscanerQr`: escáner de QR con linterna, cámara frontal y lectura desde imagen.
 - `reporte/MapaSelector`: mini mapa con pin arrastrable (con versión `.web.tsx`).
 - `reporte/EtiquetasInput`: chips de etiquetas con alta y baja.
+- `agenda/Calendario`: calendario mensual con puntos por categoría y leyenda (la lógica de fechas está documentada en `src/utils/calendario.ts`).
+- `agenda/TurnoCard`, `agenda/NuevoTurnoForm`: card y formulario de turnos.
 
 ## Estructura
 
