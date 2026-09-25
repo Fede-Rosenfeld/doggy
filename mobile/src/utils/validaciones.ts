@@ -5,6 +5,9 @@
  * función devuelve el mensaje de error a mostrar o undefined si el valor es válido.
  */
 
+import type { EstadoRegistro } from '@/types/models';
+import { fechaIngresadaAIso, hoy, parsearFecha } from './fechas';
+
 /** Formato básico de email: algo@algo.dominio, sin espacios. */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -82,5 +85,35 @@ export function validarEdad(texto: string): string | undefined {
   if (!valor) return 'Ingresá la edad.';
   if (!/^\d+$/.test(valor)) return 'Solo números.';
   if (Number(valor) > EDAD_MAXIMA) return `Máximo ${EDAD_MAXIMA}.`;
+  return undefined;
+}
+
+/**
+ * Valida una fecha escrita como dd/mm/aaaa.
+ * @param texto lo que escribió el usuario
+ * @returns mensaje de error o undefined
+ */
+export function validarFechaIngresada(texto: string): string | undefined {
+  if (!texto.trim()) return 'Ingresá la fecha.';
+  if (!fechaIngresadaAIso(texto)) return 'Usá el formato dd/mm/aaaa con una fecha real.';
+  return undefined;
+}
+
+/**
+ * Valida que la fecha de un registro sea coherente con su estado:
+ * lo aplicado no puede ser futuro y lo pendiente no puede ser pasado.
+ * @param texto fecha dd/mm/aaaa (ya validada en formato)
+ * @param estado estado elegido
+ * @returns mensaje de error o undefined
+ */
+export function validarFechaSegunEstado(
+  texto: string,
+  estado: EstadoRegistro,
+): string | undefined {
+  const iso = fechaIngresadaAIso(texto);
+  if (!iso) return undefined;
+  const fecha = parsearFecha(iso);
+  if (estado === 'aplicada' && fecha > hoy()) return 'Una aplicación no puede tener fecha futura.';
+  if (estado === 'pendiente' && fecha < hoy()) return 'Un refuerzo pendiente tiene que ser a futuro.';
   return undefined;
 }

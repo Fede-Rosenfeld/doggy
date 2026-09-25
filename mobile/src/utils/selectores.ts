@@ -3,7 +3,7 @@
  * (por ejemplo, la última vacuna de una mascota). Así no se guarda en el
  * estado nada que se pueda calcular.
  */
-import type { Mascota, RegistroSanitario, Turno } from '@/types/models';
+import type { Mascota, RegistroSanitario, TipoRegistro, Turno } from '@/types/models';
 import { parsearFecha } from './fechas';
 
 /**
@@ -46,5 +46,33 @@ export function proximoTurno(
 ): Turno | undefined {
   return turnos
     .filter((t) => t.mascotaId === mascotaId && parsearFecha(t.fecha) >= ahora)
+    .sort((a, b) => parsearFecha(a.fecha).getTime() - parsearFecha(b.fecha).getTime())[0];
+}
+
+/**
+ * Registros de una mascota y un tipo, del más nuevo al más viejo.
+ * @param registros todos los registros
+ * @param mascotaId id de la mascota
+ * @param tipo tipo a filtrar
+ * @returns la lista filtrada y ordenada
+ */
+export function registrosPorTipo(
+  registros: RegistroSanitario[],
+  mascotaId: number,
+  tipo: TipoRegistro,
+): RegistroSanitario[] {
+  return registros
+    .filter((r) => r.mascotaId === mascotaId && r.tipo === tipo)
+    .sort((a, b) => parsearFecha(b.fecha).getTime() - parsearFecha(a.fecha).getTime());
+}
+
+/**
+ * Próximo refuerzo pendiente: el registro pendiente con la fecha más cercana.
+ * @param registros registros ya filtrados de una mascota y un tipo
+ * @returns el registro pendiente más próximo, o undefined
+ */
+export function proximoRefuerzo(registros: RegistroSanitario[]): RegistroSanitario | undefined {
+  return registros
+    .filter((r) => r.estado === 'pendiente')
     .sort((a, b) => parsearFecha(a.fecha).getTime() - parsearFecha(b.fecha).getTime())[0];
 }
