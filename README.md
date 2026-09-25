@@ -51,7 +51,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Pantalla | Estado |
 | --- | --- |
 | Login | Lista |
-| Registro | En construcción |
+| Registro | Lista |
 | Mis Mascotas | En construcción |
 | Perfil de la mascota | En construcción |
 | Carnet Sanitario | En construcción |
@@ -59,6 +59,19 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Reportar mascota perdida | En construcción |
 | Agenda | En construcción |
 | Mi Perfil | En construcción |
+
+## Flujo actual
+
+1. **Login**: email y contraseña con validación local. "Ingresar" entra a la tab Mascotas.
+2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
+
+## Componentes reutilizables
+
+- `ScreenContainer`: safe area, fondo y scroll con ajuste al teclado.
+- `Input`: label, ícono, foco, error y modo contraseña.
+- `PrimaryButton`: variantes primaria (teal), secundaria (mostaza) y outline.
+- `BackButton`: volver al stack anterior, en tono claro u oscuro.
+- `TabBar`: barra inferior con la píldora de tab activa.
 
 ## Estructura
 
