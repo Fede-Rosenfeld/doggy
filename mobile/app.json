@@ -37,6 +37,12 @@
           "photosPermission": "Doggy necesita acceder a tus fotos para que elijas la foto de tu mascota. Con esa foto la pueden reconocer si alguna vez se pierde.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Doggy usa tu ubicación para mostrarte las mascotas perdidas cerca tuyo y marcar dónde se perdió la tuya."
+        }
       ]
     ],
     "experiments": {
