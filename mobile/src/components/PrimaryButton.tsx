@@ -5,6 +5,8 @@
  * - primary: teal de marca, para las acciones principales.
  * - secondary: mostaza, reservado para CTA críticos (ingresar, reportar).
  * - outline: borde teal y fondo transparente, para acciones secundarias.
+ * Tamaños: `md` (56 de alto, el de los formularios) y `sm` (píldora chica
+ * para acciones de encabezado, como "Nuevo turno").
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -32,6 +34,7 @@ type Props = {
   /** Muestra un spinner y bloquea el botón. */
   loading?: boolean;
   disabled?: boolean;
+  size?: 'md' | 'sm';
   style?: StyleProp<ViewStyle>;
 };
 
@@ -69,6 +72,7 @@ export function PrimaryButton({
   icon,
   loading = false,
   disabled = false,
+  size = 'md',
   style,
 }: Props) {
   const tone = palette[variant];
@@ -82,6 +86,7 @@ export function PrimaryButton({
       disabled={blocked}
       style={({ pressed }) => [
         styles.base,
+        size === 'sm' && styles.sm,
         { backgroundColor: pressed ? tone.pressed : tone.bg, borderColor: tone.border },
         pressed && styles.pressed,
         blocked && styles.disabled,
@@ -109,6 +114,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sm: {
+    height: sizes.avatarSm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
   },
   content: {
     flexDirection: 'row',
