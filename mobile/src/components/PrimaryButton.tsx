@@ -1,0 +1,127 @@
+/**
+ * Botón principal de la app.
+ *
+ * Variantes:
+ * - primary: teal de marca, para las acciones principales.
+ * - secondary: mostaza, reservado para CTA críticos (ingresar, reportar).
+ * - outline: borde teal y fondo transparente, para acciones secundarias.
+ */
+import { MaterialIcons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
+
+import { colors, radius, sizes, spacing, typography } from '@/theme';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'outline';
+type IconName = ComponentProps<typeof MaterialIcons>['name'];
+
+type Props = {
+  title: string;
+  onPress: () => void;
+  variant?: ButtonVariant;
+  /** Ícono opcional a la derecha del texto. */
+  icon?: IconName;
+  /** Muestra un spinner y bloquea el botón. */
+  loading?: boolean;
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+};
+
+/** Colores de fondo, fondo presionado, texto y borde por variante. */
+const palette: Record<ButtonVariant, { bg: string; pressed: string; text: string; border: string }> = {
+  primary: {
+    bg: colors.primaryContainer,
+    pressed: colors.primary,
+    text: colors.onPrimary,
+    border: colors.primaryContainer,
+  },
+  secondary: {
+    bg: colors.mustard,
+    pressed: colors.mustardPressed,
+    text: colors.onTertiaryFixed,
+    border: colors.mustard,
+  },
+  outline: {
+    bg: colors.transparent,
+    pressed: colors.tealLight10,
+    text: colors.primaryContainer,
+    border: colors.primaryContainer,
+  },
+};
+
+/**
+ * Botón con variante, ícono y estado de carga.
+ * @param props ver `Props`
+ * @returns el botón
+ */
+export function PrimaryButton({
+  title,
+  onPress,
+  variant = 'primary',
+  icon,
+  loading = false,
+  disabled = false,
+  style,
+}: Props) {
+  const tone = palette[variant];
+  const blocked = disabled || loading;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: blocked, busy: loading }}
+      onPress={onPress}
+      disabled={blocked}
+      style={({ pressed }) => [
+        styles.base,
+        { backgroundColor: pressed ? tone.pressed : tone.bg, borderColor: tone.border },
+        pressed && styles.pressed,
+        blocked && styles.disabled,
+        style,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color={tone.text} />
+      ) : (
+        <View style={styles.content}>
+          <Text style={[styles.label, { color: tone.text }]}>{title}</Text>
+          {icon && <MaterialIcons name={icon} size={sizes.iconSm + 2} color={tone.text} />}
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+// --- Estilos ---
+const styles = StyleSheet.create({
+  base: {
+    height: sizes.inputHeight,
+    borderRadius: radius.md,
+    borderWidth: sizes.borderWidth,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  label: {
+    ...typography.labelMd,
+  },
+  pressed: {
+    transform: [{ scale: 0.97 }],
+  },
+  disabled: {
+    opacity: 0.6,
+  },
+});
