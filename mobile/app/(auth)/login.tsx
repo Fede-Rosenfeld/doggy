@@ -13,6 +13,7 @@ import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'reac
 import { Input } from '@/components/Input';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenContainer } from '@/components/ScreenContainer';
+import { useApp } from '@/context/AppContext';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import { validarEmail, validarPasswordRequerida } from '@/utils/validaciones';
 
@@ -28,10 +29,13 @@ type Errores = {
  * @returns el formulario de login
  */
 export default function LoginScreen() {
+  const { iniciarSesion } = useApp();
+
   // --- Estado ---
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errores, setErrores] = useState<Errores>({});
+  const [enviando, setEnviando] = useState(false);
   const passwordRef = useRef<TextInput>(null);
 
   // --- Handlers ---
@@ -47,15 +51,24 @@ export default function LoginScreen() {
     if (errores.password) setErrores((prev) => ({ ...prev, password: undefined }));
   };
 
-  /** Valida el formulario y, si está bien, entra a la app reemplazando el login en el historial. */
-  const handleIngresar = () => {
+  /** Valida el formulario, inicia la sesión y entra a la app reemplazando el login en el historial. */
+  const handleIngresar = async () => {
     const nuevos: Errores = {
       email: validarEmail(email),
       password: validarPasswordRequerida(password),
     };
     setErrores(nuevos);
     if (nuevos.email || nuevos.password) return;
-    router.replace('/mascotas');
+
+    setEnviando(true);
+    try {
+      await iniciarSesion(email, password);
+      router.replace('/mascotas');
+    } catch {
+      Alert.alert('No pudimos ingresar', 'Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   /** La recuperación de contraseña necesita backend; por ahora solo avisa. */
@@ -131,6 +144,7 @@ export default function LoginScreen() {
           icon="login"
           variant="secondary"
           onPress={handleIngresar}
+          loading={enviando}
           style={styles.submit}
         />
       </View>
