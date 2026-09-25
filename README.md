@@ -52,7 +52,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | --- | --- |
 | Login | Lista |
 | Registro | Lista |
-| Mis Mascotas | En construcción |
+| Mis Mascotas | Lista |
 | Perfil de la mascota | En construcción |
 | Carnet Sanitario | En construcción |
 | Perdidos | En construcción |
@@ -64,6 +64,20 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 
 1. **Login**: email y contraseña con validación local. "Ingresar" entra a la tab Mascotas.
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
+3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
+
+## Datos y arquitectura
+
+La app ya está separada en capas para sumar el backend sin tocar las pantallas:
+
+```
+Pantalla → AppContext (estado global) → services → [hoy: datos en memoria | Sprint 2: fetch a la API]
+```
+
+- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
+- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026).
+- `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
+- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
 
 ## Componentes reutilizables
 
@@ -72,6 +86,11 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 - `PrimaryButton`: variantes primaria (teal), secundaria (mostaza) y outline.
 - `BackButton`: volver al stack anterior, en tono claro u oscuro.
 - `TabBar`: barra inferior con la píldora de tab activa.
+- `AppHeader`: marca y avatar del usuario con acceso al perfil.
+- `Avatar`: foto circular con respaldo de inicial y huella si no hay imagen.
+- `PetCard`: card de mascota del listado.
+- `Fab`: botón flotante mostaza, simple o extendido con texto.
+- `Cargando` / `EstadoVacio`: estados de carga, vacío y error de las listas.
 
 ## Estructura
 
