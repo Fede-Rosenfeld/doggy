@@ -2,7 +2,8 @@
  * Textos para mostrar los valores de los modelos en la interfaz
  * (los modelos guardan claves sin tildes, la UI muestra el texto en español).
  */
-import type { EstadoRegistro, TipoRegistro } from '@/types/models';
+import { colors } from '@/theme';
+import type { CategoriaTurno, EstadoRegistro, TipoRegistro } from '@/types/models';
 
 /**
  * Texto de la edad: "1 año", "3 años" o "Menos de 1 año".
@@ -59,3 +60,55 @@ export const ESTADOS_REGISTRO: { valor: EstadoRegistro; label: string }[] = [
   { valor: 'aplicada', label: 'Aplicada' },
   { valor: 'pendiente', label: 'Pendiente' },
 ];
+
+/** Textos y colores de cada categoría de turno (puntos del calendario, leyenda y chips). */
+export const CATEGORIAS_TURNO: {
+  valor: CategoriaTurno;
+  label: string;
+  /** Texto del chip en la card del turno. */
+  chip: string;
+  /** Color del punto y del borde de la card. */
+  color: string;
+  /** Color del punto cuando el día está seleccionado (fondo teal oscuro). */
+  colorSobreSeleccion: string;
+  /** Fondo y texto del chip. */
+  chipFondo: string;
+  chipTexto: string;
+}[] = [
+  {
+    valor: 'vacunas',
+    label: 'Vacunas',
+    chip: 'Vacunas',
+    color: colors.secondary,
+    colorSobreSeleccion: colors.secondaryContainer,
+    chipFondo: colors.secondaryContainer30,
+    chipTexto: colors.onSecondaryContainer,
+  },
+  {
+    valor: 'veterinario',
+    label: 'Veterinario',
+    chip: 'Clínica',
+    color: colors.tertiaryFixedDim,
+    colorSobreSeleccion: colors.tertiaryFixed,
+    chipFondo: colors.tertiaryFixed,
+    chipTexto: colors.onTertiaryFixed,
+  },
+  {
+    valor: 'peluqueria',
+    label: 'Peluquería',
+    chip: 'Peluquería',
+    color: colors.secondaryFixed,
+    colorSobreSeleccion: colors.white,
+    chipFondo: colors.secondaryContainer20,
+    chipTexto: colors.onSecondaryFixedVariant,
+  },
+];
+
+/**
+ * Datos de presentación de una categoría de turno.
+ * @param categoria clave del modelo
+ * @returns textos y colores
+ */
+export function categoriaTurno(categoria: CategoriaTurno): (typeof CATEGORIAS_TURNO)[number] {
+  return CATEGORIAS_TURNO.find((c) => c.valor === categoria) ?? CATEGORIAS_TURNO[0];
+}

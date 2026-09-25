@@ -6,7 +6,7 @@
  */
 
 import type { EstadoRegistro } from '@/types/models';
-import { fechaIngresadaAIso, hoy, parsearFecha } from './fechas';
+import { fechaIngresadaAIso, hoy, parsearFecha, parsearHora } from './fechas';
 
 /** Formato básico de email: algo@algo.dominio, sin espacios. */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -115,5 +115,16 @@ export function validarFechaSegunEstado(
   const fecha = parsearFecha(iso);
   if (estado === 'aplicada' && fecha > hoy()) return 'Una aplicación no puede tener fecha futura.';
   if (estado === 'pendiente' && fecha < hoy()) return 'Un refuerzo pendiente tiene que ser a futuro.';
+  return undefined;
+}
+
+/**
+ * Valida una hora escrita como HH:MM.
+ * @param texto lo que escribió el usuario
+ * @returns mensaje de error o undefined
+ */
+export function validarHora(texto: string): string | undefined {
+  if (!texto.trim()) return 'Ingresá la hora.';
+  if (!parsearHora(texto)) return 'Usá el formato HH:MM (por ejemplo, 10:30).';
   return undefined;
 }

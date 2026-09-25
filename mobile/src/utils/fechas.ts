@@ -108,3 +108,38 @@ export function tiempoTranscurrido(iso: string, ahora: Date = new Date()): strin
   if (diferencia < 7 * DIA_MS) return `Hace ${Math.floor(diferencia / DIA_MS)} días`;
   return formatearFecha(iso);
 }
+
+/**
+ * Va agregando los dos puntos mientras el usuario escribe una hora ("1030" → "10:30").
+ * @param texto lo que hay en el campo
+ * @returns el texto con formato HH:MM (parcial si no terminó)
+ */
+export function enmascararHora(texto: string): string {
+  const digitos = texto.replace(/\D/g, '').slice(0, 4);
+  return digitos.length > 2 ? `${digitos.slice(0, 2)}:${digitos.slice(2)}` : digitos;
+}
+
+/**
+ * Valida una hora HH:MM de 24 hs.
+ * @param texto hora escrita
+ * @returns horas y minutos, o null si no es válida
+ */
+export function parsearHora(texto: string): { horas: number; minutos: number } | null {
+  const partes = /^(\d{2}):(\d{2})$/.exec(texto.trim());
+  if (!partes) return null;
+  const horas = Number(partes[1]);
+  const minutos = Number(partes[2]);
+  if (horas > 23 || minutos > 59) return null;
+  return { horas, minutos };
+}
+
+/**
+ * Formatea un Date como dd/mm/aaaa (para precargar campos de fecha).
+ * @param fecha día
+ * @returns el texto dd/mm/aaaa
+ */
+export function fechaATexto(fecha: Date): string {
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${fecha.getFullYear()}`;
+}
