@@ -134,6 +134,8 @@ const styles = StyleSheet.create({
     height: '100%',
     ...typography.bodyMd,
     color: colors.onSurface,
+    // En web el navegador agrega su propio contorno de foco; el borde del campo ya lo indica.
+    outlineWidth: 0,
   },
   error: {
     ...typography.bodySm,
