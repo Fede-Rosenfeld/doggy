@@ -73,8 +73,9 @@ export function ReporteCard({ reporte, onPress, seleccionado = false, style }: P
           </Text>
         </View>
         <View style={styles.chips}>
-          {chips.map((chip) => (
-            <View key={chip} style={styles.chip}>
+          {chips.map((chip, indice) => (
+            // La raza (primer chip) no se achica; las etiquetas sí.
+            <View key={chip} style={[styles.chip, indice === 0 && styles.chipFijo]}>
               <Text style={styles.chipTexto} numberOfLines={1}>
                 {chip}
               </Text>
@@ -182,6 +183,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
     backgroundColor: colors.tealLight10,
+  },
+  chipFijo: {
+    flexShrink: 0,
+    maxWidth: '100%',
   },
   chipTexto: {
     ...typography.labelSm,

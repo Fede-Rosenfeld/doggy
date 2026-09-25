@@ -3,11 +3,12 @@
  *
  * Explica para qué necesita la app el permiso y ofrece la salida que
  * corresponda: volver a pedirlo o, si el sistema ya no deja preguntar,
- * abrir los ajustes de la app (Linking.openSettings).
+ * abrir los ajustes de la app (Linking.openSettings). La versión `compacto`
+ * es una sola fila, para pantallas donde el espacio importa (como el mapa).
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, sizes, spacing, typography } from '@/theme';
 import { PrimaryButton } from './PrimaryButton';
@@ -24,6 +25,7 @@ type Props = {
   /** Vuelve a intentar pedir el permiso. */
   onReintentar: () => void;
   onAbrirAjustes: () => void;
+  compacto?: boolean;
 };
 
 /**
@@ -38,7 +40,30 @@ export function PermissionNotice({
   puedePreguntar,
   onReintentar,
   onAbrirAjustes,
+  compacto = false,
 }: Props) {
+  const accion = puedePreguntar ? onReintentar : onAbrirAjustes;
+  const textoAccion = puedePreguntar ? 'Dar permiso' : 'Abrir ajustes';
+
+  if (compacto) {
+    return (
+      <View style={[styles.card, styles.row, styles.compacto]} accessibilityRole="alert">
+        <MaterialIcons name={icon} size={sizes.iconMd} color={colors.onTertiaryFixedVariant} />
+        <View style={styles.texts}>
+          <Text style={styles.titulo}>{titulo}</Text>
+          <Text style={styles.mensaje} numberOfLines={3}>
+            {mensaje}
+          </Text>
+        </View>
+        <Pressable onPress={accion} hitSlop={spacing.sm} accessibilityRole="button">
+          {({ pressed }) => (
+            <Text style={[styles.link, pressed && styles.linkPressed]}>{textoAccion}</Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card} accessibilityRole="alert">
       <View style={styles.row}>
@@ -77,6 +102,17 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: spacing.stackSm,
+  },
+  compacto: {
+    alignItems: 'center',
+    paddingVertical: spacing.stackSm,
+  },
+  link: {
+    ...typography.labelMd,
+    color: colors.primary,
+  },
+  linkPressed: {
+    opacity: 0.6,
   },
   iconCircle: {
     width: sizes.avatarSm,
