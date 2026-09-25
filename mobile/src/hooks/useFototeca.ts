@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
 import { Linking } from 'react-native';
 
-export type EstadoPermiso = 'sin-consultar' | 'concedido' | 'denegado';
+import type { EstadoPermiso } from '@/types/permisos';
 
 type Opciones = {
   /** Relación de aspecto del recorte; por defecto cuadrado para avatares. */
