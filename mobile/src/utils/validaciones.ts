@@ -128,3 +128,17 @@ export function validarHora(texto: string): string | undefined {
   if (!parsearHora(texto)) return 'Usá el formato HH:MM (por ejemplo, 10:30).';
   return undefined;
 }
+
+/**
+ * Valida un teléfono: entre 8 y 15 dígitos, admitiendo espacios, guiones y "+".
+ * @param telefono texto ingresado
+ * @returns mensaje de error o undefined
+ */
+export function validarTelefono(telefono: string): string | undefined {
+  const valor = telefono.trim();
+  if (!valor) return 'Ingresá un teléfono de contacto.';
+  if (!/^\+?[\d\s-]+$/.test(valor)) return 'Usá solo números, espacios, guiones y "+".';
+  const digitos = valor.replace(/\D/g, '').length;
+  if (digitos < 8 || digitos > 15) return 'El teléfono tiene que tener entre 8 y 15 números.';
+  return undefined;
+}

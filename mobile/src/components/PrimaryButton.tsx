@@ -5,6 +5,8 @@
  * - primary: teal de marca, para las acciones principales.
  * - secondary: mostaza, reservado para CTA críticos (ingresar, reportar).
  * - outline: borde teal y fondo transparente, para acciones secundarias.
+ * - tonal: fondo crema oscuro y texto teal, para acciones de edición.
+ * - danger: fondo rojo suave y texto rojo, para cerrar sesión.
  * Tamaños: `md` (56 de alto, el de los formularios) y `sm` (píldora chica
  * para acciones de encabezado, como "Nuevo turno").
  */
@@ -22,7 +24,7 @@ import {
 
 import { colors, radius, sizes, spacing, typography } from '@/theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'tonal' | 'danger';
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
 type Props = {
@@ -59,6 +61,18 @@ const palette: Record<ButtonVariant, { bg: string; pressed: string; text: string
     pressed: colors.tealLight10,
     text: colors.primaryContainer,
     border: colors.primaryContainer,
+  },
+  tonal: {
+    bg: colors.surfaceContainer,
+    pressed: colors.surfaceContainerHigh,
+    text: colors.primary,
+    border: colors.surfaceContainer,
+  },
+  danger: {
+    bg: colors.errorContainer,
+    pressed: colors.errorContainer,
+    text: colors.error,
+    border: colors.errorContainer,
   },
 };
 
