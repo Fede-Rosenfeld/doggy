@@ -3,7 +3,8 @@
  *
  * Carga las fuentes de la marca (Quicksand y Plus Jakarta Sans) y mantiene
  * la splash visible hasta que terminan de cargar, para que ninguna pantalla
- * se dibuje con la tipografía del sistema. Define el Stack raíz.
+ * se dibuje con la tipografía del sistema. Define el Stack raíz con los
+ * grupos de autenticación y tabs, y el modal de reporte.
  */
 import { Quicksand_600SemiBold } from '@expo-google-fonts/quicksand/600SemiBold';
 import { Quicksand_700Bold } from '@expo-google-fonts/quicksand/700Bold';
@@ -53,7 +54,13 @@ export default function RootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.surface },
         }}
-      />
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        {/* El reporte se abre desde abajo, por encima de las tabs. */}
+        <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
+      </Stack>
     </>
   );
 }

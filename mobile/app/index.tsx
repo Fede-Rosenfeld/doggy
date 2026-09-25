@@ -1,21 +1,10 @@
 /**
- * Pantalla inicial provisoria mientras se arma la navegación.
+ * Ruta de entrada ("/"). No tiene interfaz propia: redirige al login,
+ * que es el primer paso del flujo.
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { Redirect } from 'expo-router';
 
-/** Pantalla de bienvenida mínima. */
+/** Redirige a la pantalla de ingreso. */
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text>Doggy</Text>
-    </View>
-  );
+  return <Redirect href="/login" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
