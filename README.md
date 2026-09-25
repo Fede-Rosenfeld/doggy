@@ -56,7 +56,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Mis Mascotas | Lista |
 | Agregar mascota | Lista |
 | Perfil de la mascota | Lista |
-| Carnet Sanitario | En construcción |
+| Carnet Sanitario | Lista |
 | Perdidos | En construcción |
 | Reportar mascota perdida | En construcción |
 | Agenda | En construcción |
@@ -69,6 +69,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
 4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
 5. **Perfil de la mascota**: foto, raza y edad; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada.
+6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo pendiente e historial con estado, fecha y profesional. "Agregar Registro" abre un formulario (tipo, estado, nombre, fecha con máscara dd/mm/aaaa y veterinario) que valida que lo aplicado no tenga fecha futura y lo pendiente no sea pasado.
 
 ## Componentes nativos
 
@@ -111,6 +112,9 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `Badge`: etiqueta de estado ("Placa & Collar", "Aplicada", "URGENTE").
 - `SectionCard`: card de sección con decoración, acción y pie con link.
 - `QrIdentificacion`: card con el QR de la mascota y las acciones de compartir y descargar.
+- `SegmentedControl`: pestañas con subrayado para filtrar listas.
+- `FormModal`: hoja modal que sube desde abajo para formularios cortos.
+- `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/NuevoRegistroForm`: piezas del carnet sanitario.
 
 ## Estructura
 
