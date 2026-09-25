@@ -72,6 +72,9 @@ const brand = {
   /** Fondo global. */
   cream: '#FFF8F0',
   white: '#FFFFFF',
+  /** Blanco translúcido para botones sobre fondo teal. */
+  whiteOverlay: 'rgba(255, 255, 255, 0.16)',
+  whiteOverlayPressed: 'rgba(255, 255, 255, 0.28)',
   /** Color base de las sombras (teal, no negro). */
   shadow: '#1F7A6C',
   transparent: 'transparent',
