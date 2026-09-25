@@ -43,6 +43,14 @@
         {
           "locationWhenInUsePermission": "Doggy usa tu ubicación para mostrarte las mascotas perdidas cerca tuyo y marcar dónde se perdió la tuya."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Doggy usa la cámara para escanear el QR de la chapita de una mascota que encontraste y avisarle a su familia.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {
