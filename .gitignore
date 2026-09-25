@@ -1,0 +1,16 @@
+# Herramientas y material local
+.claude/
+CLAUDE.md
+_referencias/
+.DS_Store
+
+# Entorno
+.env
+.env.local
+
+# Expo / Node
+.expo/
+node_modules/
+dist/
+web-build/
+*.log
