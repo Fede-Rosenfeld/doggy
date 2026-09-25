@@ -9,7 +9,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@/theme';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
-export type BadgeTone = 'teal' | 'mustard' | 'neutral';
+export type BadgeTone = 'teal' | 'mustard' | 'neutral' | 'error';
 
 type Props = {
   label: string;
@@ -24,6 +24,7 @@ const TONOS: Record<BadgeTone, { bg: string; text: string }> = {
   teal: { bg: colors.secondaryContainer30, text: colors.onSecondaryContainer },
   mustard: { bg: colors.mustard, text: colors.onTertiaryFixed },
   neutral: { bg: colors.surfaceContainerHigh, text: colors.onSurfaceVariant },
+  error: { bg: colors.error, text: colors.onError },
 };
 
 /** Tamaño del ícono dentro del badge. */

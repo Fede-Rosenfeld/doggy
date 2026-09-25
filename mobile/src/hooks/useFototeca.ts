@@ -22,6 +22,8 @@ import type { EstadoPermiso } from '@/types/permisos';
 type Opciones = {
   /** Relación de aspecto del recorte; por defecto cuadrado para avatares. */
   aspecto?: [number, number];
+  /** Si es false no se ofrece recortar (por ejemplo, para leer un QR de una captura). */
+  recortar?: boolean;
 };
 
 type UseFototeca = {
@@ -51,10 +53,10 @@ async function asegurarPermiso(): Promise<{ concedido: boolean; puedePreguntar: 
 
 /**
  * Hook de la fototeca.
- * @param opciones aspecto del recorte
+ * @param opciones aspecto del recorte y si se permite recortar
  * @returns estado del permiso y funciones para elegir foto o abrir ajustes
  */
-export function useFototeca({ aspecto = [1, 1] }: Opciones = {}): UseFototeca {
+export function useFototeca({ aspecto = [1, 1], recortar = true }: Opciones = {}): UseFototeca {
   const [permiso, setPermiso] = useState<EstadoPermiso>('sin-consultar');
   const [puedePreguntar, setPuedePreguntar] = useState(true);
   const [eligiendo, setEligiendo] = useState(false);
@@ -74,7 +76,7 @@ export function useFototeca({ aspecto = [1, 1] }: Opciones = {}): UseFototeca {
 
       const resultado = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
+        allowsEditing: recortar,
         aspect: [ancho, alto],
         // Calidad media: alcanza para reconocer a la mascota y pesa poco.
         quality: 0.7,
@@ -84,7 +86,7 @@ export function useFototeca({ aspecto = [1, 1] }: Opciones = {}): UseFototeca {
     } finally {
       setEligiendo(false);
     }
-  }, [ancho, alto]);
+  }, [ancho, alto, recortar]);
 
   /** Lleva a los ajustes del sistema para habilitar el permiso a mano. */
   const abrirAjustes = useCallback(async () => {

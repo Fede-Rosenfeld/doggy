@@ -28,6 +28,14 @@ export type Coordenadas = {
   lng: number;
 };
 
+/** Dirección legible de un punto del mapa. */
+export type DireccionLegible = {
+  /** Calle, número y barrio: "Av. Santa Fe 3200, Palermo". */
+  texto: string;
+  /** Solo el barrio o la ciudad, para agrupar reportes: "Palermo". */
+  zona: string | null;
+};
+
 type Opciones = {
   /** Si es true, pide la ubicación apenas se monta el componente. */
   automatico?: boolean;
@@ -44,7 +52,7 @@ type UseUbicacion = {
   /** Lee la posición actual (pidiendo permiso si hace falta). */
   obtenerUbicacion: () => Promise<Coordenadas | null>;
   /** Convierte coordenadas en una dirección legible ("Av. Santa Fe 3200, Palermo"). */
-  obtenerDireccion: (coords: Coordenadas) => Promise<string | null>;
+  obtenerDireccion: (coords: Coordenadas) => Promise<DireccionLegible | null>;
   abrirAjustes: () => Promise<void>;
 };
 
@@ -63,12 +71,15 @@ async function asegurarPermiso(): Promise<{ concedido: boolean; puedePreguntar: 
 /**
  * Arma un texto corto a partir de la dirección que devuelve el sistema.
  * @param direccion resultado de reverseGeocodeAsync
- * @returns calle y número, más el barrio o la ciudad si están
+ * @returns calle y número con el barrio, y el barrio solo
  */
-function formatearDireccion(direccion: Location.LocationGeocodedAddress): string {
+function formatearDireccion(direccion: Location.LocationGeocodedAddress): DireccionLegible {
   const calle = [direccion.street, direccion.streetNumber].filter(Boolean).join(' ');
   const zona = direccion.district ?? direccion.subregion ?? direccion.city;
-  return [calle, zona].filter(Boolean).join(', ') || 'Ubicación sin nombre';
+  return {
+    texto: [calle, zona].filter(Boolean).join(', ') || 'Ubicación sin nombre',
+    zona,
+  };
 }
 
 /**
@@ -127,7 +138,7 @@ export function useUbicacion({ automatico = false }: Opciones = {}): UseUbicacio
   }, []);
 
   /** Traduce coordenadas a una dirección; si falla devuelve null y el llamador decide qué mostrar. */
-  const obtenerDireccion = useCallback(async (coords: Coordenadas): Promise<string | null> => {
+  const obtenerDireccion = useCallback(async (coords: Coordenadas): Promise<DireccionLegible | null> => {
     try {
       const resultados = await Location.reverseGeocodeAsync({
         latitude: coords.lat,

@@ -119,3 +119,14 @@ export function filtrarReportes(
     )
     .sort((a, b) => parsearFecha(b.fecha).getTime() - parsearFecha(a.fecha).getTime());
 }
+
+/**
+ * Busca la mascota que corresponde a un código leído de un QR.
+ * @param mascotas mascotas cargadas
+ * @param codigo texto leído (se normaliza a mayúsculas y sin espacios)
+ * @returns la mascota o undefined
+ */
+export function buscarMascotaPorCodigo(mascotas: Mascota[], codigo: string): Mascota | undefined {
+  const normalizado = codigo.trim().toUpperCase();
+  return mascotas.find((m) => m.codigo === normalizado);
+}
