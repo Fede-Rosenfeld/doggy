@@ -6,10 +6,11 @@
  * una card centra el mapa en ese reporte. Modo Lista: las mismas cards en
  * vertical. El buscador filtra en local por nombre o zona y el filtro por
  * estado. Si se deniega la ubicación, el mapa queda en CABA con un aviso.
+ * Si llega `reporteId` por params (después de reportar), se centra en ese reporte.
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -53,6 +54,8 @@ const FILTROS: { valor: FiltroEstado; label: string }[] = [
 
 /** Cuánto se asoma la card siguiente del carrusel. */
 const ASOMA = 32;
+/** Espera para que el mapa termine de montarse antes de mover la cámara. */
+const ESPERA_MAPA_MS = 400;
 
 /**
  * Pantalla de mascotas perdidas.
@@ -60,6 +63,7 @@ const ASOMA = 32;
  */
 export default function PerdidosScreen() {
   const { reportes } = useApp();
+  const { reporteId } = useLocalSearchParams<{ reporteId?: string }>();
   const gps = useUbicacion({ automatico: true });
   const { width } = useWindowDimensions();
 
@@ -79,6 +83,25 @@ export default function PerdidosScreen() {
     [reportes, busqueda, filtro],
   );
   const anchoCard = width - spacing.containerMargin * 2 - ASOMA;
+
+  // Recién llegado de reportar: se muestra el nuevo marker seleccionado y centrado.
+  // El ref evita repetirlo cada vez que se vuelve a la tab con el mismo param.
+  const reporteProcesado = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!reporteId || reporteProcesado.current === reporteId) return;
+    const reporte = reportes.find((r) => String(r.id) === reporteId);
+    if (!reporte) return;
+    reporteProcesado.current = reporteId;
+    setModo('mapa');
+    setFiltro('todos');
+    setBusqueda('');
+    setSeleccionadoId(reporte.id);
+    setTimeout(() => {
+      mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng });
+      // El más nuevo queda primero en el carrusel (orden por fecha).
+      carruselRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, ESPERA_MAPA_MS);
+  }, [reporteId, reportes]);
 
   // --- Handlers ---
   /** Card tocada: la marca y centra el mapa en el reporte. */
@@ -102,7 +125,7 @@ export default function PerdidosScreen() {
     setModo('mapa');
     setSeleccionadoId(reporte.id);
     // Se espera a que el mapa se monte antes de mover la cámara.
-    setTimeout(() => mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng }), 300);
+    setTimeout(() => mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng }), ESPERA_MAPA_MS);
   }, []);
 
   /** Pide la posición al GPS y centra el mapa ahí. */
