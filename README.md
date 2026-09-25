@@ -53,6 +53,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Login | Lista |
 | Registro | Lista |
 | Mis Mascotas | Lista |
+| Agregar mascota | Lista |
 | Perfil de la mascota | En construcción |
 | Carnet Sanitario | En construcción |
 | Perdidos | En construcción |
@@ -65,6 +66,16 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 1. **Login**: email y contraseña con validación local. "Ingresar" entra a la tab Mascotas.
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
+4. **Agregar mascota**: foto desde la galería, nombre, especie, tamaño, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
+
+## Componentes nativos
+
+### 1. Fototeca (galería de imágenes) — `expo-image-picker`
+
+- **Dónde:** alta de mascota (y más adelante reporte de perdida y foto de perfil). Implementado en `src/hooks/useFototeca.ts`.
+- **Qué hace:** abre el selector nativo de imágenes del sistema operativo (`launchImageLibraryAsync`) con recorte cuadrado (`allowsEditing`, `aspect: [1, 1]`) y compresión (`quality: 0.7`), y devuelve la URI local del archivo elegido.
+- **Permiso:** acceso a la biblioteca de fotos (`NSPhotoLibraryUsageDescription` en iOS), declarado con el plugin de `expo-image-picker` en `app.json` y un texto en español que explica para qué se usa. En tiempo de ejecución se sigue el flujo consultar (`getMediaLibraryPermissionsAsync`) → pedir (`requestMediaLibraryPermissionsAsync`) → evaluar el resultado. Si el usuario lo niega y `canAskAgain` es `false`, la pantalla muestra un `PermissionNotice` que explica el motivo y ofrece `Linking.openSettings()`.
+- **Por qué:** la foto es el dato que más ayuda a que un vecino reconozca a una mascota perdida. Tomarla de la galería evita obligar al usuario a sacar una foto nueva en el momento y reutiliza fotos que ya tiene de su mascota.
 
 ## Datos y arquitectura
 
@@ -91,6 +102,10 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `PetCard`: card de mascota del listado.
 - `Fab`: botón flotante mostaza, simple o extendido con texto.
 - `Cargando` / `EstadoVacio`: estados de carga, vacío y error de las listas.
+- `ScreenHeader`: volver, título y subtítulo para pantallas internas.
+- `Chip`: píldora informativa o seleccionable.
+- `FotoEditable`: foto circular con botón de cámara para elegir imagen.
+- `PermissionNotice`: aviso de permiso denegado con acceso a los ajustes.
 
 ## Estructura
 
