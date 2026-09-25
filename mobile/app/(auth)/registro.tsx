@@ -15,6 +15,7 @@ import { BackButton } from '@/components/BackButton';
 import { Input } from '@/components/Input';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenContainer } from '@/components/ScreenContainer';
+import { useApp } from '@/context/AppContext';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
 import {
   PASSWORD_MIN,
@@ -63,6 +64,8 @@ function validarFormulario(form: Formulario): Errores {
  * @returns el formulario de registro
  */
 export default function RegistroScreen() {
+  const { iniciarSesion } = useApp();
+
   // --- Estado ---
   const [form, setForm] = useState<Formulario>(FORM_INICIAL);
   const [errores, setErrores] = useState<Errores>({});
@@ -81,6 +84,12 @@ export default function RegistroScreen() {
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   };
 
+  /** Deja la sesión iniciada con la cuenta nueva y entra a la tab Mascotas. */
+  const entrarALaApp = async () => {
+    await iniciarSesion(form.email, form.password);
+    router.replace('/mascotas');
+  };
+
   /** Valida y, si todo está bien, confirma el alta y entra a la app. */
   const handleCrearCuenta = () => {
     const nuevos = validarFormulario(form);
@@ -90,7 +99,7 @@ export default function RegistroScreen() {
     Alert.alert(
       'Cuenta creada',
       `¡Bienvenido/a a Doggy, ${form.nombre.trim()}! Ya podés empezar a cargar tus mascotas.`,
-      [{ text: 'Continuar', onPress: () => router.replace('/mascotas') }],
+      [{ text: 'Continuar', onPress: entrarALaApp }],
     );
   };
 
