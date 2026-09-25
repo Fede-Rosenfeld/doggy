@@ -21,6 +21,7 @@ Sprint 1: frontend en React Native con datos estáticos.
 - Tipografías Quicksand y Plus Jakarta Sans (`@expo-google-fonts`)
 - Íconos de `@expo/vector-icons` (Material Icons)
 - `react-native-svg` + `react-native-qrcode-svg` para generar el QR de identificación
+- `expo-location` + `react-native-maps` para el GPS y el mapa
 
 ## Branding
 
@@ -57,7 +58,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 | Agregar mascota | Lista |
 | Perfil de la mascota | Lista |
 | Carnet Sanitario | Lista |
-| Perdidos | En construcción |
+| Perdidos | Lista |
 | Reportar mascota perdida | En construcción |
 | Agenda | En construcción |
 | Mi Perfil | En construcción |
@@ -70,6 +71,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
 5. **Perfil de la mascota**: foto, raza y edad; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada.
 6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo pendiente e historial con estado, fecha y profesional. "Agregar Registro" abre un formulario (tipo, estado, nombre, fecha con máscara dd/mm/aaaa y veterinario) que valida que lo aplicado no tenga fecha futura y lo pendiente no sea pasado.
+7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). El FAB mostaza abre el reporte. Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
 
 ## Componentes nativos
 
@@ -93,6 +95,13 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
 - `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
 
+### 2. GPS / Geolocalización — `expo-location` + `react-native-maps`
+
+- **Dónde:** pantalla Perdidos (y el mini mapa del reporte de extravío). Implementado en `src/hooks/useUbicacion.ts`.
+- **Qué hace:** sigue el patrón de hook tipado de la cátedra. Primero verifica que los servicios de ubicación estén activos (`hasServicesEnabledAsync`), después pide el permiso en primer plano (`getForegroundPermissionsAsync` → `requestForegroundPermissionsAsync`) y hace una lectura puntual con `getCurrentPositionAsync` y `Accuracy.High`. Con `reverseGeocodeAsync` traduce las coordenadas a una dirección legible (calle, número y barrio). La posición se dibuja en un `MapView` nativo (Apple Maps en iOS, Google Maps en Android) con `showsUserLocation`, y la cámara se mueve con `animateToRegion`.
+- **Permiso:** ubicación "mientras se usa la app" (`locationWhenInUsePermission`), declarada con el plugin de `expo-location` en `app.json`. No se pide ubicación en segundo plano porque la app solo la necesita con la pantalla abierta. Si se niega, el mapa arranca centrado en CABA y un `PermissionNotice` ofrece volver a pedirla o abrir los ajustes.
+- **Por qué:** cuando una mascota se pierde, lo que importa es la cercanía. Con la posición del usuario el mapa muestra primero los reportes de su zona, y al reportar se registra el punto exacto de extravío en vez de depender de una dirección escrita a mano. Se usa una consulta puntual (no `watchPositionAsync`) porque no hace falta seguir al usuario en tiempo real y así se ahorra batería.
+
 ## Componentes reutilizables
 
 - `ScreenContainer`: safe area, fondo y scroll con ajuste al teclado.
@@ -115,6 +124,8 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `SegmentedControl`: pestañas con subrayado para filtrar listas.
 - `FormModal`: hoja modal que sube desde abajo para formularios cortos.
 - `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/NuevoRegistroForm`: piezas del carnet sanitario.
+- `perdidos/MapaReportes`: mapa con markers y método `centrar` por ref (con una versión `.web.tsx` que muestra un aviso, porque react-native-maps no funciona en el navegador).
+- `perdidos/ReporteCard`, `perdidos/ReporteMarker`: card y pin de cada reporte.
 
 ## Estructura
 
