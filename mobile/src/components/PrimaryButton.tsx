@@ -29,8 +29,10 @@ type Props = {
   title: string;
   onPress: () => void;
   variant?: ButtonVariant;
-  /** Ícono opcional a la derecha del texto. */
+  /** Ícono opcional, por defecto a la derecha del texto. */
   icon?: IconName;
+  /** Pone el ícono antes del texto (como en "+ Nuevo turno"). */
+  iconLeft?: boolean;
   /** Muestra un spinner y bloquea el botón. */
   loading?: boolean;
   disabled?: boolean;
@@ -70,6 +72,7 @@ export function PrimaryButton({
   onPress,
   variant = 'primary',
   icon,
+  iconLeft = false,
   loading = false,
   disabled = false,
   size = 'md',
@@ -96,7 +99,7 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={tone.text} />
       ) : (
-        <View style={styles.content}>
+        <View style={[styles.content, iconLeft && styles.contentReverse]}>
           <Text style={[styles.label, { color: tone.text }]}>{title}</Text>
           {icon && <MaterialIcons name={icon} size={sizes.iconSm + 2} color={tone.text} />}
         </View>
@@ -124,6 +127,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  contentReverse: {
+    flexDirection: 'row-reverse',
   },
   label: {
     ...typography.labelMd,
