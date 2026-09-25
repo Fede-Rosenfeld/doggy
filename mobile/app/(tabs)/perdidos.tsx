@@ -144,6 +144,7 @@ export default function PerdidosScreen() {
     if (buscando) setBusqueda('');
   };
 
+  /** Abre el modal para reportar una mascota perdida. */
   const irAReportar = () => router.push('/reportar');
 
   // --- Render ---

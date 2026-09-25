@@ -61,7 +61,9 @@ export default function CarnetSanitarioScreen() {
     setTipo(registro.tipo);
   }, []);
 
+  /** Abre el formulario de nuevo registro. */
   const abrirFormulario = () => setFormVisible(true);
+  /** Cierra el formulario sin guardar. */
   const cerrarFormulario = () => setFormVisible(false);
 
   // --- Render ---

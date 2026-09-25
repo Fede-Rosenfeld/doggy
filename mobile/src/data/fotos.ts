@@ -10,7 +10,6 @@ import type { ImageSourcePropType } from 'react-native';
 
 const FOTOS_LOCALES = {
   luna: require('@/assets/images/luna.jpg'),
-  'luna-parque': require('@/assets/images/luna-parque.jpg'),
   roco: require('@/assets/images/roco.jpg'),
   milo: require('@/assets/images/milo.jpg'),
   simba: require('@/assets/images/simba.jpg'),
