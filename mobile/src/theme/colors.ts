@@ -65,6 +65,11 @@ const brand = {
   tealLight: '#2E9C8A',
   /** Chips y fondos suaves: teal claro al 10 % de opacidad. */
   tealLight10: 'rgba(46, 156, 138, 0.10)',
+  /** Verde agua del sistema con transparencia, para chips, badges y decoraciones. */
+  secondaryContainer30: 'rgba(143, 245, 224, 0.30)',
+  secondaryContainer20: 'rgba(143, 245, 224, 0.20)',
+  /** Mostaza oscuro con transparencia, para la decoración de la card de turnos. */
+  tertiaryContainer10: 'rgba(151, 98, 0, 0.10)',
   /** CTA críticos, FAB de reportar, alertas de perdidos y barras de progreso. */
   mustard: '#E8A33D',
   /** Mostaza presionada. */

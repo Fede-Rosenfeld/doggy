@@ -2,22 +2,30 @@
  * Header de la app para las pantallas principales.
  *
  * A la izquierda la huella y el nombre "Doggy"; a la derecha el avatar del
- * usuario, que lleva a la tab Perfil. Respeta la safe area superior.
+ * usuario, que lleva a la tab Perfil. En pantallas internas (`backTo`) la
+ * huella se reemplaza por el botón de volver. Respeta la safe area superior.
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Href, router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp } from '@/context/AppContext';
 import { colors, radius, sizes, spacing, typography } from '@/theme';
 import { Avatar } from './Avatar';
+import { BackButton } from './BackButton';
+
+type Props = {
+  /** Si viene, muestra el botón de volver con esta ruta de respaldo. */
+  backTo?: Href;
+};
 
 /**
  * Barra superior con la marca y el acceso al perfil.
+ * @param props.backTo ruta de respaldo del botón de volver (opcional)
  * @returns el header
  */
-export function AppHeader() {
+export function AppHeader({ backTo }: Props = {}) {
   const { usuario } = useApp();
   const insets = useSafeAreaInsets();
 
@@ -27,7 +35,11 @@ export function AppHeader() {
   return (
     <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.brand}>
-        <MaterialIcons name="pets" size={sizes.iconMd + 4} color={colors.primary} />
+        {backTo ? (
+          <BackButton fallback={backTo} />
+        ) : (
+          <MaterialIcons name="pets" size={sizes.iconMd + 4} color={colors.primary} />
+        )}
         <Text style={styles.title}>Doggy</Text>
       </View>
       <Pressable
