@@ -10,7 +10,7 @@ Sprint 1: frontend en React Native con datos estáticos.
 
 ## Integrantes
 
-- Nombre Apellido
+- Ignacio Gonzalez Iñigo y Juan Federico Rosenfeld
 
 ## Stack
 
