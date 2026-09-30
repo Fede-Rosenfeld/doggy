@@ -27,6 +27,7 @@ import { Chip } from '@/components/Chip';
 import { EstadoVacio } from '@/components/EstadoVista';
 import { Fab } from '@/components/Fab';
 import { FormModal } from '@/components/FormModal';
+import { IconButton } from '@/components/IconButton';
 import { Input } from '@/components/Input';
 import { PermissionNotice } from '@/components/PermissionNotice';
 import { MapaReportes, MapaReportesHandle } from '@/components/perdidos/MapaReportes';
@@ -148,16 +149,6 @@ export default function PerdidosScreen() {
   const irAReportar = () => router.push('/reportar');
 
   // --- Render ---
-  const acciones = [
-    { icon: 'search' as const, label: 'Buscar', onPress: toggleBuscador, activo: buscando },
-    {
-      icon: 'filter-list' as const,
-      label: 'Filtrar',
-      onPress: () => setFiltroVisible(true),
-      activo: filtro !== 'todos',
-    },
-  ];
-
   const vacio = (
     <EstadoVacio
       icon="search-off"
@@ -168,10 +159,22 @@ export default function PerdidosScreen() {
 
   return (
     <View style={styles.screen}>
-      <AppHeader acciones={acciones} />
+      <AppHeader />
 
       <View style={styles.cabecera}>
-        <Text style={styles.titulo}>Mascotas Perdidas</Text>
+        {/* Título con los botones de buscar y filtrar a la derecha. */}
+        <View style={styles.tituloFila}>
+          <Text style={styles.titulo}>Mascotas Perdidas</Text>
+          <View style={styles.acciones}>
+            <IconButton icon="search" label="Buscar" onPress={toggleBuscador} activo={buscando} />
+            <IconButton
+              icon="filter-list"
+              label="Filtrar"
+              onPress={() => setFiltroVisible(true)}
+              activo={filtro !== 'todos'}
+            />
+          </View>
+        </View>
         {buscando && (
           <Input
             icon="search"
@@ -319,9 +322,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.containerMargin,
     paddingVertical: spacing.stackSm,
   },
+  tituloFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   titulo: {
     ...typography.headlineMd,
     color: colors.onSurface,
+    flexShrink: 1,
+  },
+  acciones: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   mapaArea: {
     flex: 1,
