@@ -2,19 +2,19 @@
  * Header de la app para las pantallas principales.
  *
  * A la izquierda la huella y el nombre "Doggy"; a la derecha el avatar del
- * usuario, que lleva a la tab Perfil. En pantallas internas (`backTo`) la
- * huella se reemplaza por el botón de volver. Con `acciones`, en lugar del
- * avatar se muestran botones de ícono (buscar, filtrar). Respeta la safe area.
+ * usuario (`AvatarPerfil`), que lleva a la tab Perfil y aparece siempre. En
+ * pantallas internas (`backTo`) la huella se reemplaza por el botón de volver.
+ * Con `acciones` se suman botones de ícono (buscar, filtrar) a la izquierda
+ * del avatar. Respeta la safe area.
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { Href, router } from 'expo-router';
+import { Href } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useApp } from '@/context/AppContext';
 import { colors, radius, sizes, spacing, typography } from '@/theme';
-import { Avatar } from './Avatar';
+import { AvatarPerfil } from './AvatarPerfil';
 import { BackButton } from './BackButton';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
@@ -31,7 +31,7 @@ export type AccionHeader = {
 type Props = {
   /** Si viene, muestra el botón de volver con esta ruta de respaldo. */
   backTo?: Href;
-  /** Botones de ícono que reemplazan al avatar. */
+  /** Botones de ícono que se muestran antes del avatar. */
   acciones?: AccionHeader[];
 };
 
@@ -42,11 +42,7 @@ type Props = {
  * @returns el header
  */
 export function AppHeader({ backTo, acciones }: Props = {}) {
-  const { usuario } = useApp();
   const insets = useSafeAreaInsets();
-
-  /** Abre la tab Perfil. */
-  const irAlPerfil = () => router.navigate('/perfil');
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
@@ -58,44 +54,29 @@ export function AppHeader({ backTo, acciones }: Props = {}) {
         )}
         <Text style={styles.title}>Doggy</Text>
       </View>
-      {acciones ? (
-        <View style={styles.acciones}>
-          {acciones.map((accion) => (
-            <Pressable
-              key={accion.label}
-              onPress={accion.onPress}
-              accessibilityRole="button"
-              accessibilityLabel={accion.label}
-              accessibilityState={{ selected: !!accion.activo }}
-              style={({ pressed }) => [
-                styles.accion,
-                accion.activo && styles.accionActiva,
-                pressed && styles.avatarPressed,
-              ]}
-            >
-              <MaterialIcons
-                name={accion.icon}
-                size={sizes.iconMd}
-                color={accion.activo ? colors.primary : colors.onSurfaceVariant}
-              />
-            </Pressable>
-          ))}
-        </View>
-      ) : (
-        <Pressable
-          onPress={irAlPerfil}
-          accessibilityRole="button"
-          accessibilityLabel="Ir a mi perfil"
-          style={({ pressed }) => [styles.avatarButton, pressed && styles.avatarPressed]}
-        >
-          <Avatar
-            foto={usuario?.foto}
-            nombre={usuario?.nombre ?? 'Perfil'}
-            size={sizes.avatarSm}
-            borderColor={colors.surfaceContainerHighest}
-          />
-        </Pressable>
-      )}
+      <View style={styles.derecha}>
+        {acciones?.map((accion) => (
+          <Pressable
+            key={accion.label}
+            onPress={accion.onPress}
+            accessibilityRole="button"
+            accessibilityLabel={accion.label}
+            accessibilityState={{ selected: !!accion.activo }}
+            style={({ pressed }) => [
+              styles.accion,
+              accion.activo && styles.accionActiva,
+              pressed && styles.accionPressed,
+            ]}
+          >
+            <MaterialIcons
+              name={accion.icon}
+              size={sizes.iconMd}
+              color={accion.activo ? colors.primary : colors.onSurfaceVariant}
+            />
+          </Pressable>
+        ))}
+        <AvatarPerfil />
+      </View>
     </View>
   );
 }
@@ -128,9 +109,10 @@ const styles = StyleSheet.create({
     ...typography.headlineLgMobile,
     color: colors.primary,
   },
-  acciones: {
+  derecha: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   accion: {
     width: sizes.avatarSm,
@@ -142,11 +124,7 @@ const styles = StyleSheet.create({
   accionActiva: {
     backgroundColor: colors.tealLight10,
   },
-  avatarButton: {
-    padding: spacing.xs,
-    borderRadius: radius.full,
-  },
-  avatarPressed: {
+  accionPressed: {
     backgroundColor: colors.surfaceContainerLow,
     transform: [{ scale: 0.95 }],
   },

@@ -129,12 +129,13 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `PrimaryButton`: variantes primaria (teal), secundaria (mostaza), outline, tonal y de peligro, en dos tamaños.
 - `BackButton`: volver al stack anterior, en tono claro u oscuro.
 - `TabBar`: barra inferior con la píldora de tab activa.
-- `AppHeader`: marca y avatar del usuario con acceso al perfil.
+- `AppHeader`: marca, botones de acción opcionales (buscar, filtrar) y avatar del usuario con acceso al perfil.
+- `AvatarPerfil`: avatar clickeable del usuario que lleva a Perfil; lo usan `AppHeader` y `ScreenHeader` para que aparezca en todas las pantallas.
 - `Avatar`: foto circular con respaldo de inicial y huella si no hay imagen.
 - `PetCard`: card de mascota del listado.
 - `Fab`: botón flotante mostaza, simple o extendido con texto.
 - `Cargando` / `EstadoVacio`: estados de carga, vacío y error de las listas.
-- `ScreenHeader`: volver, título y subtítulo para pantallas internas.
+- `ScreenHeader`: volver, título, subtítulo y avatar del usuario para pantallas internas.
 - `Chip`: píldora informativa o seleccionable.
 - `FotoEditable`: foto circular con botón de cámara para elegir imagen.
 - `PermissionNotice`: aviso de permiso denegado con acceso a los ajustes.

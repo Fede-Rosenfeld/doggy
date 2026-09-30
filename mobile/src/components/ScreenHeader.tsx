@@ -3,12 +3,15 @@
  * Se usa en las pantallas que se apilan sobre una tab (alta, carnet, etc.).
  * La variante `bar` es una barra fija arriba (con safe area y sombra leve) y
  * el título en teal, como en el carnet sanitario.
+ * A la derecha va siempre el avatar del usuario (`AvatarPerfil`), igual que
+ * en `AppHeader`, para que el acceso al perfil esté en todas las pantallas.
  */
 import type { Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing, typography } from '@/theme';
+import { AvatarPerfil } from './AvatarPerfil';
 import { BackButton } from './BackButton';
 
 type Props = {
@@ -37,6 +40,7 @@ export function ScreenHeader({ title, subtitle, fallback = '/mascotas', variant 
         </Text>
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       </View>
+      <AvatarPerfil />
     </View>
   );
 }
