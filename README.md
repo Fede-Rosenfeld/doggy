@@ -57,7 +57,8 @@ Login ──► Registro
   ▼  (router.replace: "atrás" no vuelve al login)
 Tabs
  ├─ Mascotas ───┬─► Agregar mascota
- │              └─► Perfil de la mascota ─┬─► Carnet Sanitario ─► (modal) Nuevo registro
+ │              └─► Perfil de la mascota ─┬─► Editar mascota
+ │                                        ├─► Carnet Sanitario ─► (modal) Nuevo registro
  │                                        ├─► tab Agenda
  │                                        └─► (modal) Reportar como perdida
  ├─ Perdidos ───┬─► Mapa / Lista
@@ -70,7 +71,7 @@ Tabs
 
 - **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y el modal `reportar` (`presentation: 'modal'`).
 - **Bottom Tabs** (`app/(tabs)/_layout.tsx`): Mascotas, Perdidos, Agenda y Perfil, con una barra propia que marca la tab activa con una píldora.
-- **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`) y carnet (`[id]/carnet`), con la barra de tabs visible.
+- **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`), edición (`[id]/editar`) y carnet (`[id]/carnet`), con la barra de tabs visible.
 - Las acciones que dependen del backend (descargar QR, editar turnos, asignar cuidadores, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
 
 ### Detalle por pantalla
@@ -79,7 +80,7 @@ Tabs
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
 4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
-5. **Perfil de la mascota**: foto, raza y edad; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada.
+5. **Perfil de la mascota**: foto, raza y edad; botón "Editar mascota"; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada. "Editar mascota" abre el mismo formulario del alta con los datos precargados (foto, nombre, raza, edad y señas); al guardar vuelve al perfil ya actualizado. El ID único no cambia aunque cambie el nombre, para que la placa ya grabada siga funcionando.
 6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo pendiente e historial con estado, fecha y profesional. "Agregar Registro" abre un formulario (tipo, estado, nombre, fecha con máscara dd/mm/aaaa y veterinario) que valida que lo aplicado no tenga fecha futura y lo pendiente no sea pasado.
 7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). El FAB mostaza abre el reporte. Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
 8. **Reportar mascota perdida** (modal): escáner del QR de la chapita (autocompleta nombre, raza, señas y foto de la mascota), foto desde la galería, nombre, raza, descripción, etiquetas y un mini mapa con el pin precargado con el GPS, que se puede arrastrar o mover tocando el mapa, con la dirección legible debajo. Si se abre desde el perfil de una mascota, llega precargado. "Marcar como Perdido" valida, publica el reporte, vibra, cierra el modal y muestra el nuevo marker seleccionado en Perdidos.
@@ -120,7 +121,7 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
 - `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026).
 - `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
-- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
+- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
 
 ## Componentes reutilizables
 
@@ -145,6 +146,7 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `QrIdentificacion`: card con el QR de la mascota y las acciones de compartir y descargar.
 - `SegmentedControl`: pestañas con subrayado o en píldora (Mapa / Lista).
 - `FormModal`: hoja modal que sube desde abajo para formularios cortos.
+- `mascotas/MascotaForm`: formulario de mascota (foto, nombre, raza, edad y señas) compartido por el alta y la edición.
 - `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/NuevoRegistroForm`: piezas del carnet sanitario.
 - `perdidos/MapaReportes`: mapa con markers y método `centrar` por ref (con una versión `.web.tsx` que muestra un aviso, porque react-native-maps no funciona en el navegador).
 - `perdidos/ReporteCard`, `perdidos/ReporteMarker`: card y pin de cada reporte.

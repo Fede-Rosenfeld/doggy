@@ -54,6 +54,7 @@ type AppContextValue = {
   iniciarSesion: (email: string, password: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
   agregarMascota: (datos: NuevaMascota) => Promise<Mascota>;
+  editarMascota: (id: number, cambios: Partial<NuevaMascota>) => Promise<Mascota>;
   crearReporte: (datos: NuevoReporte) => Promise<ReportePerdida>;
   agregarRegistro: (datos: NuevoRegistro) => Promise<RegistroSanitario>;
   agregarTurno: (datos: NuevoTurno) => Promise<Turno>;
@@ -138,6 +139,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return nueva;
   }, []);
 
+  /** Modifica los datos de una mascota y la reemplaza en la lista. */
+  const editarMascota = useCallback(async (id: number, cambios: Partial<NuevaMascota>) => {
+    const actualizada = await mascotasService.actualizarMascota(id, cambios);
+    setMascotas((prev) => prev.map((m) => (m.id === id ? actualizada : m)));
+    return actualizada;
+  }, []);
+
   /** Publica un reporte de mascota perdida o encontrada. */
   const crearReporte = useCallback(async (datos: NuevoReporte) => {
     const nuevo = await reportesService.crearReporte(datos);
@@ -181,6 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       iniciarSesion,
       cerrarSesion,
       agregarMascota,
+      editarMascota,
       crearReporte,
       agregarRegistro,
       agregarTurno,
@@ -199,6 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       iniciarSesion,
       cerrarSesion,
       agregarMascota,
+      editarMascota,
       crearReporte,
       agregarRegistro,
       agregarTurno,

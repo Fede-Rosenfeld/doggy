@@ -1,5 +1,5 @@
 /**
- * Stack interno de la tab Mascotas: listado, alta, perfil y carnet.
+ * Stack interno de la tab Mascotas: listado, alta, perfil, edición y carnet.
  * Al estar dentro de la tab, la barra inferior sigue visible al navegar.
  */
 import { Stack } from 'expo-router';
@@ -18,6 +18,7 @@ export default function MascotasLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="nueva" />
       <Stack.Screen name="[id]/index" />
+      <Stack.Screen name="[id]/editar" />
       <Stack.Screen name="[id]/carnet" />
     </Stack>
   );
