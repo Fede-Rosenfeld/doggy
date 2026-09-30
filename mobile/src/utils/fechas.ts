@@ -143,3 +143,14 @@ export function fechaATexto(fecha: Date): string {
   const mes = String(fecha.getMonth() + 1).padStart(2, '0');
   return `${dia}/${mes}/${fecha.getFullYear()}`;
 }
+
+/**
+ * Formatea la hora de un Date como HH:MM (para precargar campos de hora).
+ * @param fecha momento
+ * @returns el texto HH:MM, sin el "hs" de `formatearHora`
+ */
+export function horaATexto(fecha: Date): string {
+  const horas = String(fecha.getHours()).padStart(2, '0');
+  const minutos = String(fecha.getMinutes()).padStart(2, '0');
+  return `${horas}:${minutos}`;
+}

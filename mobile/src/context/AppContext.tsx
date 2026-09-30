@@ -59,6 +59,7 @@ type AppContextValue = {
   agregarRegistro: (datos: NuevoRegistro) => Promise<RegistroSanitario>;
   editarRegistro: (id: number, datos: NuevoRegistro) => Promise<RegistroSanitario>;
   agregarTurno: (datos: NuevoTurno) => Promise<Turno>;
+  editarTurno: (id: number, datos: NuevoTurno) => Promise<Turno>;
   actualizarUsuario: (datos: DatosUsuario) => Promise<Usuario>;
 };
 
@@ -175,6 +176,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return nuevo;
   }, []);
 
+  /** Modifica un turno y lo reemplaza en la lista. */
+  const editarTurno = useCallback(async (id: number, datos: NuevoTurno) => {
+    const actualizado = await turnosService.actualizarTurno(id, datos);
+    setTurnos((prev) => prev.map((t) => (t.id === id ? actualizado : t)));
+    return actualizado;
+  }, []);
+
   /** Actualiza los datos personales del usuario. */
   const actualizarUsuario = useCallback(async (datos: DatosUsuario) => {
     const actualizado = await usuarioService.actualizarUsuario(datos);
@@ -202,6 +210,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agregarRegistro,
       editarRegistro,
       agregarTurno,
+      editarTurno,
       actualizarUsuario,
     }),
     [
@@ -222,6 +231,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agregarRegistro,
       editarRegistro,
       agregarTurno,
+      editarTurno,
       actualizarUsuario,
     ],
   );

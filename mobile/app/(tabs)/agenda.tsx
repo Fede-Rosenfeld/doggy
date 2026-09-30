@@ -3,14 +3,15 @@
  *
  * El calendario marca con puntos de color los días con turnos (una categoría
  * por color). Al elegir un día se listan sus turnos debajo. "Nuevo turno"
- * abre un formulario que agrega el turno al contexto y selecciona su día.
+ * abre un formulario que agrega el turno al contexto y selecciona su día; el
+ * lápiz de cada turno abre el mismo formulario con sus datos para editarlo.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Calendario } from '@/components/agenda/Calendario';
-import { NuevoTurnoForm } from '@/components/agenda/NuevoTurnoForm';
 import { TurnoCard } from '@/components/agenda/TurnoCard';
+import { TurnoForm } from '@/components/agenda/TurnoForm';
 import { AppHeader } from '@/components/AppHeader';
 import { Badge } from '@/components/Badge';
 import { EstadoVacio } from '@/components/EstadoVista';
@@ -34,6 +35,8 @@ export default function AgendaScreen() {
   const [visible, setVisible] = useState({ anio: hoy.getFullYear(), mes: hoy.getMonth() });
   const [seleccionado, setSeleccionado] = useState<Date>(hoy);
   const [formVisible, setFormVisible] = useState(false);
+  /** Turno que se está editando; null si el formulario es de alta. */
+  const [editando, setEditando] = useState<Turno | null>(null);
 
   // --- Datos derivados ---
   /** Turnos agrupados por día (AAAA-MM-DD) y ordenados por hora. */
@@ -79,13 +82,32 @@ export default function AgendaScreen() {
     setSeleccionado(contieneHoy ? hoy : new Date(siguiente.anio, siguiente.mes, 1));
   };
 
-  /** Cierra el formulario y muestra el día del turno recién creado. */
+  /** Cierra el formulario y muestra el día del turno guardado (pudo cambiar de fecha). */
   const handleGuardado = useCallback((turno: Turno) => {
     setFormVisible(false);
+    setEditando(null);
     const dia = parsearFecha(turno.fecha);
     setVisible({ anio: dia.getFullYear(), mes: dia.getMonth() });
     setSeleccionado(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()));
   }, []);
+
+  /** Abre el formulario de nuevo turno. */
+  const abrirAlta = () => {
+    setEditando(null);
+    setFormVisible(true);
+  };
+
+  /** Abre el formulario con los datos del turno tocado. */
+  const abrirEdicion = useCallback((turno: Turno) => {
+    setEditando(turno);
+    setFormVisible(true);
+  }, []);
+
+  /** Cierra el formulario sin guardar. */
+  const cerrarFormulario = () => {
+    setFormVisible(false);
+    setEditando(null);
+  };
 
   // --- Render ---
   return (
@@ -102,7 +124,7 @@ export default function AgendaScreen() {
             icon="add"
             iconLeft
             size="sm"
-            onPress={() => setFormVisible(true)}
+            onPress={abrirAlta}
           />
         </View>
 
@@ -132,18 +154,33 @@ export default function AgendaScreen() {
               icon="event-available"
               titulo="Sin turnos este día"
               mensaje="Elegí otro día marcado en el calendario o agendá uno nuevo."
-              accion={{ titulo: 'Agendar turno', onPress: () => setFormVisible(true) }}
+              accion={{ titulo: 'Agendar turno', onPress: abrirAlta }}
             />
           ) : (
             delDia.map((turno) => (
-              <TurnoCard key={turno.id} turno={turno} mascota={nombres[turno.mascotaId] ?? 'Mascota'} />
+              <TurnoCard
+                key={turno.id}
+                turno={turno}
+                mascota={nombres[turno.mascotaId] ?? 'Mascota'}
+                onEditar={abrirEdicion}
+              />
             ))
           )}
         </View>
       </ScrollView>
 
-      <FormModal visible={formVisible} titulo="Nuevo turno" onClose={() => setFormVisible(false)}>
-        <NuevoTurnoForm diaInicial={seleccionado} onGuardado={handleGuardado} />
+      <FormModal
+        visible={formVisible}
+        titulo={editando ? 'Editar turno' : 'Nuevo turno'}
+        onClose={cerrarFormulario}
+      >
+        {/* key: al pasar de un turno a otro (o al alta) el formulario arranca de cero. */}
+        <TurnoForm
+          key={editando?.id ?? 'nuevo'}
+          diaInicial={seleccionado}
+          turno={editando ?? undefined}
+          onGuardado={handleGuardado}
+        />
       </FormModal>
     </View>
   );
