@@ -14,7 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppHeader } from '@/components/AppHeader';
 import { Badge } from '@/components/Badge';
@@ -29,6 +29,7 @@ import { EditarPerfilForm } from '@/components/perfil/EditarPerfilForm';
 import { InvitarForm } from '@/components/perfil/InvitarForm';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionTitle } from '@/components/SectionTitle';
+import { GUIA_PASEO_URL } from '@/config';
 import { useApp } from '@/context/AppContext';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
@@ -139,6 +140,15 @@ export default function PerfilScreen() {
       () => router.push({ pathname: '/asignar', params: { token } }),
       ESPERA_CIERRE_HOJA_MS,
     );
+  };
+
+  /** Abre en el navegador la página oficial de la Ciudad con las reglas de paseo. */
+  const abrirGuiaPaseo = async () => {
+    try {
+      await Linking.openURL(GUIA_PASEO_URL);
+    } catch {
+      Alert.alert('No se pudo abrir la página', `Podés entrar desde el navegador: ${GUIA_PASEO_URL}`);
+    }
   };
 
   /** Cierra la sesión y vuelve al login sin dejar historial. */
@@ -275,7 +285,9 @@ export default function PerfilScreen() {
           <MenuRow
             icon="menu-book"
             titulo="Guía de paseos y normativas CABA"
-            onPress={proximamente('Guía de paseos y normativas CABA')}
+            subtitulo="Correa, bozal, chapita, caca y caniles. Web oficial de la Ciudad."
+            derecha={<MaterialIcons name="open-in-new" size={sizes.iconSm} color={colors.onSurfaceVariant} />}
+            onPress={abrirGuiaPaseo}
           />
         </View>
 
