@@ -37,20 +37,24 @@ export type Mascota = {
 };
 
 export type TipoRegistro = 'vacuna' | 'desparasitacion' | 'otro';
-export type EstadoRegistro = 'aplicada' | 'pendiente';
-
-/** Entrada del carnet sanitario de una mascota. */
+/**
+ * Entrada del carnet sanitario de una mascota. Todo registro es una
+ * aplicación ya hecha: no hay registros "pendientes". Lo que viene se indica
+ * con `proximaDosis`, como lo anota el veterinario en la libreta.
+ * TODO: sumar el código único de la vacuna validado con SENASA.
+ */
 export type RegistroSanitario = {
   id: number;
   mascotaId: number;
   tipo: TipoRegistro;
   /** Nombre de la vacuna, antiparasitario o práctica. */
   nombre: string;
-  /** Fecha de aplicación, o fecha prevista si está pendiente. */
+  /** Fecha de aplicación (ISO, nunca futura). */
   fecha: string;
   /** Veterinario o clínica. */
   profesional: string;
-  estado: EstadoRegistro;
+  /** Fecha del próximo refuerzo (ISO), si el veterinario la indicó. */
+  proximaDosis?: string;
 };
 
 export type CategoriaTurno = 'vacunas' | 'veterinario' | 'peluqueria';

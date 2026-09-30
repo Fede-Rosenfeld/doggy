@@ -78,9 +78,9 @@ export const registrosSanitarios: RegistroSanitario[] = [
     mascotaId: 1,
     tipo: 'vacuna',
     nombre: 'Antirrábica',
-    fecha: '2026-11-15',
+    fecha: '2025-11-15',
     profesional: 'Vet. San Roque',
-    estado: 'pendiente',
+    proximaDosis: '2026-11-15',
   },
   {
     id: 2,
@@ -89,7 +89,7 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Séxtuple',
     fecha: '2026-05-10',
     profesional: 'Dra. Martínez',
-    estado: 'aplicada',
+    proximaDosis: '2027-05-10',
   },
   {
     id: 3,
@@ -98,7 +98,6 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Tos de las Perreras',
     fecha: '2026-01-12',
     profesional: 'Clínica Veterinaria Sur',
-    estado: 'aplicada',
   },
   {
     id: 4,
@@ -107,7 +106,6 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Antiparasitario interno',
     fecha: '2026-08-02',
     profesional: 'Dra. Martínez',
-    estado: 'aplicada',
   },
   {
     id: 5,
@@ -116,7 +114,7 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Pipeta antipulgas',
     fecha: '2026-09-01',
     profesional: 'Vet. San Roque',
-    estado: 'aplicada',
+    proximaDosis: '2026-10-01',
   },
   {
     id: 6,
@@ -125,25 +123,16 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Séxtuple (Dosis 1)',
     fecha: '2026-09-18',
     profesional: 'Clínica Belgrano Pet',
-    estado: 'aplicada',
+    proximaDosis: '2026-10-23',
   },
   {
     id: 7,
-    mascotaId: 2,
-    tipo: 'vacuna',
-    nombre: 'Séxtuple (Dosis 2)',
-    fecha: '2026-10-23',
-    profesional: 'Clínica Belgrano Pet',
-    estado: 'pendiente',
-  },
-  {
-    id: 8,
     mascotaId: 3,
     tipo: 'vacuna',
     nombre: 'Antirrábica',
     fecha: '2026-04-20',
     profesional: 'Vet. San Roque',
-    estado: 'aplicada',
+    proximaDosis: '2027-04-20',
   },
 ];
 

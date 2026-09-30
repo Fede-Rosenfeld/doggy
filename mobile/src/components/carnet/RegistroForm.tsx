@@ -1,19 +1,23 @@
 /**
- * Formulario para agregar un registro al carnet sanitario: tipo, estado,
- * nombre, fecha y veterinario o clínica. Se muestra dentro de un FormModal
- * y guarda el registro en el contexto global.
+ * Formulario de un registro del carnet sanitario: tipo, nombre, fecha de
+ * aplicación, veterinario o clínica y, opcional, la fecha del próximo
+ * refuerzo. Todo lo que se carga es una aplicación ya hecha (no hay
+ * registros pendientes). Se muestra dentro de un FormModal.
+ *
+ * Sirve para dar de alta y para corregir: si recibe `registro`, arranca con
+ * sus datos y al guardar lo reemplaza; si no, crea uno nuevo.
  */
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
 import { colors, spacing, typography } from '@/theme';
-import type { EstadoRegistro, RegistroSanitario, TipoRegistro } from '@/types/models';
-import { ESTADOS_REGISTRO, TIPOS_REGISTRO } from '@/utils/etiquetas';
-import { enmascararFecha, fechaIngresadaAIso } from '@/utils/fechas';
+import type { NuevoRegistro, RegistroSanitario, TipoRegistro } from '@/types/models';
+import { TIPOS_REGISTRO } from '@/utils/etiquetas';
+import { enmascararFecha, fechaIngresadaAIso, formatearFecha } from '@/utils/fechas';
 import {
-  validarFechaIngresada,
-  validarFechaSegunEstado,
+  validarFechaAplicacion,
+  validarProximaDosis,
   validarRequerido,
 } from '@/utils/validaciones';
 import { Chip } from '../Chip';
@@ -22,13 +26,15 @@ import { PrimaryButton } from '../PrimaryButton';
 
 type Props = {
   mascotaId: number;
-  /** Tipo preseleccionado (el de la pestaña activa). */
+  /** Tipo preseleccionado en el alta (el de la pestaña activa). */
   tipoInicial: TipoRegistro;
+  /** Registro a corregir. Si no viene, el formulario crea uno nuevo. */
+  registro?: RegistroSanitario;
   /** Se llama con el registro ya guardado. */
   onGuardado: (registro: RegistroSanitario) => void;
 };
 
-type Campo = 'nombre' | 'fecha' | 'profesional';
+type Campo = 'nombre' | 'fecha' | 'profesional' | 'proximaDosis';
 type Errores = Partial<Record<Campo, string>>;
 
 /** Ejemplos de nombre según el tipo, para el placeholder. */
@@ -39,23 +45,30 @@ const EJEMPLOS: Record<TipoRegistro, string> = {
 };
 
 /**
- * Formulario de alta de registro sanitario.
+ * Formulario de alta o edición de registro sanitario.
  * @param props ver `Props`
  * @returns el formulario
  */
-export function NuevoRegistroForm({ mascotaId, tipoInicial, onGuardado }: Props) {
-  const { agregarRegistro } = useApp();
+export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: Props) {
+  const { agregarRegistro, editarRegistro } = useApp();
 
   // --- Estado ---
-  const [tipo, setTipo] = useState<TipoRegistro>(tipoInicial);
-  const [estado, setEstado] = useState<EstadoRegistro>('aplicada');
-  const [nombre, setNombre] = useState('');
-  const [fecha, setFecha] = useState('');
-  const [profesional, setProfesional] = useState('');
+  // Las fechas se editan como dd/mm/aaaa: las del registro se pasan a ese formato.
+  const [tipo, setTipo] = useState<TipoRegistro>(registro?.tipo ?? tipoInicial);
+  const [nombre, setNombre] = useState(registro?.nombre ?? '');
+  const [fecha, setFecha] = useState(registro ? formatearFecha(registro.fecha) : '');
+  const [profesional, setProfesional] = useState(registro?.profesional ?? '');
+  const [proximaDosis, setProximaDosis] = useState(
+    registro?.proximaDosis ? formatearFecha(registro.proximaDosis) : '',
+  );
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const fechaRef = useRef<TextInput>(null);
   const profesionalRef = useRef<TextInput>(null);
+  const proximaDosisRef = useRef<TextInput>(null);
+
+  /** Textos del tipo elegido ("Próximo refuerzo", "Próxima dosis"...). */
+  const textos = TIPOS_REGISTRO.find((t) => t.valor === tipo) ?? TIPOS_REGISTRO[0];
 
   // --- Handlers ---
   /**
@@ -69,28 +82,35 @@ export function NuevoRegistroForm({ mascotaId, tipoInicial, onGuardado }: Props)
   /** Valida todos los campos y devuelve los errores encontrados. */
   const validar = (): Errores => ({
     nombre: validarRequerido(nombre, 'Ingresá el nombre del registro.'),
-    fecha: validarFechaIngresada(fecha) ?? validarFechaSegunEstado(fecha, estado),
+    fecha: validarFechaAplicacion(fecha),
     profesional: validarRequerido(profesional, 'Indicá el veterinario o la clínica.'),
+    proximaDosis: validarProximaDosis(proximaDosis, fecha),
   });
 
-  /** Valida y guarda el registro en el contexto. */
+  /** Valida y guarda el registro (nuevo o corregido) en el contexto. */
   const handleGuardar = async () => {
     const nuevos = validar();
     setErrores(nuevos);
     const iso = fechaIngresadaAIso(fecha);
     if (Object.values(nuevos).some(Boolean) || !iso) return;
+    // Opcional: si quedó vacío, el registro se guarda sin refuerzo.
+    const isoProxima = fechaIngresadaAIso(proximaDosis);
+
+    const datos: NuevoRegistro = {
+      mascotaId,
+      tipo,
+      nombre: nombre.trim(),
+      fecha: iso,
+      profesional: profesional.trim(),
+      ...(isoProxima && { proximaDosis: isoProxima }),
+    };
 
     setGuardando(true);
     try {
-      const registro = await agregarRegistro({
-        mascotaId,
-        tipo,
-        estado,
-        nombre: nombre.trim(),
-        fecha: iso,
-        profesional: profesional.trim(),
-      });
-      onGuardado(registro);
+      const guardado = registro
+        ? await editarRegistro(registro.id, datos)
+        : await agregarRegistro(datos);
+      onGuardado(guardado);
     } catch {
       Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
     } finally {
@@ -115,26 +135,9 @@ export function NuevoRegistroForm({ mascotaId, tipoInicial, onGuardado }: Props)
         </View>
       </View>
 
-      <View style={styles.grupo}>
-        <Text style={styles.label}>Estado</Text>
-        <View style={styles.chips}>
-          {ESTADOS_REGISTRO.map((e) => (
-            <Chip
-              key={e.valor}
-              label={e.label}
-              selected={estado === e.valor}
-              onPress={() => {
-                setEstado(e.valor);
-                limpiarError('fecha');
-              }}
-            />
-          ))}
-        </View>
-      </View>
-
       <Input
         label="Nombre"
-        icon="vaccines"
+        icon={textos.icono}
         placeholder={EJEMPLOS[tipo]}
         value={nombre}
         onChangeText={(texto) => {
@@ -149,13 +152,15 @@ export function NuevoRegistroForm({ mascotaId, tipoInicial, onGuardado }: Props)
       />
       <Input
         ref={fechaRef}
-        label={estado === 'aplicada' ? 'Fecha de aplicación' : 'Fecha prevista'}
+        label="Fecha de aplicación"
         icon="event"
         placeholder="dd/mm/aaaa"
         value={fecha}
         onChangeText={(texto) => {
           setFecha(enmascararFecha(texto));
           limpiarError('fecha');
+          // El refuerzo se valida contra esta fecha: si cambia, su error ya no aplica.
+          limpiarError('proximaDosis');
         }}
         error={errores.fecha}
         keyboardType="number-pad"
@@ -176,12 +181,29 @@ export function NuevoRegistroForm({ mascotaId, tipoInicial, onGuardado }: Props)
         }}
         error={errores.profesional}
         autoCapitalize="words"
+        returnKeyType="next"
+        onSubmitEditing={() => proximaDosisRef.current?.focus()}
+        submitBehavior="submit"
+      />
+      <Input
+        ref={proximaDosisRef}
+        label={`${textos.proximo} (opcional)`}
+        icon="update"
+        placeholder="dd/mm/aaaa"
+        value={proximaDosis}
+        onChangeText={(texto) => {
+          setProximaDosis(enmascararFecha(texto));
+          limpiarError('proximaDosis');
+        }}
+        error={errores.proximaDosis}
+        keyboardType="number-pad"
+        maxLength={10}
         returnKeyType="done"
         onSubmitEditing={handleGuardar}
       />
 
       <PrimaryButton
-        title="Guardar registro"
+        title={registro ? 'Guardar cambios' : 'Guardar registro'}
         icon="check"
         onPress={handleGuardar}
         loading={guardando}

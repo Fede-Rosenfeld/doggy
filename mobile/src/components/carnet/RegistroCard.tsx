@@ -1,21 +1,33 @@
 /**
- * Card de un registro del historial sanitario: nombre, estado, fecha y
- * profesional o clínica que lo aplicó.
+ * Card de un registro del historial sanitario.
+ *
+ * Todas las cards tienen la misma estructura para que el historial se lea
+ * parejo: arriba el ícono del tipo, el nombre, el badge "Aplicada" (todo
+ * registro del carnet es una aplicación hecha) y el botón de editar; abajo,
+ * separadas por una línea, siempre las mismas tres filas alineadas:
+ * aplicación, profesional y refuerzo (con "—" si no tiene).
  */
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, shadows, spacing, typography } from '@/theme';
+import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { RegistroSanitario } from '@/types/models';
+import { TIPOS_REGISTRO } from '@/utils/etiquetas';
 import { formatearFecha } from '@/utils/fechas';
 import { Badge } from '../Badge';
+import { IconButton } from '../IconButton';
 
 type Props = {
   registro: RegistroSanitario;
+  /** Abre el formulario para corregir el registro. */
+  onEditar: (registro: RegistroSanitario) => void;
 };
 
-/** Tamaño de los íconos de la fila de detalle. */
+/** Tamaño de los íconos de las filas de detalle. */
 const ICONO = 16;
+/** Ancho fijo de la columna de etiquetas, para que los valores queden alineados. */
+const ANCHO_ETIQUETA = 92;
 
 /**
  * Indica si el profesional es una persona (Dr./Dra.) o una institución.
@@ -29,33 +41,77 @@ function esVeterinario(profesional: string): boolean {
 /**
  * Card del historial.
  * @param props.registro registro a mostrar
+ * @param props.onEditar se llama al tocar el lápiz
  * @returns la card
  */
-export function RegistroCard({ registro }: Props) {
-  const aplicada = registro.estado === 'aplicada';
+export function RegistroCard({ registro, onEditar }: Props) {
+  const tipo = TIPOS_REGISTRO.find((t) => t.valor === registro.tipo) ?? TIPOS_REGISTRO[0];
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.nombre}>{registro.nombre}</Text>
-        <Badge label={aplicada ? 'Aplicada' : 'Pendiente'} tone={aplicada ? 'teal' : 'neutral'} dot />
-      </View>
-      <View style={styles.detalle}>
-        <View style={styles.dato}>
-          <MaterialIcons name="event" size={ICONO} color={colors.onSurfaceVariant} />
-          <Text style={styles.datoTexto}>{formatearFecha(registro.fecha)}</Text>
+        <View style={styles.icono}>
+          <MaterialIcons name={tipo.icono} size={sizes.iconMd} color={colors.primary} />
         </View>
-        <View style={styles.dato}>
-          {esVeterinario(registro.profesional) ? (
-            <MaterialCommunityIcons name="stethoscope" size={ICONO} color={colors.onSurfaceVariant} />
-          ) : (
-            <MaterialIcons name="local-hospital" size={ICONO} color={colors.onSurfaceVariant} />
-          )}
-          <Text style={styles.datoTexto} numberOfLines={1}>
-            {registro.profesional}
+        <View style={styles.titulo}>
+          <Text style={styles.nombre} numberOfLines={2}>
+            {registro.nombre}
           </Text>
+          <Badge label="Aplicada" tone="teal" dot />
         </View>
+        <IconButton
+          icon="edit"
+          label={`Editar ${registro.nombre}`}
+          onPress={() => onEditar(registro)}
+        />
       </View>
+
+      <View style={styles.detalle}>
+        <Fila
+          icono={<MaterialIcons name="event" size={ICONO} color={colors.onSurfaceVariant} />}
+          etiqueta="Aplicación"
+          valor={formatearFecha(registro.fecha)}
+        />
+        <Fila
+          icono={
+            esVeterinario(registro.profesional) ? (
+              <MaterialCommunityIcons name="stethoscope" size={ICONO} color={colors.onSurfaceVariant} />
+            ) : (
+              <MaterialIcons name="local-hospital" size={ICONO} color={colors.onSurfaceVariant} />
+            )
+          }
+          etiqueta="Profesional"
+          valor={registro.profesional}
+        />
+        <Fila
+          icono={<MaterialIcons name="update" size={ICONO} color={colors.onSurfaceVariant} />}
+          etiqueta="Refuerzo"
+          valor={registro.proximaDosis ? formatearFecha(registro.proximaDosis) : '—'}
+        />
+      </View>
+    </View>
+  );
+}
+
+type FilaProps = {
+  icono: ReactNode;
+  etiqueta: string;
+  valor: string;
+};
+
+/**
+ * Fila de detalle: ícono, etiqueta de ancho fijo y valor.
+ * @param props ver `FilaProps`
+ * @returns la fila
+ */
+function Fila({ icono, etiqueta, valor }: FilaProps) {
+  return (
+    <View style={styles.fila}>
+      {icono}
+      <Text style={styles.etiqueta}>{etiqueta}</Text>
+      <Text style={styles.valor} numberOfLines={1}>
+        {valor}
+      </Text>
     </View>
   );
 }
@@ -72,28 +128,45 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
+    gap: spacing.stackSm,
+  },
+  icono: {
+    width: sizes.avatarSm,
+    height: sizes.avatarSm,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryFixed,
+  },
+  titulo: {
+    flex: 1,
+    gap: spacing.xs,
   },
   nombre: {
     ...typography.bodyLg,
     fontFamily: typography.labelMd.fontFamily,
     color: colors.onSurface,
-    flex: 1,
   },
   detalle: {
-    flexDirection: 'row',
     gap: spacing.sm,
+    paddingTop: spacing.stackSm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.outlineVariant,
   },
-  dato: {
-    flex: 1,
+  fila: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  datoTexto: {
+  etiqueta: {
     ...typography.bodySm,
     color: colors.onSurfaceVariant,
-    flexShrink: 1,
+    width: ANCHO_ETIQUETA,
+  },
+  valor: {
+    ...typography.bodySm,
+    fontFamily: typography.labelMd.fontFamily,
+    color: colors.onSurface,
+    flex: 1,
   },
 });

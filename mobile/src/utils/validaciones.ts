@@ -5,7 +5,6 @@
  * función devuelve el mensaje de error a mostrar o undefined si el valor es válido.
  */
 
-import type { EstadoRegistro } from '@/types/models';
 import { fechaIngresadaAIso, hoy, parsearFecha, parsearHora } from './fechas';
 
 /** Formato básico de email: algo@algo.dominio, sin espacios. */
@@ -100,21 +99,34 @@ export function validarFechaIngresada(texto: string): string | undefined {
 }
 
 /**
- * Valida que la fecha de un registro sea coherente con su estado:
- * lo aplicado no puede ser futuro y lo pendiente no puede ser pasado.
- * @param texto fecha dd/mm/aaaa (ya validada en formato)
- * @param estado estado elegido
+ * Valida la fecha de aplicación de un registro sanitario: formato válido y
+ * no futura (en el carnet solo se cargan aplicaciones ya hechas).
+ * @param texto fecha dd/mm/aaaa
  * @returns mensaje de error o undefined
  */
-export function validarFechaSegunEstado(
-  texto: string,
-  estado: EstadoRegistro,
-): string | undefined {
+export function validarFechaAplicacion(texto: string): string | undefined {
+  const error = validarFechaIngresada(texto);
+  if (error) return error;
   const iso = fechaIngresadaAIso(texto);
-  if (!iso) return undefined;
-  const fecha = parsearFecha(iso);
-  if (estado === 'aplicada' && fecha > hoy()) return 'Una aplicación no puede tener fecha futura.';
-  if (estado === 'pendiente' && fecha < hoy()) return 'Un refuerzo pendiente tiene que ser a futuro.';
+  if (iso && parsearFecha(iso) > hoy()) return 'Una aplicación no puede tener fecha futura.';
+  return undefined;
+}
+
+/**
+ * Valida la fecha opcional del próximo refuerzo: si viene, tiene que tener
+ * formato válido y ser posterior a la aplicación.
+ * @param texto fecha dd/mm/aaaa del refuerzo (puede estar vacía)
+ * @param aplicacion fecha dd/mm/aaaa de la aplicación
+ * @returns mensaje de error o undefined
+ */
+export function validarProximaDosis(texto: string, aplicacion: string): string | undefined {
+  if (!texto.trim()) return undefined;
+  const iso = fechaIngresadaAIso(texto);
+  if (!iso) return 'Usá el formato dd/mm/aaaa con una fecha real.';
+  const isoAplicacion = fechaIngresadaAIso(aplicacion);
+  if (isoAplicacion && parsearFecha(iso) <= parsearFecha(isoAplicacion)) {
+    return 'El refuerzo tiene que ser posterior a la aplicación.';
+  }
   return undefined;
 }
 

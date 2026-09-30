@@ -57,6 +57,7 @@ type AppContextValue = {
   editarMascota: (id: number, cambios: Partial<NuevaMascota>) => Promise<Mascota>;
   crearReporte: (datos: NuevoReporte) => Promise<ReportePerdida>;
   agregarRegistro: (datos: NuevoRegistro) => Promise<RegistroSanitario>;
+  editarRegistro: (id: number, datos: NuevoRegistro) => Promise<RegistroSanitario>;
   agregarTurno: (datos: NuevoTurno) => Promise<Turno>;
   actualizarUsuario: (datos: DatosUsuario) => Promise<Usuario>;
 };
@@ -160,6 +161,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return nuevo;
   }, []);
 
+  /** Corrige un registro del carnet y lo reemplaza en la lista. */
+  const editarRegistro = useCallback(async (id: number, datos: NuevoRegistro) => {
+    const actualizado = await registrosService.actualizarRegistro(id, datos);
+    setRegistros((prev) => prev.map((r) => (r.id === id ? actualizado : r)));
+    return actualizado;
+  }, []);
+
   /** Agenda un turno. */
   const agregarTurno = useCallback(async (datos: NuevoTurno) => {
     const nuevo = await turnosService.crearTurno(datos);
@@ -192,6 +200,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       editarMascota,
       crearReporte,
       agregarRegistro,
+      editarRegistro,
       agregarTurno,
       actualizarUsuario,
     }),
@@ -211,6 +220,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       editarMascota,
       crearReporte,
       agregarRegistro,
+      editarRegistro,
       agregarTurno,
       actualizarUsuario,
     ],

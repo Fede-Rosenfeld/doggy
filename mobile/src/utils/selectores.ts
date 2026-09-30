@@ -11,7 +11,7 @@ import type {
   TipoRegistro,
   Turno,
 } from '@/types/models';
-import { parsearFecha } from './fechas';
+import { hoy, parsearFecha } from './fechas';
 
 /**
  * Busca una mascota por el id que llega en la ruta.
@@ -35,7 +35,7 @@ export function ultimaVacuna(
   mascotaId: number,
 ): RegistroSanitario | undefined {
   return registros
-    .filter((r) => r.mascotaId === mascotaId && r.tipo === 'vacuna' && r.estado === 'aplicada')
+    .filter((r) => r.mascotaId === mascotaId && r.tipo === 'vacuna')
     .sort((a, b) => parsearFecha(b.fecha).getTime() - parsearFecha(a.fecha).getTime())[0];
 }
 
@@ -74,14 +74,28 @@ export function registrosPorTipo(
 }
 
 /**
- * Próximo refuerzo pendiente: el registro pendiente con la fecha más cercana.
+ * Próximo refuerzo: la aplicación cuya `proximaDosis` a futuro es la más cercana.
+ * Solo cuenta la última aplicación de cada nombre: si la antirrábica ya se
+ * volvió a dar, el refuerzo que indicaba la dosis anterior deja de valer.
  * @param registros registros ya filtrados de una mascota y un tipo
- * @returns el registro pendiente más próximo, o undefined
+ * @param desde fecha de referencia (se puede pasar para testear)
+ * @returns el registro con el refuerzo más próximo, o undefined
  */
-export function proximoRefuerzo(registros: RegistroSanitario[]): RegistroSanitario | undefined {
-  return registros
-    .filter((r) => r.estado === 'pendiente')
-    .sort((a, b) => parsearFecha(a.fecha).getTime() - parsearFecha(b.fecha).getTime())[0];
+export function proximoRefuerzo(
+  registros: RegistroSanitario[],
+  desde: Date = hoy(),
+): RegistroSanitario | undefined {
+  const ultimaPorNombre = new Map<string, RegistroSanitario>();
+  for (const r of registros) {
+    const clave = r.nombre.trim().toLowerCase();
+    const previa = ultimaPorNombre.get(clave);
+    if (!previa || parsearFecha(r.fecha) > parsearFecha(previa.fecha)) ultimaPorNombre.set(clave, r);
+  }
+  return [...ultimaPorNombre.values()]
+    .filter((r) => r.proximaDosis && parsearFecha(r.proximaDosis) >= desde)
+    .sort(
+      (a, b) => parsearFecha(a.proximaDosis!).getTime() - parsearFecha(b.proximaDosis!).getTime(),
+    )[0];
 }
 
 /** Filtro de estado de la pantalla Perdidos. */

@@ -3,7 +3,7 @@
  * (los modelos guardan claves sin tildes, la UI muestra el texto en español).
  */
 import { colors } from '@/theme';
-import type { CategoriaTurno, EstadoRegistro, TipoRegistro } from '@/types/models';
+import type { CategoriaTurno, TipoRegistro } from '@/types/models';
 
 /**
  * Texto de la edad: "1 año", "3 años" o "Menos de 1 año".
@@ -24,13 +24,16 @@ export const TIPOS_REGISTRO: {
   singular: string;
   /** Título de la lista en el carnet. */
   historial: string;
-  /** Título de la card del pendiente más próximo. */
+  /** Título de la card del próximo refuerzo y del campo opcional del formulario. */
   proximo: string;
   /** Título del estado vacío. */
   vacio: string;
+  /** Ícono de MaterialIcons de las cards y del formulario. */
+  icono: 'vaccines' | 'bug-report' | 'medical-services';
 }[] = [
   {
     valor: 'vacuna',
+    icono: 'vaccines',
     pestana: 'Vacunas',
     singular: 'Vacuna',
     historial: 'Historial de Vacunación',
@@ -39,6 +42,7 @@ export const TIPOS_REGISTRO: {
   },
   {
     valor: 'desparasitacion',
+    icono: 'bug-report',
     pestana: 'Desparasitación',
     singular: 'Desparasitación',
     historial: 'Historial de Desparasitación',
@@ -47,18 +51,13 @@ export const TIPOS_REGISTRO: {
   },
   {
     valor: 'otro',
+    icono: 'medical-services',
     pestana: 'Otros',
     singular: 'Otro',
     historial: 'Otros registros',
     proximo: 'Próximo control',
     vacio: 'Sin otros registros',
   },
-];
-
-/** Textos de los estados de un registro. */
-export const ESTADOS_REGISTRO: { valor: EstadoRegistro; label: string }[] = [
-  { valor: 'aplicada', label: 'Aplicada' },
-  { valor: 'pendiente', label: 'Pendiente' },
 ];
 
 /** Textos y colores de cada categoría de turno (puntos del calendario, leyenda y chips). */
