@@ -3,8 +3,9 @@
  *
  * Modo Mapa: un marker por reporte (mostaza perdido, teal encontrado), botón
  * "mi ubicación" que centra el mapa con el GPS y un carrusel de cards; tocar
- * una card centra el mapa en ese reporte. Modo Lista: las mismas cards en
- * vertical. El buscador filtra en local por nombre o zona y el filtro por
+ * un marker o una card centra el mapa en ese reporte y abre la hoja de
+ * detalle con todo lo que se cargó al reportarlo. Modo Lista: las mismas
+ * cards en vertical, que también abren el detalle. El buscador filtra en local por nombre o zona y el filtro por
  * estado. Si se deniega la ubicación, el mapa queda en CABA con un aviso.
  * El FAB pregunta qué se reporta: "Se perdió mi mascota" o "Encontré una mascota".
  * Si llega `reporteId` por params (después de reportar), se centra en ese reporte.
@@ -32,6 +33,7 @@ import { IconButton } from '@/components/IconButton';
 import { Input } from '@/components/Input';
 import { MenuRow } from '@/components/MenuRow';
 import { PermissionNotice } from '@/components/PermissionNotice';
+import { DetalleReporte } from '@/components/perdidos/DetalleReporte';
 import { MapaReportes, MapaReportesHandle } from '@/components/perdidos/MapaReportes';
 import { ReporteCard } from '@/components/perdidos/ReporteCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -67,7 +69,7 @@ const ESPERA_CIERRE_HOJA_MS = 300;
  * @returns el mapa o la lista de reportes
  */
 export default function PerdidosScreen() {
-  const { reportes } = useApp();
+  const { reportes, usuario } = useApp();
   const { reporteId } = useLocalSearchParams<{ reporteId?: string }>();
   const gps = useUbicacion({ automatico: true });
   const { width } = useWindowDimensions();
@@ -80,6 +82,10 @@ export default function PerdidosScreen() {
   const [filtroVisible, setFiltroVisible] = useState(false);
   const [eleccionVisible, setEleccionVisible] = useState(false);
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
+  // El reporte del detalle se guarda aparte de la visibilidad para que la hoja
+  // no quede vacía durante la animación de cierre.
+  const [detalle, setDetalle] = useState<ReportePerdida | null>(null);
+  const [detalleVisible, setDetalleVisible] = useState(false);
   const mapaRef = useRef<MapaReportesHandle>(null);
   const carruselRef = useRef<FlatList<ReportePerdida>>(null);
 
@@ -110,24 +116,39 @@ export default function PerdidosScreen() {
   }, [reporteId, reportes]);
 
   // --- Handlers ---
-  /** Card tocada: la marca y centra el mapa en el reporte. */
-  const handleCard = useCallback((reporte: ReportePerdida) => {
-    setSeleccionadoId(reporte.id);
-    mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng });
+  /**
+   * Abre la hoja con toda la información del reporte.
+   * @param reporte reporte tocado
+   */
+  const abrirDetalle = useCallback((reporte: ReportePerdida) => {
+    setDetalle(reporte);
+    setDetalleVisible(true);
   }, []);
 
-  /** Marker tocado: lo marca y lleva el carrusel hasta su card. */
+  /** Card del carrusel tocada: la marca, centra el mapa y abre su detalle. */
+  const handleCard = useCallback(
+    (reporte: ReportePerdida) => {
+      setSeleccionadoId(reporte.id);
+      mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng });
+      abrirDetalle(reporte);
+    },
+    [abrirDetalle],
+  );
+
+  /** Marker tocado: lo marca, lleva el carrusel hasta su card y abre su detalle. */
   const handleMarker = useCallback(
     (reporte: ReportePerdida) => {
       setSeleccionadoId(reporte.id);
       const indice = visibles.findIndex((r) => r.id === reporte.id);
       if (indice >= 0) carruselRef.current?.scrollToIndex({ index: indice, animated: true });
+      abrirDetalle(reporte);
     },
-    [visibles],
+    [visibles, abrirDetalle],
   );
 
-  /** En modo lista, tocar una card vuelve al mapa centrado en ese reporte. */
+  /** "Ver en el mapa" del detalle: vuelve al mapa (si estaba en lista) centrado en el reporte. */
   const abrirEnMapa = useCallback((reporte: ReportePerdida) => {
+    setDetalleVisible(false);
     setModo('mapa');
     setSeleccionadoId(reporte.id);
     // Se espera a que el mapa se monte antes de mover la cámara.
@@ -284,7 +305,7 @@ export default function PerdidosScreen() {
           <FlatList
             data={visibles}
             keyExtractor={(reporte) => String(reporte.id)}
-            renderItem={({ item }) => <ReporteCard reporte={item} onPress={abrirEnMapa} />}
+            renderItem={({ item }) => <ReporteCard reporte={item} onPress={abrirDetalle} />}
             ListHeaderComponent={
               <SegmentedControl opciones={MODOS} valor={modo} onChange={setModo} variant="pill" />
             }
@@ -312,6 +333,14 @@ export default function PerdidosScreen() {
         </View>
         <PrimaryButton title="Listo" onPress={() => setFiltroVisible(false)} />
       </FormModal>
+
+      <DetalleReporte
+        visible={detalleVisible}
+        reporte={detalle}
+        esPropio={!!detalle && detalle.autorId === usuario?.id}
+        onClose={() => setDetalleVisible(false)}
+        onVerEnMapa={abrirEnMapa}
+      />
 
       {/* Dos reportes distintos: el tutor que perdió a su mascota y el vecino que encontró una. */}
       <FormModal
