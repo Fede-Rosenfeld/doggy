@@ -26,6 +26,7 @@ import * as usuarioService from '@/services/usuario';
 import type {
   Cuidador,
   DatosUsuario,
+  Invitacion,
   Mascota,
   NuevaMascota,
   NuevoRegistro,
@@ -33,6 +34,7 @@ import type {
   NuevoTurno,
   RegistroSanitario,
   ReportePerdida,
+  RolMascota,
   Turno,
   Usuario,
 } from '@/types/models';
@@ -61,6 +63,12 @@ type AppContextValue = {
   agregarTurno: (datos: NuevoTurno) => Promise<Turno>;
   editarTurno: (id: number, datos: NuevoTurno) => Promise<Turno>;
   actualizarUsuario: (datos: DatosUsuario) => Promise<Usuario>;
+  // --- Asignación de mascotas ---
+  generarInvitacion: (mascota: Mascota, rol: RolMascota) => Promise<Invitacion>;
+  verInvitacion: (token: string) => Promise<Invitacion>;
+  /** Acepta un link y devuelve la mascota que se sumó a la cuenta. */
+  aceptarInvitacion: (token: string) => Promise<Mascota>;
+  desasignarme: (mascotaId: number) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -134,10 +142,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUsuario(null);
   }, []);
 
-  /** Crea una mascota y la suma al final de la lista. */
+  /** Crea una mascota, la suma al final de la lista y trae su asignación (el usuario como dueño). */
   const agregarMascota = useCallback(async (datos: NuevaMascota) => {
     const nueva = await mascotasService.crearMascota(datos);
     setMascotas((prev) => [...prev, nueva]);
+    setCuidadores(await cuidadoresService.obtenerCuidadores());
     return nueva;
   }, []);
 
@@ -190,6 +199,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return actualizado;
   }, []);
 
+  /** Genera un link de asignación (solo si el usuario es dueño de la mascota). */
+  const generarInvitacion = useCallback(
+    (mascota: Mascota, rol: RolMascota) => cuidadoresService.crearInvitacion(mascota, rol),
+    [],
+  );
+
+  /** Trae un link para mostrarlo antes de aceptarlo. */
+  const verInvitacion = useCallback(
+    (token: string) => cuidadoresService.obtenerInvitacion(token),
+    [],
+  );
+
+  /**
+   * Acepta un link: el usuario queda asignado y la mascota aparece en su cuenta
+   * (se vuelven a traer las mascotas y las asignaciones).
+   */
+  const aceptarInvitacion = useCallback(async (token: string) => {
+    const asignacion = await cuidadoresService.aceptarInvitacion(token);
+    const [m, c] = await Promise.all([
+      mascotasService.obtenerMascotas(),
+      cuidadoresService.obtenerCuidadores(),
+    ]);
+    setMascotas(m);
+    setCuidadores(c);
+    const mascota = m.find((x) => x.id === asignacion.mascotaId);
+    if (!mascota) throw new Error('No encontramos la mascota asignada.');
+    return mascota;
+  }, []);
+
+  /** Desasigna al usuario: la mascota y todo lo suyo salen de su cuenta. */
+  const desasignarme = useCallback(async (mascotaId: number) => {
+    await cuidadoresService.desasignarme(mascotaId);
+    setMascotas((prev) => prev.filter((m) => m.id !== mascotaId));
+    setCuidadores((prev) => prev.filter((c) => c.mascotaId !== mascotaId));
+    setRegistros((prev) => prev.filter((r) => r.mascotaId !== mascotaId));
+    setTurnos((prev) => prev.filter((t) => t.mascotaId !== mascotaId));
+  }, []);
+
   // useMemo evita re-renderizar a todos los consumidores si no cambió nada.
   const value = useMemo<AppContextValue>(
     () => ({
@@ -212,6 +259,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agregarTurno,
       editarTurno,
       actualizarUsuario,
+      generarInvitacion,
+      verInvitacion,
+      aceptarInvitacion,
+      desasignarme,
     }),
     [
       usuario,
@@ -233,6 +284,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agregarTurno,
       editarTurno,
       actualizarUsuario,
+      generarInvitacion,
+      verInvitacion,
+      aceptarInvitacion,
+      desasignarme,
     ],
   );
 

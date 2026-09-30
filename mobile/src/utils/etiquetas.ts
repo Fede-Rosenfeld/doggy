@@ -3,7 +3,7 @@
  * (los modelos guardan claves sin tildes, la UI muestra el texto en español).
  */
 import { colors } from '@/theme';
-import type { CategoriaTurno, TipoRegistro } from '@/types/models';
+import type { CategoriaTurno, RolMascota, TipoRegistro } from '@/types/models';
 
 /**
  * Texto de la edad: "1 año", "3 años" o "Menos de 1 año".
@@ -59,6 +59,34 @@ export const TIPOS_REGISTRO: {
     vacio: 'Sin otros registros',
   },
 ];
+
+/** Textos de cada rol sobre una mascota (badge, formulario de invitación y aceptación). */
+export const ROLES_MASCOTA: {
+  valor: RolMascota;
+  label: string;
+  /** Qué puede hacer quien tiene el rol. */
+  descripcion: string;
+}[] = [
+  {
+    valor: 'dueno',
+    label: 'Dueño',
+    descripcion: 'Puede asignar la mascota a otras personas.',
+  },
+  {
+    valor: 'invitado',
+    label: 'Invitado',
+    descripcion: 'Tiene la mascota en su cuenta, pero no puede asignarla a nadie.',
+  },
+];
+
+/**
+ * Textos de un rol.
+ * @param rol clave del modelo
+ * @returns label y descripción
+ */
+export function rolMascota(rol: RolMascota): (typeof ROLES_MASCOTA)[number] {
+  return ROLES_MASCOTA.find((r) => r.valor === rol) ?? ROLES_MASCOTA[1];
+}
 
 /** Textos y colores de cada categoría de turno (puntos del calendario, leyenda y chips). */
 export const CATEGORIAS_TURNO: {

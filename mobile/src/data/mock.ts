@@ -8,6 +8,7 @@
  */
 import type {
   Cuidador,
+  Invitacion,
   Mascota,
   RegistroSanitario,
   ReportePerdida,
@@ -69,6 +70,17 @@ export const mascotas: Mascota[] = [
     codigo: 'DOGGY-5610-MILO',
     senas: 'Pelo claro con manchas marrones en las orejas.',
     foto: 'milo',
+  },
+  // Mascota de otra usuaria (Lucía): Sofía no la ve hasta aceptar el link de asignación.
+  {
+    id: 4,
+    tutorId: 20,
+    nombre: 'Toby',
+    raza: 'Beagle',
+    edad: 4,
+    codigo: 'DOGGY-7741-TOBY',
+    senas: 'Tricolor, con la punta de la cola blanca.',
+    foto: null,
   },
 ];
 
@@ -222,41 +234,109 @@ export const reportes: ReportePerdida[] = [
   },
 ];
 
+/** Usuaria dueña de Toby: sirve para probar un link de asignación de otra persona. */
+const LUCIA_ID = 20;
+
+/**
+ * Asignaciones de personas a mascotas. Sofía (la usuaria logueada) figura
+ * como dueña de sus tres mascotas; el resto son familia, clínica y paseador.
+ */
 export const cuidadores: Cuidador[] = [
   {
     id: 1,
     mascotaId: 1,
-    nombre: 'Carlos Romero',
-    rol: 'Co-tutor',
-    detalle: 'Acceso total y carnet',
+    usuarioId: USUARIO_ID,
+    nombre: 'Sofía Romero',
+    rol: 'dueno',
+    detalle: 'Tutora',
     tipo: 'familia',
-    foto: 'carlos',
+    foto: 'sofia',
   },
   {
     id: 2,
     mascotaId: 1,
+    usuarioId: 11,
+    nombre: 'Carlos Romero',
+    rol: 'dueno',
+    detalle: 'Co-tutor',
+    tipo: 'familia',
+    foto: 'carlos',
+  },
+  {
+    id: 3,
+    mascotaId: 1,
+    usuarioId: 12,
     nombre: 'Vet. San Roque',
-    rol: 'Clínica',
+    rol: 'invitado',
     detalle: 'Dra. Martínez',
     tipo: 'clinica',
     foto: null,
   },
   {
-    id: 3,
+    id: 4,
     mascotaId: 2,
+    usuarioId: USUARIO_ID,
+    nombre: 'Sofía Romero',
+    rol: 'dueno',
+    detalle: 'Tutora',
+    tipo: 'familia',
+    foto: 'sofia',
+  },
+  {
+    id: 5,
+    mascotaId: 2,
+    usuarioId: 13,
     nombre: 'Marcos Díaz',
-    rol: 'Paseador',
+    rol: 'invitado',
     detalle: 'Paseos de lunes a viernes (10-12 hs)',
     tipo: 'paseador',
     foto: null,
   },
   {
-    id: 4,
+    id: 6,
     mascotaId: 3,
+    usuarioId: USUARIO_ID,
+    nombre: 'Sofía Romero',
+    rol: 'dueno',
+    detalle: 'Tutora',
+    tipo: 'familia',
+    foto: 'sofia',
+  },
+  {
+    id: 7,
+    mascotaId: 3,
+    usuarioId: 14,
     nombre: 'Sol Romero',
-    rol: 'Co-tutora',
+    rol: 'dueno',
     detalle: 'Hogar secundario',
     tipo: 'familia',
     foto: null,
+  },
+  {
+    id: 8,
+    mascotaId: 4,
+    usuarioId: LUCIA_ID,
+    nombre: 'Lucía Gómez',
+    rol: 'dueno',
+    detalle: 'Tutora',
+    tipo: 'familia',
+    foto: null,
+  },
+];
+
+/**
+ * Links de asignación ya generados. El de Toby lo creó Lucía para que Sofía
+ * lo acepte: se prueba desde Perfil → "Tengo un link de asignación" con el
+ * código TOBY2026.
+ */
+export const invitaciones: Invitacion[] = [
+  {
+    token: 'TOBY2026',
+    mascotaId: 4,
+    rol: 'invitado',
+    creadaPorId: LUCIA_ID,
+    vence: '2027-12-31T23:59:59.000Z',
+    usada: false,
+    mascota: { nombre: 'Toby', raza: 'Beagle', foto: null },
   },
 ];

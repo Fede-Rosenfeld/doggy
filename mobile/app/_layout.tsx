@@ -4,8 +4,9 @@
  * Carga las fuentes de la marca (Quicksand y Plus Jakarta Sans) y mantiene
  * la splash visible hasta que terminan de cargar, para que ninguna pantalla
  * se dibuje con la tipografía del sistema. Define el Stack raíz con los
- * grupos de autenticación y tabs, y los dos modales de reporte (mascota
- * encontrada y mascota propia perdida), todo dentro del provider del estado global.
+ * grupos de autenticación y tabs, los dos modales de reporte (mascota
+ * encontrada y mascota propia perdida) y el de asignación de mascota, todo
+ * dentro del provider del estado global.
  */
 import { Quicksand_600SemiBold } from '@expo-google-fonts/quicksand/600SemiBold';
 import { Quicksand_700Bold } from '@expo-google-fonts/quicksand/700Bold';
@@ -63,6 +64,8 @@ export default function RootLayout() {
         {/* Los reportes se abren desde abajo, por encima de las tabs. */}
         <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="mi-mascota-perdida" options={{ presentation: 'modal' }} />
+        {/* Lo abre un link de asignación de mascota (doggy://asignar?token=...). */}
+        <Stack.Screen name="asignar" options={{ presentation: 'modal' }} />
       </Stack>
     </AppProvider>
   );

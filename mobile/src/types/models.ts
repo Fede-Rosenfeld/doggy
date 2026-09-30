@@ -103,17 +103,48 @@ export type ReportePerdida = {
 
 export type TipoCuidador = 'familia' | 'clinica' | 'paseador';
 
-/** Persona o institución de confianza asignada al cuidado de una mascota. */
+/**
+ * Rol de una persona sobre una mascota.
+ * - dueno: puede asignar a otras personas (generar links de asignación).
+ * - invitado: tiene la mascota en su cuenta pero no puede asignar a nadie.
+ * Cualquiera de los dos puede desasignarse, salvo el último dueño.
+ */
+export type RolMascota = 'dueno' | 'invitado';
+
+/**
+ * Persona o institución asignada a una mascota (la tabla que une usuarios y
+ * mascotas). El tutor que la dio de alta también figura acá, como dueño.
+ */
 export type Cuidador = {
   id: number;
   mascotaId: number;
+  /** Usuario asignado. */
+  usuarioId: number;
   nombre: string;
-  /** Rol que se muestra en el badge: "Co-tutor", "Clínica", "Paseador". */
-  rol: string;
-  /** Detalle del permiso o la tarea: "Acceso total y carnet". */
+  rol: RolMascota;
+  /** Detalle de la tarea o el vínculo: "Hogar secundario", "Paseos de lunes a viernes". */
   detalle: string;
+  /** Tipo de vínculo, para el ícono: familia, clínica o paseador. */
   tipo: TipoCuidador;
   foto: string | null;
+};
+
+/**
+ * Link de asignación de una mascota. Lo genera un dueño con un rol; quien lo
+ * abre y lo acepta queda asignado con ese rol. Sirve para una sola persona y vence.
+ */
+export type Invitacion = {
+  /** Código del link (va en la URL). */
+  token: string;
+  mascotaId: number;
+  rol: RolMascota;
+  /** Dueño que generó el link. */
+  creadaPorId: number;
+  /** Fecha ISO de vencimiento. */
+  vence: string;
+  usada: boolean;
+  /** Datos de la mascota para mostrar la invitación antes de aceptarla. */
+  mascota: Pick<Mascota, 'nombre' | 'raza' | 'foto'>;
 };
 
 /** Datos que se mandan para crear una mascota (el id y el código los asigna el servidor). */
