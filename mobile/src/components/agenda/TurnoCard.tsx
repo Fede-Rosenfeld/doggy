@@ -1,9 +1,9 @@
 /**
  * Card de un turno de la Agenda: hora, categoría, mascota, motivo y lugar,
- * con un borde izquierdo del color de la categoría.
+ * con un borde izquierdo del color de la categoría. El lápiz abre la edición.
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { Turno } from '@/types/models';
@@ -14,21 +14,19 @@ type Props = {
   turno: Turno;
   /** Nombre de la mascota del turno. */
   mascota: string;
+  /** Abre el formulario para editar el turno. */
+  onEditar: (turno: Turno) => void;
 };
 
 /**
  * Card de turno.
  * @param props.turno turno a mostrar
  * @param props.mascota nombre de la mascota
+ * @param props.onEditar se llama al tocar el lápiz
  * @returns la card
  */
-export function TurnoCard({ turno, mascota }: Props) {
+export function TurnoCard({ turno, mascota, onEditar }: Props) {
   const categoria = categoriaTurno(turno.categoria);
-
-  /** Editar necesita el PATCH del backend: por ahora avisa. */
-  const handleEditar = () => {
-    Alert.alert('Editar turno', 'Disponible próximamente. Vas a poder cambiar la fecha, la hora y el lugar.');
-  };
 
   return (
     <View style={[styles.card, { borderLeftColor: categoria.color }]}>
@@ -46,7 +44,7 @@ export function TurnoCard({ turno, mascota }: Props) {
         <Text style={styles.lugar}>{turno.lugar}</Text>
       </View>
       <Pressable
-        onPress={handleEditar}
+        onPress={() => onEditar(turno)}
         accessibilityRole="button"
         accessibilityLabel={`Editar turno de ${mascota}`}
         style={({ pressed }) => [styles.editar, pressed && styles.editarPressed]}

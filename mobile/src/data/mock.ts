@@ -8,6 +8,7 @@
  */
 import type {
   Cuidador,
+  Invitacion,
   Mascota,
   RegistroSanitario,
   ReportePerdida,
@@ -70,6 +71,17 @@ export const mascotas: Mascota[] = [
     senas: 'Pelo claro con manchas marrones en las orejas.',
     foto: 'milo',
   },
+  // Mascota de otra usuaria (Lucía): Sofía no la ve hasta aceptar el link de asignación.
+  {
+    id: 4,
+    tutorId: 20,
+    nombre: 'Toby',
+    raza: 'Beagle',
+    edad: 4,
+    codigo: 'DOGGY-7741-TOBY',
+    senas: 'Tricolor, con la punta de la cola blanca.',
+    foto: null,
+  },
 ];
 
 export const registrosSanitarios: RegistroSanitario[] = [
@@ -78,9 +90,9 @@ export const registrosSanitarios: RegistroSanitario[] = [
     mascotaId: 1,
     tipo: 'vacuna',
     nombre: 'Antirrábica',
-    fecha: '2026-11-15',
+    fecha: '2025-11-15',
     profesional: 'Vet. San Roque',
-    estado: 'pendiente',
+    proximaDosis: '2026-11-15',
   },
   {
     id: 2,
@@ -89,7 +101,7 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Séxtuple',
     fecha: '2026-05-10',
     profesional: 'Dra. Martínez',
-    estado: 'aplicada',
+    proximaDosis: '2027-05-10',
   },
   {
     id: 3,
@@ -98,7 +110,6 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Tos de las Perreras',
     fecha: '2026-01-12',
     profesional: 'Clínica Veterinaria Sur',
-    estado: 'aplicada',
   },
   {
     id: 4,
@@ -107,7 +118,6 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Antiparasitario interno',
     fecha: '2026-08-02',
     profesional: 'Dra. Martínez',
-    estado: 'aplicada',
   },
   {
     id: 5,
@@ -116,7 +126,7 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Pipeta antipulgas',
     fecha: '2026-09-01',
     profesional: 'Vet. San Roque',
-    estado: 'aplicada',
+    proximaDosis: '2026-10-01',
   },
   {
     id: 6,
@@ -125,25 +135,16 @@ export const registrosSanitarios: RegistroSanitario[] = [
     nombre: 'Séxtuple (Dosis 1)',
     fecha: '2026-09-18',
     profesional: 'Clínica Belgrano Pet',
-    estado: 'aplicada',
+    proximaDosis: '2026-10-23',
   },
   {
     id: 7,
-    mascotaId: 2,
-    tipo: 'vacuna',
-    nombre: 'Séxtuple (Dosis 2)',
-    fecha: '2026-10-23',
-    profesional: 'Clínica Belgrano Pet',
-    estado: 'pendiente',
-  },
-  {
-    id: 8,
     mascotaId: 3,
     tipo: 'vacuna',
     nombre: 'Antirrábica',
     fecha: '2026-04-20',
     profesional: 'Vet. San Roque',
-    estado: 'aplicada',
+    proximaDosis: '2027-04-20',
   },
 ];
 
@@ -197,6 +198,8 @@ export const reportes: ReportePerdida[] = [
     lng: -58.4306,
     zona: 'Palermo, CABA',
     fecha: haceHoras(2),
+    radioMetros: 1000,
+    infoAdicional: 'Tenía puesto un pretal rojo. Se asusta con las motos.',
   },
   {
     id: 2,
@@ -227,44 +230,113 @@ export const reportes: ReportePerdida[] = [
     lng: -58.3974,
     zona: 'Recoleta, CABA',
     fecha: haceHoras(22),
+    radioMetros: 500,
   },
 ];
 
+/** Usuaria dueña de Toby: sirve para probar un link de asignación de otra persona. */
+const LUCIA_ID = 20;
+
+/**
+ * Asignaciones de personas a mascotas. Sofía (la usuaria logueada) figura
+ * como dueña de sus tres mascotas; el resto son familia, clínica y paseador.
+ */
 export const cuidadores: Cuidador[] = [
   {
     id: 1,
     mascotaId: 1,
-    nombre: 'Carlos Romero',
-    rol: 'Co-tutor',
-    detalle: 'Acceso total y carnet',
+    usuarioId: USUARIO_ID,
+    nombre: 'Sofía Romero',
+    rol: 'dueno',
+    detalle: 'Tutora',
     tipo: 'familia',
-    foto: 'carlos',
+    foto: 'sofia',
   },
   {
     id: 2,
     mascotaId: 1,
+    usuarioId: 11,
+    nombre: 'Carlos Romero',
+    rol: 'dueno',
+    detalle: 'Co-tutor',
+    tipo: 'familia',
+    foto: 'carlos',
+  },
+  {
+    id: 3,
+    mascotaId: 1,
+    usuarioId: 12,
     nombre: 'Vet. San Roque',
-    rol: 'Clínica',
+    rol: 'invitado',
     detalle: 'Dra. Martínez',
     tipo: 'clinica',
     foto: null,
   },
   {
-    id: 3,
+    id: 4,
     mascotaId: 2,
+    usuarioId: USUARIO_ID,
+    nombre: 'Sofía Romero',
+    rol: 'dueno',
+    detalle: 'Tutora',
+    tipo: 'familia',
+    foto: 'sofia',
+  },
+  {
+    id: 5,
+    mascotaId: 2,
+    usuarioId: 13,
     nombre: 'Marcos Díaz',
-    rol: 'Paseador',
+    rol: 'invitado',
     detalle: 'Paseos de lunes a viernes (10-12 hs)',
     tipo: 'paseador',
     foto: null,
   },
   {
-    id: 4,
+    id: 6,
     mascotaId: 3,
+    usuarioId: USUARIO_ID,
+    nombre: 'Sofía Romero',
+    rol: 'dueno',
+    detalle: 'Tutora',
+    tipo: 'familia',
+    foto: 'sofia',
+  },
+  {
+    id: 7,
+    mascotaId: 3,
+    usuarioId: 14,
     nombre: 'Sol Romero',
-    rol: 'Co-tutora',
+    rol: 'dueno',
     detalle: 'Hogar secundario',
     tipo: 'familia',
     foto: null,
+  },
+  {
+    id: 8,
+    mascotaId: 4,
+    usuarioId: LUCIA_ID,
+    nombre: 'Lucía Gómez',
+    rol: 'dueno',
+    detalle: 'Tutora',
+    tipo: 'familia',
+    foto: null,
+  },
+];
+
+/**
+ * Links de asignación ya generados. El de Toby lo creó Lucía para que Sofía
+ * lo acepte: se prueba desde Perfil → "Tengo un link de asignación" con el
+ * código TOBY2026.
+ */
+export const invitaciones: Invitacion[] = [
+  {
+    token: 'TOBY2026',
+    mascotaId: 4,
+    rol: 'invitado',
+    creadaPorId: LUCIA_ID,
+    vence: '2027-12-31T23:59:59.000Z',
+    usada: false,
+    mascota: { nombre: 'Toby', raza: 'Beagle', foto: null },
   },
 ];

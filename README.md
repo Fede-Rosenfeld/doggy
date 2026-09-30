@@ -57,21 +57,28 @@ Login ──► Registro
   ▼  (router.replace: "atrás" no vuelve al login)
 Tabs
  ├─ Mascotas ───┬─► Agregar mascota
- │              └─► Perfil de la mascota ─┬─► Carnet Sanitario ─► (modal) Nuevo registro
+ │              └─► Perfil de la mascota ─┬─► Editar mascota
+ │                                        ├─► Carnet Sanitario ─► (modal) Nuevo registro
  │                                        ├─► tab Agenda
- │                                        └─► (modal) Reportar como perdida
+ │                                        └─► (modal) Se perdió mi mascota
  ├─ Perdidos ───┬─► Mapa / Lista
- │              └─► (modal) Reportar ─► vuelve a Perdidos con el nuevo marker
+ │              └─► "+" ¿Qué querés reportar? ─┬─► (modal) Se perdió mi mascota ─┐
+ │                                             └─► (modal) Encontré una mascota ─┴─► vuelve a Perdidos con el nuevo marker
  ├─ Agenda ─────── (modal) Nuevo turno
  └─ Perfil ─────┬─► (modal) Editar datos personales
+                ├─► Familia y Cuidadores ─┬─► (hoja) Asignar: generar link con rol ─► compartir
+                │                         └─► (hoja) Desasignarme
+                ├─► Tengo un link de asignación ─► (modal) Asignación de mascota
                 ├─► Mis reportes activos ─► tab Perdidos
                 └─► Cerrar sesión ─► Login
+
+Link de asignación (doggy://asignar?token=...) ─► (modal) Asignación de mascota ─► Perfil de la mascota
 ```
 
-- **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y el modal `reportar` (`presentation: 'modal'`).
+- **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y los modales `mi-mascota-perdida`, `reportar` y `asignar` (`presentation: 'modal'`). `asignar` es también la ruta de los links de asignación (`doggy://asignar?token=...`, esquema `doggy` de `app.json`).
 - **Bottom Tabs** (`app/(tabs)/_layout.tsx`): Mascotas, Perdidos, Agenda y Perfil, con una barra propia que marca la tab activa con una píldora.
-- **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`) y carnet (`[id]/carnet`), con la barra de tabs visible.
-- Las acciones que dependen del backend (descargar QR, editar turnos, asignar cuidadores, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
+- **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`), edición (`[id]/editar`) y carnet (`[id]/carnet`), con la barra de tabs visible.
+- Las acciones que dependen del backend (descargar QR, permisos finos por cuidador, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
 
 ### Detalle por pantalla
 
@@ -79,12 +86,21 @@ Tabs
 2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
 4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
-5. **Perfil de la mascota**: foto, raza y edad; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre el modal de reporte con la mascota precargada.
-6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo pendiente e historial con estado, fecha y profesional. "Agregar Registro" abre un formulario (tipo, estado, nombre, fecha con máscara dd/mm/aaaa y veterinario) que valida que lo aplicado no tenga fecha futura y lo pendiente no sea pasado.
-7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). El FAB mostaza abre el reporte. Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
-8. **Reportar mascota perdida** (modal): escáner del QR de la chapita (autocompleta nombre, raza, señas y foto de la mascota), foto desde la galería, nombre, raza, descripción, etiquetas y un mini mapa con el pin precargado con el GPS, que se puede arrastrar o mover tocando el mapa, con la dirección legible debajo. Si se abre desde el perfil de una mascota, llega precargado. "Marcar como Perdido" valida, publica el reporte, vibra, cierra el modal y muestra el nuevo marker seleccionado en Perdidos.
-9. **Agenda**: calendario mensual hecho a mano con `Date` (semana de lunes a domingo, navegación entre meses, día seleccionado, "Hoy" marcado y puntos de color por categoría en los días con turnos). Al tocar un día vibra suave (`Haptics.selectionAsync`) y lista sus turnos con hora, categoría, mascota, motivo y lugar. "Nuevo turno" abre un formulario (mascota, categoría, fecha, hora, motivo y lugar) que valida que el turno sea a futuro.
-10. **Mi Perfil**: foto de perfil editable desde la galería, nombre, ubicación y cantidad de mascotas registradas (calculada desde el estado global). "Editar datos personales" abre un formulario (nombre, apellido, ubicación, email, teléfono de emergencia y WhatsApp). Card de contacto de emergencia, familia y cuidadores agrupados por mascota, menú (notificaciones, mis reportes activos con el conteo real, ayuda y guía de paseos) y "Cerrar sesión", que vuelve al login sin dejar historial.
+5. **Perfil de la mascota**: foto, raza y edad; botón "Editar mascota"; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre "Se perdió mi mascota" con esa mascota ya elegida. "Editar mascota" abre el mismo formulario del alta con los datos precargados (foto, nombre, raza, edad y señas); al guardar vuelve al perfil ya actualizado. El ID único no cambia aunque cambie el nombre, para que la placa ya grabada siga funcionando.
+6. **Carnet Sanitario**: pestañas Vacunas / Desparasitación / Otros que filtran los registros, card destacada con el próximo refuerzo e historial de aplicaciones (todas con el badge "Aplicada") con fecha, profesional y, si tiene, fecha de refuerzo. En el carnet solo se cargan aplicaciones ya hechas: no hay registros pendientes. "Agregar Registro" abre un formulario (tipo, nombre, fecha de aplicación con máscara dd/mm/aaaa, veterinario y, opcional, la fecha del próximo refuerzo) que valida que la aplicación no tenga fecha futura y que el refuerzo sea posterior a ella. La card de próximo refuerzo muestra el más cercano a futuro, tomando solo la última aplicación de cada vacuna o producto. Cada card (incluida la del próximo refuerzo) tiene un lápiz que abre el mismo formulario con los datos cargados para corregir un registro mal cargado; si se cambia el tipo, el carnet salta a esa pestaña.
+7. **Perdidos**: mapa de CABA con un marker por reporte (mostaza perdido, teal encontrado), botón "mi ubicación" que centra el mapa con el GPS y carrusel de cards debajo; tocar una card centra el mapa en ese reporte y tocar un marker lleva a su card. Tocar un marker o una card (en el carrusel o en la lista) abre una hoja con todo lo cargado en el reporte: foto circular y centrada como en el perfil de la mascota, con el estado debajo (al tocarla se abre grande y completa a pantalla completa), raza y etiquetas, cuándo (hace cuánto, fecha y hora), dónde, radio de búsqueda, señas o descripción e información adicional, con un aviso si el reporte es propio y el botón "Ver en el mapa". El toggle Mapa / Lista cambia a una lista vertical. El buscador filtra en local por nombre o barrio y el filtro por estado (perdidos / encontrados). Si el reporte seleccionado tiene radio de búsqueda, el mapa dibuja su círculo, y la card muestra el radio junto a la zona. El FAB mostaza pregunta qué se quiere reportar: "Se perdió mi mascota" o "Encontré una mascota". Si se niega la ubicación, el mapa queda en CABA y aparece un aviso para habilitarla.
+8. **Reportes: mascota propia vs. mascota encontrada.** Son dos flujos distintos porque la persona y lo que sabe son distintos.
+   - **Se perdió mi mascota** (modal `mi-mascota-perdida`): el tutor elige cuál de sus mascotas se perdió (llega elegida si se abre desde su perfil) y los datos salen del perfil sin volver a cargarlos (foto, nombre, raza, edad, señas e ID de la chapita). Marca en el mini mapa dónde la vio por última vez (precargado con el GPS) y un radio de búsqueda (200 m, 500 m, 1 km o 2 km) que se dibuja como un círculo mostaza alrededor del pin. Suma información del día (qué tenía puesto, arnés, cómo reacciona) y etiquetas. Si la mascota ya tiene un reporte activo, avisa. "Publicar como perdida" publica el reporte, vibra, cierra el modal y muestra el nuevo marker con su círculo en Perdidos. Si el usuario no tiene mascotas, ofrece cargar una.
+   - **Encontré una mascota** (modal `reportar`): para quien encontró un perro en la calle. Escáner del QR de la chapita (autocompleta nombre, raza, señas y foto), foto desde la galería, nombre (opcional: si no se sabe se publica como "Sin identificar"), raza, descripción, etiquetas y un mini mapa con el punto donde se la encontró. "Publicar como encontrada" publica el reporte como encontrado, vibra y muestra el marker teal en Perdidos.
+9. **Agenda**: calendario mensual hecho a mano con `Date` (semana de lunes a domingo, navegación entre meses, día seleccionado, "Hoy" marcado y puntos de color por categoría en los días con turnos). Al tocar un día vibra suave (`Haptics.selectionAsync`) y lista sus turnos con hora, categoría, mascota, motivo y lugar. "Nuevo turno" abre un formulario (mascota, categoría, fecha, hora, motivo y lugar) que valida que el turno sea a futuro. El lápiz de cada turno abre el mismo formulario con sus datos para editarlo; al guardar, la agenda salta al nuevo día si se cambió la fecha. Al editar, la regla de "a futuro" solo aplica si se cambia la fecha o la hora, así se puede corregir el motivo o el lugar de un turno que ya pasó.
+10. **Mi Perfil**: foto de perfil editable desde la galería, nombre, ubicación y cantidad de mascotas registradas (calculada desde el estado global). "Editar datos personales" abre un formulario (nombre, apellido, ubicación, email, teléfono de emergencia y WhatsApp). Card de contacto de emergencia, familia y cuidadores agrupados por mascota, menú (notificaciones, link de asignación, mis reportes activos con el conteo real, ayuda y guía de paseos) y "Cerrar sesión", que vuelve al login sin dejar historial.
+11. **Asignación de mascotas (dueño / invitado).** Cada persona asignada a una mascota tiene un rol:
+    - **Dueño**: puede asignar la mascota a otras personas. Quien da de alta una mascota queda como dueño.
+    - **Invitado**: tiene la mascota en su cuenta (perfil, carnet, turnos), pero no puede asignarla a nadie.
+
+    En Perfil → Familia y Cuidadores, cada mascota lista a sus personas con su rol (el usuario marcado como "Vos"). Solo si el usuario es dueño aparece "+ Asignar a…", que abre una hoja para elegir el rol y generar un link (`doggy://asignar?token=XXXX`; en Expo Go, la URL de desarrollo equivalente) con un código de 8 caracteres, para compartir con la hoja nativa. El link sirve para una sola persona y vence a los 7 días. Al abrirlo (o al pegar el link o el código en "Tengo un link de asignación") se ve la mascota y el rol ofrecido; "Aceptar" la suma a la cuenta y abre su perfil. Si el link no existe, ya se usó, venció o el usuario ya está asignado, la pantalla lo explica.
+
+    Cualquiera puede **desasignarse** con "Desasignarme de…": la mascota sale de su cuenta (con su carnet y turnos) y las demás personas la siguen teniendo. El único dueño no puede desasignarse, para que la mascota no quede sin nadie que la administre; la app le pide sumar antes a otro dueño. Para probarlo con los datos de ejemplo: en "Tengo un link de asignación" cargar el código **TOBY2026**, que suma a Toby (de otra usuaria) como invitado.
 
 ## Componentes nativos
 
@@ -104,7 +120,7 @@ Tabs
 
 ### 3. Cámara (lector de QR y linterna) — `expo-camera` + `expo-haptics`
 
-- **Dónde:** modal Reportar mascota perdida. Implementado en `src/components/reporte/EscanerQr.tsx`.
+- **Dónde:** modal Encontré una mascota. Implementado en `src/components/reporte/EscanerQr.tsx`.
 - **Qué hace:** monta un `CameraView` con `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}` y `onBarcodeScanned`. Cuando lee un código con formato `DOGGY-XXXX-NOMBRE`, busca la mascota en el estado global y autocompleta el formulario. Tras la primera lectura se bloquean las siguientes (el lector dispara varias veces por segundo mientras el QR está en cuadro) y la cámara se desmonta. Permite prender el flash como linterna (`enableTorch`) para leer chapitas de noche, cambiar a la cámara frontal (`facing`) y leer un QR desde una imagen de la galería con `scanFromURLAsync`. Cada lectura se confirma con `Haptics.notificationAsync` (éxito o error).
 - **Permiso:** cámara, pedido con `useCameraPermissions` recién cuando el usuario toca "Escanear" y declarado con el plugin de `expo-camera` en `app.json` (sin micrófono, porque no se graba audio). Si se niega, se muestra un `PermissionNotice` y queda la alternativa de subir una foto del QR.
 - **Por qué:** quien encuentra un perro suele estar en la calle, apurado y con una mano ocupada. Escanear la chapita identifica a la mascota y trae sus datos en un segundo, sin tipear un código. La cámara solo se enciende a pedido y se apaga al leer para no gastar batería.
@@ -117,10 +133,10 @@ La app ya está separada en capas para sumar el backend sin tocar las pantallas:
 Pantalla → AppContext (estado global) → services → [hoy: datos en memoria | Sprint 2: fetch a la API]
 ```
 
-- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
-- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026).
+- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
+- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA, turnos de octubre de 2026, y Toby, de otra usuaria, con el link de asignación `TOBY2026` para probar el flujo de invitado).
 - `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
-- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar mascota, crear reporte, agregar registro sanitario, agregar turno, actualizar usuario, iniciar y cerrar sesión).
+- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear reporte, agregar y editar registro sanitario, agregar y editar turno, actualizar usuario, generar, ver y aceptar links de asignación, desasignarse, iniciar y cerrar sesión).
 
 ## Componentes reutilizables
 
@@ -130,11 +146,14 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `BackButton`: volver al stack anterior, en tono claro u oscuro.
 - `TabBar`: barra inferior con la píldora de tab activa.
 - `AppHeader`: marca y avatar del usuario con acceso al perfil.
+- `IconButton`: botón circular de un ícono, resaltable (buscar y filtrar en Perdidos).
+- `AvatarPerfil`: avatar clickeable del usuario que lleva a Perfil; lo usan `AppHeader` y `ScreenHeader` para que aparezca en todas las pantallas.
 - `Avatar`: foto circular con respaldo de inicial y huella si no hay imagen.
+- `VisorFoto`: modal a pantalla completa para ver una foto grande y entera, con fondo oscuro y botón de cerrar.
 - `PetCard`: card de mascota del listado.
 - `Fab`: botón flotante mostaza, simple o extendido con texto.
 - `Cargando` / `EstadoVacio`: estados de carga, vacío y error de las listas.
-- `ScreenHeader`: volver, título y subtítulo para pantallas internas.
+- `ScreenHeader`: volver, título, subtítulo y avatar del usuario para pantallas internas.
 - `Chip`: píldora informativa o seleccionable.
 - `FotoEditable`: foto circular con botón de cámara para elegir imagen.
 - `PermissionNotice`: aviso de permiso denegado con acceso a los ajustes.
@@ -143,17 +162,23 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `QrIdentificacion`: card con el QR de la mascota y las acciones de compartir y descargar.
 - `SegmentedControl`: pestañas con subrayado o en píldora (Mapa / Lista).
 - `FormModal`: hoja modal que sube desde abajo para formularios cortos.
-- `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/NuevoRegistroForm`: piezas del carnet sanitario.
+- `mascotas/MascotaForm`: formulario de mascota (foto, nombre, raza, edad y señas) compartido por el alta y la edición.
+- `carnet/RegistroCard`, `carnet/ProximoRefuerzoCard`, `carnet/RegistroForm`: piezas del carnet sanitario. Las cards tienen todas la misma estructura (ícono del tipo, nombre, badge "Aplicada", lápiz para editar y filas fijas de aplicación, profesional y refuerzo) y `RegistroForm` sirve tanto para el alta como para corregir un registro.
+- `perdidos/DetalleReporte`: hoja con el detalle completo de un reporte (usa `FormModal`).
 - `perdidos/MapaReportes`: mapa con markers y método `centrar` por ref (con una versión `.web.tsx` que muestra un aviso, porque react-native-maps no funciona en el navegador).
 - `perdidos/ReporteCard`, `perdidos/ReporteMarker`: card y pin de cada reporte.
 - `reporte/EscanerQr`: escáner de QR con linterna, cámara frontal y lectura desde imagen.
-- `reporte/MapaSelector`: mini mapa con pin arrastrable (con versión `.web.tsx`).
+- `reporte/MapaSelector`: mini mapa con pin arrastrable y, opcional, el círculo del radio de búsqueda (con versión `.web.tsx`).
 - `reporte/EtiquetasInput`: chips de etiquetas con alta y baja.
+- `reporte/SelectorMascota`: fila deslizable de las mascotas del usuario para elegir cuál se perdió.
+- `reporte/ResumenMascota`: card de solo lectura con los datos del perfil que se publican en el reporte.
 - `agenda/Calendario`: calendario mensual con puntos por categoría y leyenda (la lógica de fechas está documentada en `src/utils/calendario.ts`).
-- `agenda/TurnoCard`, `agenda/NuevoTurnoForm`: card y formulario de turnos.
+- `agenda/TurnoCard`, `agenda/TurnoForm`: card de turno (con lápiz para editar) y formulario que sirve para agendar y para editar.
 - `MenuRow`: fila de menú con ícono, badge, flecha o un elemento propio (Switch).
 - `SectionTitle`: título de sección con ícono en círculo y badge.
-- `perfil/ContactoEmergencia`, `perfil/CuidadoresMascota`, `perfil/EditarPerfilForm`: piezas del perfil de usuario.
+- `perfil/ContactoEmergencia`, `perfil/CuidadoresMascota`, `perfil/EditarPerfilForm`: piezas del perfil de usuario. `CuidadoresMascota` muestra el rol de cada persona y, según el rol del usuario, "Asignar" (solo dueños) y "Desasignarme".
+- `perfil/InvitarForm`: elige el rol (Dueño / Invitado), genera el link de asignación y lo comparte.
+- `src/utils/invitaciones.ts`: arma el link a partir del código (`expo-linking`) y saca el código de un link pegado.
 
 ## Estructura
 
@@ -191,4 +216,5 @@ doggy/
   EXPO_PUBLIC_API_URL=http://192.168.0.10:3000
   ```
 
-- **Pendientes que dependen del backend:** login real con token, persistencia de mascotas, reportes y turnos, subida de fotos, edición y baja de turnos, invitación de cuidadores, recordatorios por notificaciones push y descarga del QR como imagen.
+- **Código único de vacuna (SENASA):** cada aplicación del carnet va a llevar el código único de la vacuna, validado contra una API de SENASA (o la fuente oficial que corresponda), para que el carnet sirva como constancia. Queda marcado con un `TODO` en `RegistroSanitario` (`src/types/models.ts`).
+- **Pendientes que dependen del backend:** login real con token, persistencia de mascotas, reportes y turnos, subida de fotos, baja de turnos, links de asignación entre usuarios reales (hoy se prueban con un solo usuario y el código de ejemplo), recordatorios por notificaciones push y descarga del QR como imagen.

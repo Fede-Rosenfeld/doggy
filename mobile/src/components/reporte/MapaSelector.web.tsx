@@ -1,26 +1,29 @@
 /**
  * Selector de ubicación (versión web). react-native-maps no funciona en el
- * navegador, así que se muestra el punto marcado en texto; en el celular se
- * usa MapaSelector.tsx con el pin arrastrable.
+ * navegador, así que se muestra el punto marcado (y el radio, si hay) en
+ * texto; en el celular se usa MapaSelector.tsx con el pin arrastrable.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, sizes, spacing, typography } from '@/theme';
+import { textoRadio } from '@/utils/mapa';
 import type { MapaSelectorProps } from './MapaSelector.types';
 
 /**
  * Reemplazo del mini mapa para web.
  * @param props.coords punto marcado
+ * @param props.radioMetros radio de búsqueda (opcional)
  * @returns un recuadro con las coordenadas
  */
-export function MapaSelector({ coords }: MapaSelectorProps) {
+export function MapaSelector({ coords, radioMetros }: MapaSelectorProps) {
   return (
     <View style={styles.contenedor}>
       <MaterialIcons name="location-on" size={sizes.iconLg} color={colors.mustard} />
       <Text style={styles.texto}>
         {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
       </Text>
+      {!!radioMetros && <Text style={styles.texto}>Radio de búsqueda: {textoRadio(radioMetros)}</Text>}
       <Text style={styles.ayuda}>En la app del celular podés mover el pin en el mapa.</Text>
     </View>
   );

@@ -1,5 +1,7 @@
 /**
- * Card destacada en mostaza con el próximo refuerzo pendiente del carnet.
+ * Card destacada en mostaza con el próximo refuerzo del carnet: el nombre de
+ * la aplicación y la fecha de su `proximaDosis`. Como ese registro no se
+ * repite en el historial, la card tiene su propio botón de editar.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
@@ -7,20 +9,26 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { RegistroSanitario } from '@/types/models';
 import { formatearFecha } from '@/utils/fechas';
+import { IconButton } from '../IconButton';
 
 type Props = {
   registro: RegistroSanitario;
   /** Título de la card; cambia según el tipo ("Próximo refuerzo", "Próxima dosis"...). */
   titulo?: string;
+  /** Abre el formulario para corregir la aplicación. */
+  onEditar: (registro: RegistroSanitario) => void;
 };
 
 /**
  * Card del próximo refuerzo.
- * @param props.registro registro pendiente a destacar
+ * @param props.registro aplicación con la próxima dosis a destacar
  * @param props.titulo título de la card
- * @returns la card
+ * @param props.onEditar se llama al tocar el lápiz
+ * @returns la card, o nada si el registro no tiene próxima dosis
  */
-export function ProximoRefuerzoCard({ registro, titulo = 'Próximo refuerzo' }: Props) {
+export function ProximoRefuerzoCard({ registro, titulo = 'Próximo refuerzo', onEditar }: Props) {
+  if (!registro.proximaDosis) return null;
+
   return (
     <View style={styles.card} accessibilityRole="summary">
       <View style={styles.icono}>
@@ -31,9 +39,14 @@ export function ProximoRefuerzoCard({ registro, titulo = 'Próximo refuerzo' }: 
         <Text style={styles.nombre}>{registro.nombre}</Text>
         <View style={styles.fecha}>
           <MaterialIcons name="calendar-today" size={sizes.iconSm} color={colors.onTertiaryFixedVariant} />
-          <Text style={styles.fechaTexto}>{formatearFecha(registro.fecha)}</Text>
+          <Text style={styles.fechaTexto}>{formatearFecha(registro.proximaDosis)}</Text>
         </View>
       </View>
+      <IconButton
+        icon="edit"
+        label={`Editar ${registro.nombre}`}
+        onPress={() => onEditar(registro)}
+      />
     </View>
   );
 }

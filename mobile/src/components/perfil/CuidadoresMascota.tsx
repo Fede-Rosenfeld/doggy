@@ -1,23 +1,40 @@
 /**
- * Card de "Familia y Cuidadores" de una mascota: la mascota con su raza, la
- * lista de personas o instituciones asignadas y el botón para sumar otra.
+ * Card de "Familia y Cuidadores" de una mascota: la mascota con su raza y
+ * las personas asignadas con su rol (Dueño / Invitado); el usuario logueado
+ * aparece marcado como "Vos".
+ *
+ * Solo si el usuario es dueño se muestra "Asignar", que genera un link de
+ * asignación. Cualquiera puede desasignarse con "Desasignarme".
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
-import type { Cuidador, Mascota, TipoCuidador } from '@/types/models';
+import type { Cuidador, Mascota, RolMascota, TipoCuidador, Usuario } from '@/types/models';
+import { rolMascota } from '@/utils/etiquetas';
 import { Avatar } from '../Avatar';
 
 type Props = {
   mascota: Mascota;
   cuidadores: Cuidador[];
+  /** Usuario logueado: su fila muestra sus datos actuales y la marca "Vos". */
+  usuario: Usuario;
+  /** Abre el formulario para generar un link de asignación. */
+  onAsignar: (mascota: Mascota) => void;
+  /** Abre la confirmación para desasignarse. */
+  onDesasignarme: (mascota: Mascota) => void;
+};
+
+/** Colores del badge de cada rol. */
+const ROLES: Record<RolMascota, { fondo: string; texto: string }> = {
+  dueno: { fondo: colors.primaryFixed, texto: colors.onPrimaryFixedVariant },
+  invitado: { fondo: colors.surfaceContainerHigh, texto: colors.onSurfaceVariant },
 };
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
-/** Ícono y colores del rol según el tipo de cuidador. */
+/** Ícono y colores según el tipo de vínculo, para quien no tiene foto. */
 const TIPOS: Record<TipoCuidador, { icon: IconName; fondo: string; texto: string }> = {
   familia: { icon: 'family-restroom', fondo: colors.primaryFixed, texto: colors.onPrimaryFixedVariant },
   clinica: { icon: 'local-hospital', fondo: colors.tertiaryFixed, texto: colors.onTertiaryFixed },
@@ -28,29 +45,31 @@ const TIPOS: Record<TipoCuidador, { icon: IconName; fondo: string; texto: string
 const AVATAR = 36;
 
 /**
- * Texto con la cantidad de cuidadores.
- * @param cantidad cuántos hay
- * @returns "Sin cuidadores asignados", "1 cuidador asignado" o "N cuidadores asignados"
+ * Texto con la cantidad de personas asignadas.
+ * @param cantidad cuántas hay
+ * @returns "1 persona asignada" o "N personas asignadas"
  */
 function textoCantidad(cantidad: number): string {
-  if (cantidad === 0) return 'Sin cuidadores asignados';
-  return cantidad === 1 ? '1 cuidador asignado' : `${cantidad} cuidadores asignados`;
+  return cantidad === 1 ? '1 persona asignada' : `${cantidad} personas asignadas`;
 }
 
 /**
  * Card de cuidadores de una mascota.
- * @param props mascota y sus cuidadores
+ * @param props ver `Props`
  * @returns la card
  */
-export function CuidadoresMascota({ mascota, cuidadores }: Props) {
-  /** Gestionar permisos necesita el backend: por ahora avisa. */
+export function CuidadoresMascota({ mascota, cuidadores, usuario, onAsignar, onDesasignarme }: Props) {
+  const miRol = cuidadores.find((c) => c.usuarioId === usuario.id)?.rol;
+  // El usuario logueado va primero; después los dueños y al final los invitados.
+  const ordenados = [...cuidadores].sort((a, b) => {
+    if (a.usuarioId === usuario.id) return -1;
+    if (b.usuarioId === usuario.id) return 1;
+    return a.rol === b.rol ? 0 : a.rol === 'dueno' ? -1 : 1;
+  });
+
+  /** Gestionar permisos finos necesita el backend: por ahora avisa. */
   const handlePermisos = () => {
     Alert.alert('Permisos', `Disponible próximamente. Vas a poder definir qué ve cada cuidador de ${mascota.nombre}.`);
-  };
-
-  /** Asignar un cuidador necesita invitar a otro usuario: por ahora avisa. */
-  const handleAsignar = () => {
-    Alert.alert('Asignar cuidador', `Disponible próximamente. Vas a poder invitar a alguien a cuidar a ${mascota.nombre}.`);
   };
 
   return (
@@ -78,12 +97,17 @@ export function CuidadoresMascota({ mascota, cuidadores }: Props) {
         </Pressable>
       </View>
 
-      {cuidadores.map((cuidador) => {
+      {ordenados.map((cuidador) => {
         const tipo = TIPOS[cuidador.tipo];
+        const rol = ROLES[cuidador.rol];
+        const esVos = cuidador.usuarioId === usuario.id;
+        // La fila propia usa los datos actuales del usuario (pudo cambiar su foto).
+        const nombre = esVos ? `${usuario.nombre} ${usuario.apellido}` : cuidador.nombre;
+        const foto = esVos ? usuario.foto : cuidador.foto;
         return (
-          <View key={cuidador.id} style={styles.cuidador}>
-            {cuidador.foto ? (
-              <Avatar foto={cuidador.foto} nombre={cuidador.nombre} size={AVATAR} borderColor={colors.white} />
+          <View key={cuidador.id} style={[styles.cuidador, esVos && styles.cuidadorVos]}>
+            {foto ? (
+              <Avatar foto={foto} nombre={nombre} size={AVATAR} borderColor={colors.white} />
             ) : (
               <View style={[styles.iconoCuidador, { backgroundColor: tipo.fondo }]}>
                 <MaterialIcons name={tipo.icon} size={sizes.iconSm} color={tipo.texto} />
@@ -91,27 +115,43 @@ export function CuidadoresMascota({ mascota, cuidadores }: Props) {
             )}
             <View style={styles.cuidadorTexto}>
               <Text style={styles.cuidadorNombre} numberOfLines={1}>
-                {cuidador.nombre}
+                {nombre}
+                {esVos && <Text style={styles.vos}> · Vos</Text>}
               </Text>
               <Text style={styles.cuidadorDetalle} numberOfLines={1}>
                 {cuidador.detalle}
               </Text>
             </View>
-            <View style={[styles.rol, { backgroundColor: tipo.fondo }]}>
-              <Text style={[styles.rolTexto, { color: tipo.texto }]}>{cuidador.rol}</Text>
+            <View style={[styles.rol, { backgroundColor: rol.fondo }]}>
+              <Text style={[styles.rolTexto, { color: rol.texto }]}>{rolMascota(cuidador.rol).label}</Text>
             </View>
           </View>
         );
       })}
 
-      <Pressable
-        onPress={handleAsignar}
-        accessibilityRole="button"
-        style={({ pressed }) => [styles.asignar, pressed && styles.asignarPressed]}
-      >
-        <MaterialIcons name="person-add" size={sizes.iconSm} color={colors.primary} />
-        <Text style={styles.asignarTexto}>+ Asignar a {mascota.nombre}</Text>
-      </Pressable>
+      {/* Solo un dueño puede asignar a otras personas. */}
+      {miRol === 'dueno' && (
+        <Pressable
+          onPress={() => onAsignar(mascota)}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.asignar, pressed && styles.asignarPressed]}
+        >
+          <MaterialIcons name="person-add" size={sizes.iconSm} color={colors.primary} />
+          <Text style={styles.asignarTexto}>+ Asignar a {mascota.nombre}</Text>
+        </Pressable>
+      )}
+
+      {miRol && (
+        <Pressable
+          onPress={() => onDesasignarme(mascota)}
+          accessibilityRole="button"
+          hitSlop={spacing.xs}
+          style={({ pressed }) => [styles.desasignar, pressed && styles.desasignarPressed]}
+        >
+          <MaterialIcons name="person-remove" size={sizes.iconSm} color={colors.error} />
+          <Text style={styles.desasignarTexto}>Desasignarme de {mascota.nombre}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -228,5 +268,26 @@ const styles = StyleSheet.create({
   asignarTexto: {
     ...typography.labelSm,
     color: colors.primary,
+  },
+  cuidadorVos: {
+    borderWidth: sizes.borderWidth,
+    borderColor: colors.primaryFixed,
+  },
+  vos: {
+    color: colors.primary,
+  },
+  desasignar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs + 2,
+    paddingVertical: spacing.xs,
+  },
+  desasignarPressed: {
+    opacity: 0.6,
+  },
+  desasignarTexto: {
+    ...typography.labelSm,
+    color: colors.error,
   },
 });

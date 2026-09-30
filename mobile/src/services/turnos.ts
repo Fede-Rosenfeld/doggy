@@ -27,3 +27,17 @@ export async function crearTurno(datos: NuevoTurno): Promise<Turno> {
   turnos = [...turnos, nuevo];
   return simularRespuesta(nuevo);
 }
+
+/**
+ * Reemplaza los datos de un turno (cambio de fecha, hora, lugar, etc.).
+ * Endpoint futuro: PUT /api/turnos/:id  { ...datos } -> 200 Turno
+ * @param id id del turno
+ * @param datos datos completos del turno
+ * @returns el turno actualizado
+ */
+export async function actualizarTurno(id: number, datos: NuevoTurno): Promise<Turno> {
+  if (!turnos.some((t) => t.id === id)) throw new Error('El turno no existe.');
+  const actualizado: Turno = { ...datos, id };
+  turnos = turnos.map((t) => (t.id === id ? actualizado : t));
+  return simularRespuesta(actualizado);
+}

@@ -2,9 +2,9 @@
  * Perfil de la mascota.
  *
  * Toma la mascota del contexto según el `id` de la ruta y muestra su foto,
- * raza y edad, el QR de identificación para la placa del collar, las señas
+ * raza y edad, el botón para editar sus datos, el QR de identificación para la placa del collar, las señas
  * particulares, un resumen del carnet sanitario y de los turnos, y el acceso
- * para reportarla como perdida.
+ * para reportarla como perdida ("Se perdió mi mascota", con sus datos ya cargados).
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -48,6 +48,12 @@ export default function PerfilMascotaScreen() {
   );
 
   // --- Handlers ---
+  /** Abre el formulario para editar los datos de la mascota. */
+  const editarMascota = () => {
+    if (!mascota) return;
+    router.push({ pathname: '/mascotas/[id]/editar', params: { id: String(mascota.id) } });
+  };
+
   /** Abre el carnet sanitario completo. */
   const verCarnet = () => {
     if (!mascota) return;
@@ -57,10 +63,10 @@ export default function PerfilMascotaScreen() {
   /** Cambia a la tab Agenda. */
   const irAgenda = () => router.navigate('/agenda');
 
-  /** Abre el modal de reporte con esta mascota precargada. */
+  /** Abre "Se perdió mi mascota" con esta mascota ya elegida. */
   const reportarPerdida = () => {
     if (!mascota) return;
-    router.push({ pathname: '/reportar', params: { mascotaId: String(mascota.id) } });
+    router.push({ pathname: '/mi-mascota-perdida', params: { mascotaId: String(mascota.id) } });
   };
 
   // --- Render ---
@@ -101,6 +107,15 @@ export default function PerfilMascotaScreen() {
             <Chip label={mascota.raza} size="md" />
             <Chip label={textoEdad(mascota.edad)} size="md" />
           </View>
+          <PrimaryButton
+            title="Editar mascota"
+            icon="edit"
+            iconLeft
+            variant="outline"
+            size="sm"
+            onPress={editarMascota}
+            style={styles.editar}
+          />
         </View>
 
         <QrIdentificacion mascota={mascota} />
@@ -206,6 +221,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: spacing.sm,
+  },
+  editar: {
+    marginTop: spacing.stackSm,
+    paddingHorizontal: spacing.lg,
   },
   senas: {
     flexDirection: 'row',

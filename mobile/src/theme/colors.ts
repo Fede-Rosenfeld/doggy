@@ -73,6 +73,8 @@ const brand = {
   /** Velos sobre la cámara, para que los controles se lean sobre cualquier imagen. */
   cameraOverlay: 'rgba(0, 0, 0, 0.45)',
   cameraControl: 'rgba(0, 0, 0, 0.55)',
+  /** Fondo casi negro del visor de fotos a pantalla completa. */
+  visorFondo: 'rgba(0, 0, 0, 0.92)',
   whiteTranslucent: 'rgba(255, 255, 255, 0.92)',
   /** Fondo suave del recuadro de ayuda del escáner. */
   primary5: 'rgba(0, 96, 84, 0.05)',
@@ -83,6 +85,9 @@ const brand = {
   mustard: '#E8A33D',
   /** Mostaza presionada. */
   mustardPressed: '#D69536',
+  /** Relleno y borde del círculo de búsqueda de una mascota perdida en el mapa. */
+  mustard20: 'rgba(232, 163, 61, 0.20)',
+  mustard80: 'rgba(232, 163, 61, 0.80)',
   /** Fondo global. */
   cream: '#FFF8F0',
   white: '#FFFFFF',

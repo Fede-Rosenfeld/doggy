@@ -2,17 +2,20 @@
  * Carnet Sanitario de una mascota.
  *
  * Muestra el resumen de la mascota, pestañas para filtrar por tipo de
- * registro (vacunas, desparasitación u otros), el próximo refuerzo pendiente
- * destacado y el historial. El FAB abre un formulario para sumar un registro.
+ * registro (vacunas, desparasitación u otros), el próximo refuerzo destacado
+ * (sale de la `proximaDosis` de las aplicaciones) y el historial, donde todos
+ * los registros son aplicaciones hechas. El FAB abre un formulario para
+ * sumar un registro, y el lápiz de cada card abre el mismo formulario con
+ * los datos cargados para corregirlo.
  */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
-import { NuevoRegistroForm } from '@/components/carnet/NuevoRegistroForm';
 import { ProximoRefuerzoCard } from '@/components/carnet/ProximoRefuerzoCard';
 import { RegistroCard } from '@/components/carnet/RegistroCard';
+import { RegistroForm } from '@/components/carnet/RegistroForm';
 import { Cargando, EstadoVacio } from '@/components/EstadoVista';
 import { Fab } from '@/components/Fab';
 import { FormModal } from '@/components/FormModal';
@@ -39,6 +42,8 @@ export default function CarnetSanitarioScreen() {
   // --- Estado ---
   const [tipo, setTipo] = useState<TipoRegistro>('vacuna');
   const [formVisible, setFormVisible] = useState(false);
+  /** Registro que se está corrigiendo; null si el formulario es de alta. */
+  const [editando, setEditando] = useState<RegistroSanitario | null>(null);
 
   // --- Datos derivados ---
   const mascota = useMemo(() => buscarMascota(mascotas, id), [mascotas, id]);
@@ -55,16 +60,30 @@ export default function CarnetSanitarioScreen() {
   const textos = TIPOS_REGISTRO.find((t) => t.valor === tipo) ?? TIPOS_REGISTRO[0];
 
   // --- Handlers ---
-  /** Cierra el formulario y muestra la pestaña del registro recién creado. */
+  /** Cierra el formulario y muestra la pestaña del registro guardado (pudo cambiar de tipo). */
   const handleGuardado = useCallback((registro: RegistroSanitario) => {
     setFormVisible(false);
+    setEditando(null);
     setTipo(registro.tipo);
   }, []);
 
   /** Abre el formulario de nuevo registro. */
-  const abrirFormulario = () => setFormVisible(true);
+  const abrirFormulario = () => {
+    setEditando(null);
+    setFormVisible(true);
+  };
+
+  /** Abre el formulario con los datos del registro para corregirlo. */
+  const abrirEdicion = useCallback((registro: RegistroSanitario) => {
+    setEditando(registro);
+    setFormVisible(true);
+  }, []);
+
   /** Cierra el formulario sin guardar. */
-  const cerrarFormulario = () => setFormVisible(false);
+  const cerrarFormulario = () => {
+    setFormVisible(false);
+    setEditando(null);
+  };
 
   // --- Render ---
   if (!mascota) {
@@ -98,7 +117,9 @@ export default function CarnetSanitarioScreen() {
 
       <SegmentedControl opciones={PESTANAS} valor={tipo} onChange={setTipo} />
 
-      {proximo && <ProximoRefuerzoCard registro={proximo} titulo={textos.proximo} />}
+      {proximo && (
+        <ProximoRefuerzoCard registro={proximo} titulo={textos.proximo} onEditar={abrirEdicion} />
+      )}
 
       {historial.length > 0 && <Text style={styles.seccion}>{textos.historial}</Text>}
     </View>
@@ -114,7 +135,7 @@ export default function CarnetSanitarioScreen() {
       <FlatList
         data={historial}
         keyExtractor={(registro) => String(registro.id)}
-        renderItem={({ item }) => <RegistroCard registro={item} />}
+        renderItem={({ item }) => <RegistroCard registro={item} onEditar={abrirEdicion} />}
         ListHeaderComponent={encabezado}
         ListEmptyComponent={
           proximo ? null : (
@@ -137,10 +158,17 @@ export default function CarnetSanitarioScreen() {
         accessibilityLabel="Agregar registro al carnet"
       />
 
-      <FormModal visible={formVisible} titulo="Nuevo registro" onClose={cerrarFormulario}>
-        <NuevoRegistroForm
+      <FormModal
+        visible={formVisible}
+        titulo={editando ? 'Editar registro' : 'Nuevo registro'}
+        onClose={cerrarFormulario}
+      >
+        {/* key: al pasar de un registro a otro (o al alta) el formulario arranca de cero. */}
+        <RegistroForm
+          key={editando?.id ?? 'nuevo'}
           mascotaId={mascota.id}
           tipoInicial={tipo}
+          registro={editando ?? undefined}
           onGuardado={handleGuardado}
         />
       </FormModal>

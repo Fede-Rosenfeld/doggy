@@ -27,3 +27,21 @@ export async function crearRegistro(datos: NuevoRegistro): Promise<RegistroSanit
   registros = [...registros, nuevo];
   return simularRespuesta(nuevo);
 }
+
+/**
+ * Reemplaza los datos de un registro (para corregir uno mal cargado).
+ * Es un reemplazo completo: si `proximaDosis` no viene, el registro queda sin refuerzo.
+ * Endpoint futuro: PUT /api/registros/:id  { ...datos } -> 200 RegistroSanitario
+ * @param id id del registro
+ * @param datos datos completos del registro
+ * @returns el registro actualizado
+ */
+export async function actualizarRegistro(
+  id: number,
+  datos: NuevoRegistro,
+): Promise<RegistroSanitario> {
+  if (!registros.some((r) => r.id === id)) throw new Error('El registro no existe.');
+  const actualizado: RegistroSanitario = { ...datos, id };
+  registros = registros.map((r) => (r.id === id ? actualizado : r));
+  return simularRespuesta(actualizado);
+}

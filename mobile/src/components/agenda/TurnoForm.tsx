@@ -1,19 +1,23 @@
 /**
- * Formulario para agendar un turno: mascota, categoría, fecha, hora, motivo
- * y lugar. Se muestra dentro de un FormModal y guarda el turno en el contexto.
+ * Formulario de un turno: mascota, categoría, fecha, hora, motivo y lugar.
+ * Se muestra dentro de un FormModal y guarda el turno en el contexto.
+ *
+ * Sirve para agendar y para editar: si recibe `turno`, arranca con sus datos
+ * y al guardar lo reemplaza; si no, crea uno nuevo en el día elegido.
  */
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
 import { colors, spacing, typography } from '@/theme';
-import type { CategoriaTurno, Turno } from '@/types/models';
+import type { CategoriaTurno, NuevoTurno, Turno } from '@/types/models';
 import { CATEGORIAS_TURNO } from '@/utils/etiquetas';
 import {
   enmascararFecha,
   enmascararHora,
   fechaATexto,
   fechaIngresadaAIso,
+  horaATexto,
   parsearFecha,
   parsearHora,
 } from '@/utils/fechas';
@@ -23,8 +27,11 @@ import { Input } from '../Input';
 import { PrimaryButton } from '../PrimaryButton';
 
 type Props = {
-  /** Día preseleccionado (el elegido en el calendario). */
+  /** Día preseleccionado en el alta (el elegido en el calendario). */
   diaInicial: Date;
+  /** Turno a editar. Si no viene, el formulario agenda uno nuevo. */
+  turno?: Turno;
+  /** Se llama con el turno ya guardado. */
   onGuardado: (turno: Turno) => void;
 };
 
@@ -46,20 +53,26 @@ function combinarFechaHora(fecha: string, hora: string): Date | null {
 }
 
 /**
- * Formulario de nuevo turno.
- * @param props día inicial y callback con el turno guardado
+ * Formulario de alta o edición de turno.
+ * @param props día inicial, turno a editar (opcional) y callback con el turno guardado
  * @returns el formulario
  */
-export function NuevoTurnoForm({ diaInicial, onGuardado }: Props) {
-  const { mascotas, agregarTurno } = useApp();
+export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
+  const { mascotas, agregarTurno, editarTurno } = useApp();
+  /** Fecha y hora originales del turno que se edita, en el formato de los campos. */
+  const original = turno
+    ? { fecha: fechaATexto(parsearFecha(turno.fecha)), hora: horaATexto(parsearFecha(turno.fecha)) }
+    : null;
 
   // --- Estado ---
-  const [mascotaId, setMascotaId] = useState<number | null>(mascotas[0]?.id ?? null);
-  const [categoria, setCategoria] = useState<CategoriaTurno>('veterinario');
-  const [fecha, setFecha] = useState(fechaATexto(diaInicial));
-  const [hora, setHora] = useState('');
-  const [motivo, setMotivo] = useState('');
-  const [lugar, setLugar] = useState('');
+  const [mascotaId, setMascotaId] = useState<number | null>(
+    turno?.mascotaId ?? mascotas[0]?.id ?? null,
+  );
+  const [categoria, setCategoria] = useState<CategoriaTurno>(turno?.categoria ?? 'veterinario');
+  const [fecha, setFecha] = useState(original?.fecha ?? fechaATexto(diaInicial));
+  const [hora, setHora] = useState(original?.hora ?? '');
+  const [motivo, setMotivo] = useState(turno?.motivo ?? '');
+  const [lugar, setLugar] = useState(turno?.lugar ?? '');
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const horaRef = useRef<TextInput>(null);
@@ -75,7 +88,11 @@ export function NuevoTurnoForm({ diaInicial, onGuardado }: Props) {
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   };
 
-  /** Valida el formulario; además del formato, el turno tiene que ser a futuro. */
+  /**
+   * Valida el formulario; además del formato, el turno tiene que ser a futuro.
+   * Al editar, esa regla solo aplica si se cambió la fecha o la hora: así se
+   * puede corregir el motivo o el lugar de un turno que ya pasó.
+   */
   const validar = (): Errores => {
     const nuevos: Errores = {
       mascota: mascotaId === null ? 'Elegí una mascota.' : undefined,
@@ -85,29 +102,32 @@ export function NuevoTurnoForm({ diaInicial, onGuardado }: Props) {
       lugar: validarRequerido(lugar, 'Indicá dónde es el turno.'),
     };
     const cuando = combinarFechaHora(fecha, hora);
-    if (!nuevos.fecha && !nuevos.hora && cuando && cuando < new Date()) {
+    const cambioHorario = !original || original.fecha !== fecha || original.hora !== hora;
+    if (!nuevos.fecha && !nuevos.hora && cuando && cambioHorario && cuando < new Date()) {
       nuevos.hora = 'Ese horario ya pasó.';
     }
     return nuevos;
   };
 
-  /** Valida y guarda el turno. */
+  /** Valida y guarda el turno (nuevo o editado). */
   const handleGuardar = async () => {
     const nuevos = validar();
     setErrores(nuevos);
     const cuando = combinarFechaHora(fecha, hora);
     if (Object.values(nuevos).some(Boolean) || !cuando || mascotaId === null) return;
 
+    const datos: NuevoTurno = {
+      mascotaId,
+      categoria,
+      fecha: cuando.toISOString(),
+      motivo: motivo.trim(),
+      lugar: lugar.trim(),
+    };
+
     setGuardando(true);
     try {
-      const turno = await agregarTurno({
-        mascotaId,
-        categoria,
-        fecha: cuando.toISOString(),
-        motivo: motivo.trim(),
-        lugar: lugar.trim(),
-      });
-      onGuardado(turno);
+      const guardado = turno ? await editarTurno(turno.id, datos) : await agregarTurno(datos);
+      onGuardado(guardado);
     } catch {
       Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
     } finally {
@@ -223,8 +243,8 @@ export function NuevoTurnoForm({ diaInicial, onGuardado }: Props) {
       />
 
       <PrimaryButton
-        title="Agendar turno"
-        icon="event-available"
+        title={turno ? 'Guardar cambios' : 'Agendar turno'}
+        icon={turno ? 'check' : 'event-available'}
         onPress={handleGuardar}
         loading={guardando}
         style={styles.boton}
