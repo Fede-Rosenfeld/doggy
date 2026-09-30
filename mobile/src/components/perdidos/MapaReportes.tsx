@@ -4,11 +4,14 @@
  * Usa el mapa del sistema (Apple Maps en iOS, Google Maps en Android, ambos
  * disponibles en Expo Go). Arranca mostrando CABA y expone `centrar` por ref
  * para que la pantalla mueva la cámara al tocar una card o "mi ubicación".
+ * Si el reporte seleccionado tiene radio de búsqueda (mascota propia
+ * perdida), se dibuja el círculo de la zona donde se la vio por última vez.
  */
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { StyleSheet } from 'react-native';
-import MapView from 'react-native-maps';
+import MapView, { Circle } from 'react-native-maps';
 
+import { colors } from '@/theme';
 import { CENTRO_CABA, DELTA_BARRIO, DELTA_CIUDAD, regionAlrededor } from '@/utils/mapa';
 import type { MapaReportesHandle, MapaReportesProps } from './MapaReportes.types';
 import { ReporteMarker } from './ReporteMarker';
@@ -26,6 +29,8 @@ const ANIMACION_MS = 500;
 export const MapaReportes = forwardRef<MapaReportesHandle, MapaReportesProps>(
   function MapaReportes({ reportes, onSeleccionar, seleccionadoId, mostrarUsuario, style }, ref) {
     const mapaRef = useRef<MapView>(null);
+    // Solo el seleccionado muestra su círculo, para no tapar el mapa con zonas.
+    const seleccionado = reportes.find((r) => r.id === seleccionadoId);
 
     useImperativeHandle(ref, () => ({
       centrar: (coords, delta = DELTA_BARRIO) => {
@@ -44,6 +49,15 @@ export const MapaReportes = forwardRef<MapaReportesHandle, MapaReportesProps>(
         toolbarEnabled={false}
         showsPointsOfInterests={false}
       >
+        {seleccionado?.radioMetros ? (
+          <Circle
+            center={{ latitude: seleccionado.lat, longitude: seleccionado.lng }}
+            radius={seleccionado.radioMetros}
+            fillColor={colors.mustard20}
+            strokeColor={colors.mustard80}
+            strokeWidth={2}
+          />
+        ) : null}
         {reportes.map((reporte) => (
           <ReporteMarker
             key={reporte.id}

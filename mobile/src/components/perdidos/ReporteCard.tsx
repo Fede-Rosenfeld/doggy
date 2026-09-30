@@ -1,6 +1,7 @@
 /**
  * Card de un reporte de mascota perdida o encontrada: foto con el estado
- * encima, nombre, hace cuánto, zona y chips (raza y etiquetas).
+ * encima, nombre, hace cuánto, zona (con el radio de búsqueda si lo reportó
+ * su tutor) y chips (raza y etiquetas).
  * Se usa en el carrusel debajo del mapa y en el modo lista.
  */
 import { MaterialIcons } from '@expo/vector-icons';
@@ -10,6 +11,7 @@ import { fuenteFoto } from '@/data/fotos';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { ReportePerdida } from '@/types/models';
 import { tiempoTranscurrido } from '@/utils/fechas';
+import { textoRadio } from '@/utils/mapa';
 
 type Props = {
   reporte: ReportePerdida;
@@ -70,6 +72,7 @@ export function ReporteCard({ reporte, onPress, seleccionado = false, style }: P
           <MaterialIcons name="location-on" size={16} color={colors.onSurfaceVariant} />
           <Text style={styles.zonaTexto} numberOfLines={1}>
             {reporte.zona}
+            {reporte.radioMetros ? ` · radio ${textoRadio(reporte.radioMetros)}` : ''}
           </Text>
         </View>
         <View style={styles.chips}>

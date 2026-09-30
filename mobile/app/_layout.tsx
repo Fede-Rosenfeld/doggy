@@ -4,8 +4,8 @@
  * Carga las fuentes de la marca (Quicksand y Plus Jakarta Sans) y mantiene
  * la splash visible hasta que terminan de cargar, para que ninguna pantalla
  * se dibuje con la tipografía del sistema. Define el Stack raíz con los
- * grupos de autenticación y tabs, y el modal de reporte, todo dentro del
- * provider del estado global.
+ * grupos de autenticación y tabs, y los dos modales de reporte (mascota
+ * encontrada y mascota propia perdida), todo dentro del provider del estado global.
  */
 import { Quicksand_600SemiBold } from '@expo-google-fonts/quicksand/600SemiBold';
 import { Quicksand_700Bold } from '@expo-google-fonts/quicksand/700Bold';
@@ -60,8 +60,9 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        {/* El reporte se abre desde abajo, por encima de las tabs. */}
+        {/* Los reportes se abren desde abajo, por encima de las tabs. */}
         <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="mi-mascota-perdida" options={{ presentation: 'modal' }} />
       </Stack>
     </AppProvider>
   );

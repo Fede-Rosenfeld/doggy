@@ -92,6 +92,13 @@ export type ReportePerdida = {
   zona: string;
   /** Momento en que se perdió o se encontró. */
   fecha: string;
+  /**
+   * Radio de búsqueda en metros alrededor de `lat`/`lng`: la zona donde el
+   * tutor la vio por última vez. Solo lo tienen los reportes de mascotas propias.
+   */
+  radioMetros?: number;
+  /** Datos extra del tutor: ropa que tenía puesta, arnés, cómo reacciona, etc. */
+  infoAdicional?: string;
 };
 
 export type TipoCuidador = 'familia' | 'clinica' | 'paseador';

@@ -8,4 +8,9 @@ export type MapaSelectorProps = {
   coords: Coordenadas;
   /** Se llama cuando el usuario arrastra el pin o toca otro lugar del mapa. */
   onChange: (coords: Coordenadas) => void;
+  /**
+   * Si viene, dibuja un círculo de ese radio (en metros) alrededor del pin y
+   * ajusta el zoom para que entre completo. Se usa en "Se perdió mi mascota".
+   */
+  radioMetros?: number;
 };

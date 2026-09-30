@@ -1,17 +1,19 @@
 /**
- * Reportar Mascota Perdida (modal).
+ * Encontré una mascota (modal).
  *
- * Junta los tres componentes nativos de la app:
- * - cámara: escanear el QR de la chapita para autocompletar los datos,
- * - fototeca: elegir la foto de la mascota,
- * - GPS: precargar el punto de extravío en el mini mapa.
- * Si se abre desde el perfil de una mascota llega su id por params y el
- * formulario ya viene completo. Al confirmar se crea el reporte, vibra, se
- * cierra el modal y se muestra el nuevo marker en Perdidos.
+ * Reporte de alguien que encontró un perro en la calle (el de una mascota
+ * propia es `mi-mascota-perdida.tsx`). Junta los tres componentes nativos:
+ * - cámara: escanear el QR de la chapita para identificar a la mascota y
+ *   autocompletar sus datos,
+ * - fototeca: sacarle o elegir una foto,
+ * - GPS: precargar en el mini mapa el punto donde se la encontró.
+ * El nombre es opcional porque quien la encuentra muchas veces no lo sabe.
+ * Al confirmar se crea el reporte "encontrado", vibra, se cierra el modal y
+ * se muestra el nuevo marker en Perdidos.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -40,20 +42,21 @@ import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { Mascota } from '@/types/models';
 import { CODIGO_MASCOTA_REGEX } from '@/utils/codigos';
 import { CENTRO_CABA } from '@/utils/mapa';
-import { buscarMascota, buscarMascotaPorCodigo } from '@/utils/selectores';
+import { buscarMascotaPorCodigo } from '@/utils/selectores';
 import { validarRequerido } from '@/utils/validaciones';
 
 type Errores = {
-  nombre?: string;
   descripcion?: string;
 };
 
+/** Nombre que se publica si quien la encontró no lo sabe. */
+const SIN_NOMBRE = 'Sin identificar';
+
 /**
- * Pantalla del reporte.
- * @returns el formulario de reporte de mascota perdida
+ * Pantalla del reporte de mascota encontrada.
+ * @returns el formulario de reporte
  */
 export default function ReportarScreen() {
-  const { mascotaId: mascotaIdParam } = useLocalSearchParams<{ mascotaId?: string }>();
   const { mascotas, crearReporte } = useApp();
   const gps = useUbicacion({ automatico: true });
   const fototeca = useFototeca();
@@ -73,12 +76,11 @@ export default function ReportarScreen() {
   const [enviando, setEnviando] = useState(false);
   // Si el usuario movió el pin, la posición del GPS ya no lo pisa.
   const pinAjustado = useRef(false);
-  const precargado = useRef(false);
 
   // --- Precarga ---
   /**
-   * Completa el formulario con los datos de una mascota registrada.
-   * @param mascota mascota a reportar
+   * Completa el formulario con los datos de la mascota identificada por el QR.
+   * @param mascota mascota registrada en la app
    */
   const precargar = useCallback((mascota: Mascota) => {
     setMascotaId(mascota.id);
@@ -89,17 +91,7 @@ export default function ReportarScreen() {
     setErrores({});
   }, []);
 
-  // Mascota que llega por params desde su perfil (una sola vez).
-  useEffect(() => {
-    if (precargado.current || !mascotaIdParam) return;
-    const mascota = buscarMascota(mascotas, mascotaIdParam);
-    if (mascota) {
-      precargado.current = true;
-      precargar(mascota);
-    }
-  }, [mascotaIdParam, mascotas, precargar]);
-
-  // Cuando llega la posición del GPS, se usa como punto de extravío.
+  // Cuando llega la posición del GPS, se usa como el punto donde se la encontró.
   useEffect(() => {
     if (gps.ubicacion && !pinAjustado.current) setCoords(gps.ubicacion);
   }, [gps.ubicacion]);
@@ -136,7 +128,7 @@ export default function ReportarScreen() {
   };
 
   /**
-   * Mueve el punto de extravío a donde lo dejó el usuario.
+   * Mueve el punto del hallazgo a donde lo dejó el usuario.
    * @param nuevas coordenadas del pin
    */
   const handleMoverPin = (nuevas: Coordenadas) => {
@@ -166,18 +158,17 @@ export default function ReportarScreen() {
   /** Valida, crea el reporte, vibra y vuelve a Perdidos mostrando el nuevo marker. */
   const handleReportar = async () => {
     const nuevos: Errores = {
-      nombre: validarRequerido(nombre, 'Ingresá el nombre de la mascota.'),
-      descripcion: validarRequerido(descripcion, 'Describí cómo reconocerla.'),
+      descripcion: validarRequerido(descripcion, 'Describí cómo es para que su familia la reconozca.'),
     };
     setErrores(nuevos);
-    if (nuevos.nombre || nuevos.descripcion) return;
+    if (nuevos.descripcion) return;
 
     setEnviando(true);
     try {
       const reporte = await crearReporte({
         mascotaId,
-        estado: 'perdido',
-        nombre: nombre.trim(),
+        estado: 'encontrado',
+        nombre: nombre.trim() || SIN_NOMBRE,
         raza: raza.trim() || 'Sin especificar',
         descripcion: descripcion.trim(),
         foto,
@@ -201,7 +192,7 @@ export default function ReportarScreen() {
   // --- Render ---
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Reportar Perdido" variant="bar" fallback="/perdidos" />
+      <ScreenHeader title="Encontré una mascota" variant="bar" fallback="/perdidos" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -212,10 +203,10 @@ export default function ReportarScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.intro}>
-            <Text style={styles.titulo}>Reportar Mascota Perdida</Text>
+            <Text style={styles.titulo}>Reportar Mascota Encontrada</Text>
             <Text style={styles.subtitulo}>
-              Completá los detalles para que la comunidad pueda ayudarte a encontrarla lo más rápido
-              posible.
+              Si tiene chapita Doggy, escaneala y completamos sus datos. Si no, contanos cómo es y
+              dónde la encontraste para que su familia la pueda ubicar.
             </Text>
           </View>
 
@@ -239,19 +230,15 @@ export default function ReportarScreen() {
                 size={sizes.avatarLg - 32}
               />
               <Text style={styles.fotoAyuda}>
-                {foto ? 'Tocá para cambiar la foto' : 'Sumá una foto reciente: es lo que más ayuda a reconocerla'}
+                {foto ? 'Tocá para cambiar la foto' : 'Sumá una foto: es lo que más ayuda a que su familia la reconozca'}
               </Text>
             </View>
 
             <Input
-              label="Nombre de la Mascota"
+              label="Nombre (si lo sabés)"
               placeholder="Ej. Firulais"
               value={nombre}
-              onChangeText={(texto) => {
-                setNombre(texto);
-                if (errores.nombre) setErrores((prev) => ({ ...prev, nombre: undefined }));
-              }}
-              error={errores.nombre}
+              onChangeText={setNombre}
               autoCapitalize="words"
             />
             <Input
@@ -263,7 +250,7 @@ export default function ReportarScreen() {
             />
             <Input
               label="Descripción / Señas particulares"
-              placeholder="Describí el collar, marcas de nacimiento, etc."
+              placeholder="Describí el collar, marcas, tamaño, si está lastimada, etc."
               value={descripcion}
               onChangeText={(texto) => {
                 setDescripcion(texto);
@@ -276,16 +263,16 @@ export default function ReportarScreen() {
             <EtiquetasInput etiquetas={etiquetas} onChange={setEtiquetas} />
           </View>
 
-          {/* Ubicación de extravío */}
+          {/* Dónde se la encontró */}
           <View style={styles.card}>
             <View style={styles.cardTitulo}>
               <MaterialIcons name="location-on" size={sizes.iconMd} color={colors.primary} />
-              <Text style={styles.cardTituloTexto}>Ubicación de extravío</Text>
+              <Text style={styles.cardTituloTexto}>¿Dónde la encontraste?</Text>
             </View>
             <MapaSelector coords={coords} onChange={handleMoverPin} />
             <View style={styles.direccion}>
               <Text style={styles.direccionTexto} numberOfLines={2}>
-                {direccion?.texto ?? (gps.cargando ? 'Buscando tu ubicación…' : 'Mové el pin hasta donde se perdió')}
+                {direccion?.texto ?? (gps.cargando ? 'Buscando tu ubicación…' : 'Mové el pin hasta donde la encontraste')}
               </Text>
               <Pressable onPress={usarMiUbicacion} hitSlop={spacing.sm} accessibilityRole="button">
                 {({ pressed }) => (
@@ -307,9 +294,9 @@ export default function ReportarScreen() {
           </View>
 
           <PrimaryButton
-            title="Marcar como Perdido"
-            icon="campaign"
-            variant="secondary"
+            title="Publicar como encontrada"
+            icon="volunteer-activism"
+            variant="primary"
             onPress={handleReportar}
             loading={enviando}
             style={styles.boton}

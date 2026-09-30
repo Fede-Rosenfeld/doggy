@@ -6,6 +6,7 @@
  * una card centra el mapa en ese reporte. Modo Lista: las mismas cards en
  * vertical. El buscador filtra en local por nombre o zona y el filtro por
  * estado. Si se deniega la ubicación, el mapa queda en CABA con un aviso.
+ * El FAB pregunta qué se reporta: "Se perdió mi mascota" o "Encontré una mascota".
  * Si llega `reporteId` por params (después de reportar), se centra en ese reporte.
  */
 import { MaterialIcons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ import { Fab } from '@/components/Fab';
 import { FormModal } from '@/components/FormModal';
 import { IconButton } from '@/components/IconButton';
 import { Input } from '@/components/Input';
+import { MenuRow } from '@/components/MenuRow';
 import { PermissionNotice } from '@/components/PermissionNotice';
 import { MapaReportes, MapaReportesHandle } from '@/components/perdidos/MapaReportes';
 import { ReporteCard } from '@/components/perdidos/ReporteCard';
@@ -57,6 +59,8 @@ const FILTROS: { valor: FiltroEstado; label: string }[] = [
 const ASOMA = 32;
 /** Espera para que el mapa termine de montarse antes de mover la cámara. */
 const ESPERA_MAPA_MS = 400;
+/** Espera a que termine de cerrarse la hoja de elección antes de abrir el reporte. */
+const ESPERA_CIERRE_HOJA_MS = 300;
 
 /**
  * Pantalla de mascotas perdidas.
@@ -74,6 +78,7 @@ export default function PerdidosScreen() {
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState<FiltroEstado>('todos');
   const [filtroVisible, setFiltroVisible] = useState(false);
+  const [eleccionVisible, setEleccionVisible] = useState(false);
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
   const mapaRef = useRef<MapaReportesHandle>(null);
   const carruselRef = useRef<FlatList<ReportePerdida>>(null);
@@ -145,8 +150,18 @@ export default function PerdidosScreen() {
     if (buscando) setBusqueda('');
   };
 
-  /** Abre el modal para reportar una mascota perdida. */
-  const irAReportar = () => router.push('/reportar');
+  /** Abre la hoja para elegir qué se reporta: una mascota propia o una encontrada. */
+  const irAReportar = () => setEleccionVisible(true);
+
+  /**
+   * Cierra la hoja de elección y abre el modal del reporte elegido.
+   * @param ruta modal a abrir
+   */
+  const abrirReporte = (ruta: '/mi-mascota-perdida' | '/reportar') => {
+    setEleccionVisible(false);
+    // En iOS no se puede presentar un modal mientras otro se está cerrando.
+    setTimeout(() => router.push(ruta), ESPERA_CIERRE_HOJA_MS);
+  };
 
   // --- Render ---
   const vacio = (
@@ -297,6 +312,28 @@ export default function PerdidosScreen() {
         </View>
         <PrimaryButton title="Listo" onPress={() => setFiltroVisible(false)} />
       </FormModal>
+
+      {/* Dos reportes distintos: el tutor que perdió a su mascota y el vecino que encontró una. */}
+      <FormModal
+        visible={eleccionVisible}
+        titulo="¿Qué querés reportar?"
+        onClose={() => setEleccionVisible(false)}
+      >
+        <View style={styles.opciones}>
+          <MenuRow
+            icon="campaign"
+            titulo="Se perdió mi mascota"
+            subtitulo="Usamos los datos de su perfil y marcás dónde la viste por última vez."
+            onPress={() => abrirReporte('/mi-mascota-perdida')}
+          />
+          <MenuRow
+            icon="volunteer-activism"
+            titulo="Encontré una mascota"
+            subtitulo="Escaneá su chapita o contanos cómo es y dónde la encontraste."
+            onPress={() => abrirReporte('/reportar')}
+          />
+        </View>
+      </FormModal>
     </View>
   );
 }
@@ -408,5 +445,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  opciones: {
+    // Las filas de menú traen su propio margen lateral; se compensa el del modal.
+    marginHorizontal: -spacing.containerMargin,
   },
 });

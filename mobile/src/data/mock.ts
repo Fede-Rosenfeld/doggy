@@ -186,6 +186,8 @@ export const reportes: ReportePerdida[] = [
     lng: -58.4306,
     zona: 'Palermo, CABA',
     fecha: haceHoras(2),
+    radioMetros: 1000,
+    infoAdicional: 'Tenía puesto un pretal rojo. Se asusta con las motos.',
   },
   {
     id: 2,
@@ -216,6 +218,7 @@ export const reportes: ReportePerdida[] = [
     lng: -58.3974,
     zona: 'Recoleta, CABA',
     fecha: haceHoras(22),
+    radioMetros: 500,
   },
 ];
 

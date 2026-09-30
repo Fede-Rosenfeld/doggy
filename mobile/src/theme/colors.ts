@@ -83,6 +83,9 @@ const brand = {
   mustard: '#E8A33D',
   /** Mostaza presionada. */
   mustardPressed: '#D69536',
+  /** Relleno y borde del círculo de búsqueda de una mascota perdida en el mapa. */
+  mustard20: 'rgba(232, 163, 61, 0.20)',
+  mustard80: 'rgba(232, 163, 61, 0.80)',
   /** Fondo global. */
   cream: '#FFF8F0',
   white: '#FFFFFF',
