@@ -144,3 +144,35 @@ export function buscarMascotaPorCodigo(mascotas: Mascota[], codigo: string): Mas
   const normalizado = codigo.trim().toUpperCase();
   return mascotas.find((m) => m.codigo === normalizado);
 }
+
+/**
+ * Reporte de "perdido" activo de una mascota, si tiene (el más reciente).
+ * @param reportes todos los reportes
+ * @param mascotaId id de la mascota
+ * @returns el reporte o undefined si no está reportada como perdida
+ */
+export function reporteActivo(
+  reportes: ReportePerdida[],
+  mascotaId: number,
+): ReportePerdida | undefined {
+  return filtrarReportes(reportes, '', 'perdido').find((r) => r.mascotaId === mascotaId);
+}
+
+/**
+ * Indica si el usuario puede editar o cerrar un reporte de perdido: lo
+ * publicó él o la mascota está en su cuenta (dueño o invitado), así quien la
+ * encuentre de la familia puede sacarla del mapa aunque no la haya reportado.
+ * @param reporte reporte a revisar
+ * @param usuarioId usuario logueado
+ * @param mascotas mascotas de la cuenta del usuario
+ * @returns true si puede gestionarlo
+ */
+export function puedeGestionarReporte(
+  reporte: ReportePerdida,
+  usuarioId: number | undefined,
+  mascotas: Mascota[],
+): boolean {
+  if (reporte.estado !== 'perdido') return false;
+  if (reporte.autorId === usuarioId) return true;
+  return reporte.mascotaId !== null && mascotas.some((m) => m.id === reporte.mascotaId);
+}

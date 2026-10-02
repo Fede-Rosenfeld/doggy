@@ -6,6 +6,8 @@
  * etiquetas, cuándo y dónde (con el radio de búsqueda si lo marcó su tutor),
  * descripción o señas particulares e información adicional (ropa, arnés,
  * cómo reacciona). "Ver en el mapa" cierra la hoja y centra el mapa en el reporte.
+ * Si la mascota perdida es del usuario (o él publicó el reporte), suma
+ * "Editar reporte" y "Ya apareció", que cierra el reporte y lo saca del mapa.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { useState, type ComponentProps } from 'react';
@@ -33,6 +35,14 @@ type Props = {
   onClose: () => void;
   /** Cierra la hoja y centra el mapa en el reporte. */
   onVerEnMapa: (reporte: ReportePerdida) => void;
+  /** true si el usuario puede editar y cerrar el reporte (ver `puedeGestionarReporte`). */
+  puedeGestionar?: boolean;
+  /** Abre la edición del reporte. */
+  onEditar?: (reporte: ReportePerdida) => void;
+  /** Avisa que la mascota ya apareció (pide confirmación y cierra el reporte). */
+  onYaAparecio?: (reporte: ReportePerdida) => void;
+  /** true mientras se cierra el reporte. */
+  cerrando?: boolean;
 };
 
 /**
@@ -40,7 +50,17 @@ type Props = {
  * @param props ver `Props`
  * @returns el modal con la información completa
  */
-export function DetalleReporte({ visible, reporte, esPropio, onClose, onVerEnMapa }: Props) {
+export function DetalleReporte({
+  visible,
+  reporte,
+  esPropio,
+  onClose,
+  onVerEnMapa,
+  puedeGestionar = false,
+  onEditar,
+  onYaAparecio,
+  cerrando = false,
+}: Props) {
   if (!reporte) return null;
 
   const perdido = reporte.estado === 'perdido';
@@ -49,7 +69,6 @@ export function DetalleReporte({ visible, reporte, esPropio, onClose, onVerEnMap
     <FormModal visible={visible} titulo={reporte.nombre} onClose={onClose}>
       {/* key: al cambiar de reporte, el visor arranca cerrado. */}
       <FotoReporte key={reporte.id} reporte={reporte} />
-
 
       {esPropio && (
         <View style={styles.propio}>
@@ -95,6 +114,33 @@ export function DetalleReporte({ visible, reporte, esPropio, onClose, onVerEnMap
         variant="outline"
         onPress={() => onVerEnMapa(reporte)}
       />
+
+      {/* Acciones del tutor: corregir el reporte o sacarlo porque ya apareció. */}
+      {puedeGestionar && (
+        <View style={styles.gestion}>
+          {onEditar && (
+            <PrimaryButton
+              title="Editar reporte"
+              icon="edit"
+              iconLeft
+              variant="tonal"
+              onPress={() => onEditar(reporte)}
+              disabled={cerrando}
+              style={styles.gestionBoton}
+            />
+          )}
+          {onYaAparecio && (
+            <PrimaryButton
+              title="Ya apareció"
+              icon="celebration"
+              iconLeft
+              onPress={() => onYaAparecio(reporte)}
+              loading={cerrando}
+              style={styles.gestionBoton}
+            />
+          )}
+        </View>
+      )}
     </FormModal>
   );
 }
@@ -282,5 +328,12 @@ const styles = StyleSheet.create({
   seccionTexto: {
     ...typography.bodyMd,
     color: colors.onSurface,
+  },
+  gestion: {
+    flexDirection: 'row',
+    gap: spacing.stackSm,
+  },
+  gestionBoton: {
+    flex: 1,
   },
 });

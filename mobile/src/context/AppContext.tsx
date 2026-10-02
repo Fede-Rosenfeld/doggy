@@ -58,6 +58,9 @@ type AppContextValue = {
   agregarMascota: (datos: NuevaMascota) => Promise<Mascota>;
   editarMascota: (id: number, cambios: Partial<NuevaMascota>) => Promise<Mascota>;
   crearReporte: (datos: NuevoReporte) => Promise<ReportePerdida>;
+  editarReporte: (id: number, cambios: Partial<NuevoReporte>) => Promise<ReportePerdida>;
+  /** Cierra un reporte porque la mascota apareció: sale del mapa. */
+  cerrarReporte: (id: number) => Promise<void>;
   agregarRegistro: (datos: NuevoRegistro) => Promise<RegistroSanitario>;
   editarRegistro: (id: number, datos: NuevoRegistro) => Promise<RegistroSanitario>;
   agregarTurno: (datos: NuevoTurno) => Promise<Turno>;
@@ -164,6 +167,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return nuevo;
   }, []);
 
+  /** Modifica un reporte publicado y lo reemplaza en la lista. */
+  const editarReporte = useCallback(async (id: number, cambios: Partial<NuevoReporte>) => {
+    const actualizado = await reportesService.actualizarReporte(id, cambios);
+    setReportes((prev) => prev.map((r) => (r.id === id ? actualizado : r)));
+    return actualizado;
+  }, []);
+
+  /** Cierra un reporte (la mascota ya apareció) y lo saca de la lista. */
+  const cerrarReporte = useCallback(async (id: number) => {
+    await reportesService.cerrarReporte(id);
+    setReportes((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
   /** Agrega un registro al carnet sanitario. */
   const agregarRegistro = useCallback(async (datos: NuevoRegistro) => {
     const nuevo = await registrosService.crearRegistro(datos);
@@ -254,6 +270,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agregarMascota,
       editarMascota,
       crearReporte,
+      editarReporte,
+      cerrarReporte,
       agregarRegistro,
       editarRegistro,
       agregarTurno,
@@ -279,6 +297,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agregarMascota,
       editarMascota,
       crearReporte,
+      editarReporte,
+      cerrarReporte,
       agregarRegistro,
       editarRegistro,
       agregarTurno,

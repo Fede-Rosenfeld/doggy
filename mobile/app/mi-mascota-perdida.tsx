@@ -10,6 +10,11 @@
  * - suma información del día: ropa, arnés, cómo reacciona, etiquetas.
  * Al publicar se crea el reporte "perdido", vibra, se cierra el modal y se
  * muestra el nuevo marker (con su círculo) en Perdidos.
+ *
+ * Si llega `reporteId`, la pantalla edita ese reporte en vez de crear uno:
+ * arranca con su punto, radio, información y etiquetas, la mascota queda fija
+ * y "Guardar cambios" lo actualiza. Desde acá también se puede avisar que la
+ * mascota ya apareció, lo que cierra el reporte y lo saca del mapa.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -38,38 +43,61 @@ import { ResumenMascota } from '@/components/reporte/ResumenMascota';
 import { SelectorMascota } from '@/components/reporte/SelectorMascota';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApp } from '@/context/AppContext';
+import { useCerrarReporte } from '@/hooks/useCerrarReporte';
 import { Coordenadas, DireccionLegible, useUbicacion } from '@/hooks/useUbicacion';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
+import type { ReportePerdida } from '@/types/models';
 import { CENTRO_CABA, RADIO_POR_DEFECTO, RADIOS_BUSQUEDA, textoRadio } from '@/utils/mapa';
-import { buscarMascota } from '@/utils/selectores';
+import { buscarMascota, reporteActivo } from '@/utils/selectores';
 
 /**
- * Pantalla del reporte de una mascota propia.
+ * Pantalla del reporte de una mascota propia (alta o edición).
  * @returns el formulario, o un estado vacío si el usuario no tiene mascotas
  */
 export default function MiMascotaPerdidaScreen() {
-  const { mascotaId: mascotaIdParam } = useLocalSearchParams<{ mascotaId?: string }>();
-  const { mascotas, reportes, crearReporte } = useApp();
+  const { mascotaId: mascotaIdParam, reporteId } = useLocalSearchParams<{
+    mascotaId?: string;
+    reporteId?: string;
+  }>();
+  const { mascotas, reportes, crearReporte, editarReporte } = useApp();
+  const { cerrando, pedirCierre } = useCerrarReporte();
   const gps = useUbicacion({ automatico: true });
   const insets = useSafeAreaInsets();
 
+  // Al cerrarlo desde acá, el modal sigue montado mientras baja: se guarda el
+  // reporte para no mostrar un instante el aviso de "ya no está activo".
+  const [cerradoAca, setCerradoAca] = useState<ReportePerdida | null>(null);
+  /** Reporte que se edita; undefined si se está creando uno nuevo. */
+  const editado =
+    (reporteId ? reportes.find((r) => String(r.id) === reporteId) : undefined) ??
+    cerradoAca ??
+    undefined;
+  const editando = !!reporteId;
+
   // --- Estado ---
+  // Al editar, el formulario arranca con lo que ya se publicó.
   /** Mascota que tocó el usuario en el selector; null = la del param o la primera. */
   const [elegidaId, setElegidaId] = useState<number | null>(null);
-  const [coords, setCoords] = useState<Coordenadas>(CENTRO_CABA);
-  const [radioMetros, setRadioMetros] = useState<number>(RADIO_POR_DEFECTO);
+  const [coords, setCoords] = useState<Coordenadas>(() =>
+    editado ? { lat: editado.lat, lng: editado.lng } : CENTRO_CABA,
+  );
+  const [radioMetros, setRadioMetros] = useState<number>(
+    () => editado?.radioMetros ?? RADIO_POR_DEFECTO,
+  );
   const [direccion, setDireccion] = useState<DireccionLegible | null>(null);
-  const [infoAdicional, setInfoAdicional] = useState('');
-  const [etiquetas, setEtiquetas] = useState<string[]>([]);
+  const [infoAdicional, setInfoAdicional] = useState(() => editado?.infoAdicional ?? '');
+  const [etiquetas, setEtiquetas] = useState<string[]>(() => editado?.etiquetas ?? []);
   const [enviando, setEnviando] = useState(false);
-  // Si el usuario movió el pin, la posición del GPS ya no lo pisa.
-  const pinAjustado = useRef(false);
+  // Si el usuario movió el pin (o se edita un punto ya publicado), el GPS ya no lo pisa.
+  const pinAjustado = useRef(editando);
 
   // --- Datos derivados ---
-  const mascota =
-    buscarMascota(mascotas, elegidaId !== null ? String(elegidaId) : mascotaIdParam) ?? mascotas[0];
+  const mascota = editando
+    ? mascotas.find((m) => m.id === editado?.mascotaId)
+    : (buscarMascota(mascotas, elegidaId !== null ? String(elegidaId) : mascotaIdParam) ??
+      mascotas[0]);
   // Aviso para no duplicar: ya hay un reporte de "perdido" abierto para esta mascota.
-  const yaReportada = !!mascota && reportes.some((r) => r.mascotaId === mascota.id && r.estado === 'perdido');
+  const yaReportada = !editando && !!mascota && !!reporteActivo(reportes, mascota.id);
 
   // Cuando llega la posición del GPS, se usa como último lugar donde se la vio.
   useEffect(() => {
@@ -143,7 +171,63 @@ export default function MiMascotaPerdidaScreen() {
     }
   };
 
+  /**
+   * "Ya apareció": confirma, cierra el reporte y el modal.
+   * @param reporte reporte que se está editando
+   */
+  const handleYaAparecio = (reporte: ReportePerdida) => {
+    setCerradoAca(reporte);
+    pedirCierre(reporte, cerrarModal);
+  };
+
+  /** Cierra el modal; si no hay a dónde volver (link directo), va a Perdidos. */
+  const cerrarModal = () => {
+    if (router.canGoBack()) router.back();
+    else router.navigate('/perdidos');
+  };
+
+  /** Guarda los cambios del reporte editado y cierra el modal. */
+  const handleGuardar = async () => {
+    if (!editado) return;
+    setEnviando(true);
+    try {
+      await editarReporte(editado.id, {
+        etiquetas,
+        lat: coords.lat,
+        lng: coords.lng,
+        // Si no se pudo traducir el punto, queda la zona que ya tenía.
+        zona: direccion?.zona ?? editado.zona,
+        radioMetros,
+        // Vacía se borra del reporte, como si nunca se hubiera cargado.
+        infoAdicional: infoAdicional.trim() || undefined,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      cerrarModal();
+    } catch {
+      Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   // --- Render ---
+  const titulo = editando ? 'Editar reporte' : 'Se perdió mi mascota';
+
+  // El reporte ya se cerró (o no es de una mascota de la cuenta): no hay nada para editar.
+  if (editando && (!editado || !mascota)) {
+    return (
+      <View style={styles.screen}>
+        <ScreenHeader title={titulo} variant="bar" fallback="/perdidos" />
+        <EstadoVacio
+          icon="search-off"
+          titulo="Este reporte ya no está activo"
+          mensaje="Puede que la mascota ya haya aparecido y alguien de la familia haya cerrado el reporte."
+          accion={{ titulo: 'Volver', onPress: cerrarModal }}
+        />
+      </View>
+    );
+  }
+
   if (!mascota) {
     return (
       <View style={styles.screen}>
@@ -160,7 +244,7 @@ export default function MiMascotaPerdidaScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Se perdió mi mascota" variant="bar" fallback="/perdidos" />
+      <ScreenHeader title={titulo} variant="bar" fallback="/perdidos" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -171,15 +255,18 @@ export default function MiMascotaPerdidaScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.intro}>
-            <Text style={styles.titulo}>Reportar a mi mascota</Text>
+            <Text style={styles.titulo}>
+              {editando ? `Reporte de ${mascota.nombre}` : 'Reportar a mi mascota'}
+            </Text>
             <Text style={styles.subtitulo}>
-              Usamos los datos de su perfil. Marcá dónde la viste por última vez y contanos todo lo
-              que ayude a reconocerla.
+              {editando
+                ? 'Ajustá el punto, el radio de búsqueda o la información que ven los vecinos.'
+                : 'Usamos los datos de su perfil. Marcá dónde la viste por última vez y contanos todo lo que ayude a reconocerla.'}
             </Text>
           </View>
 
-          {/* Quién se perdió */}
-          {mascotas.length > 1 && (
+          {/* Quién se perdió (al editar, la mascota del reporte no cambia) */}
+          {!editando && mascotas.length > 1 && (
             <View style={styles.seccion}>
               <Text style={styles.seccionTitulo}>¿Quién se perdió?</Text>
               <SelectorMascota
@@ -266,14 +353,36 @@ export default function MiMascotaPerdidaScreen() {
             <EtiquetasInput etiquetas={etiquetas} onChange={setEtiquetas} />
           </View>
 
-          <PrimaryButton
-            title="Publicar como perdida"
-            icon="campaign"
-            variant="secondary"
-            onPress={handlePublicar}
-            loading={enviando}
-            style={styles.boton}
-          />
+          {editado ? (
+            <>
+              <PrimaryButton
+                title="Guardar cambios"
+                icon="check"
+                onPress={handleGuardar}
+                loading={enviando}
+                disabled={cerrando}
+                style={styles.boton}
+              />
+              <PrimaryButton
+                title="Ya apareció"
+                icon="celebration"
+                iconLeft
+                variant="outline"
+                onPress={() => handleYaAparecio(editado)}
+                loading={cerrando}
+                disabled={enviando}
+              />
+            </>
+          ) : (
+            <PrimaryButton
+              title="Publicar como perdida"
+              icon="campaign"
+              variant="secondary"
+              onPress={handlePublicar}
+              loading={enviando}
+              style={styles.boton}
+            />
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
