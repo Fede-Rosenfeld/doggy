@@ -1,12 +1,15 @@
 /**
  * Editor de etiquetas del reporte ("Collar rojo", "Asustadizo").
  * Muestra las etiquetas como chips que se quitan al tocarlas, y el chip
- * "Añadir Etiqueta" abre un campo para escribir una nueva.
+ * "Añadir Etiqueta" abre un campo para escribir una nueva. Cada etiqueta se
+ * valida como un nombre corto (letras y números, hasta 24 caracteres) y no
+ * se puede repetir; si no cumple, se avisa debajo del campo.
  */
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { spacing } from '@/theme';
+import { LIMITES, limpiarTexto, validarEtiqueta } from '@/utils/validaciones';
 import { Chip } from '../Chip';
 import { Input } from '../Input';
 import { PrimaryButton } from '../PrimaryButton';
@@ -18,8 +21,6 @@ type Props = {
 
 /** Máximo de etiquetas por reporte, para que las cards no se desborden. */
 const MAXIMO = 5;
-/** Largo máximo de cada etiqueta. */
-const LARGO_MAXIMO = 24;
 
 /**
  * Chips de etiquetas con alta y baja.
@@ -29,14 +30,26 @@ const LARGO_MAXIMO = 24;
 export function EtiquetasInput({ etiquetas, onChange }: Props) {
   const [agregando, setAgregando] = useState(false);
   const [texto, setTexto] = useState('');
+  const [error, setError] = useState<string | undefined>();
 
-  /** Suma la etiqueta escrita si no está vacía ni repetida. */
-  const agregar = () => {
-    const nueva = texto.trim();
-    const repetida = etiquetas.some((e) => e.toLowerCase() === nueva.toLowerCase());
-    if (nueva && !repetida) onChange([...etiquetas, nueva]);
+  /** Cierra el campo de alta y lo deja vacío. */
+  const cerrar = () => {
     setTexto('');
+    setError(undefined);
     setAgregando(false);
+  };
+
+  /** Suma la etiqueta escrita si es válida y no está repetida; vacía, cierra el campo. */
+  const agregar = () => {
+    const nueva = limpiarTexto(texto);
+    if (!nueva) return cerrar();
+    const invalida = validarEtiqueta(nueva);
+    if (invalida) return setError(invalida);
+    if (etiquetas.some((e) => e.toLowerCase() === nueva.toLowerCase())) {
+      return setError('Esa etiqueta ya está.');
+    }
+    onChange([...etiquetas, nueva]);
+    cerrar();
   };
 
   /**
@@ -61,8 +74,12 @@ export function EtiquetasInput({ etiquetas, onChange }: Props) {
             <Input
               placeholder="Ej: Collar rojo"
               value={texto}
-              onChangeText={setTexto}
-              maxLength={LARGO_MAXIMO}
+              onChangeText={(valor) => {
+                setTexto(valor);
+                setError(undefined);
+              }}
+              error={error}
+              maxLength={LIMITES.etiqueta}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={agregar}

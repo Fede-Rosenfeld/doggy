@@ -35,6 +35,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Doggy necesita acceder a tus fotos para que elijas la foto de tu mascota. Con esa foto la pueden reconocer si alguna vez se pierde.",
+          "cameraPermission": "Doggy usa la cámara para sacarle una foto a tu mascota o a una que encontraste, y para escanear el QR de su chapita.",
           "microphonePermission": false
         }
       ],
@@ -47,7 +48,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Doggy usa la cámara para escanear el QR de la chapita de una mascota que encontraste y avisarle a su familia.",
+          "cameraPermission": "Doggy usa la cámara para sacarle una foto a tu mascota o a una que encontraste, y para escanear el QR de su chapita.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

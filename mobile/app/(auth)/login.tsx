@@ -2,8 +2,9 @@
  * Pantalla de Login.
  *
  * Primera pantalla del flujo. Muestra el logo y un formulario de email y
- * contraseña con validación local. Todavía no hay backend: si los datos
- * tienen formato válido se entra directo a la tab Mascotas.
+ * contraseña con validación local (formato del email y largo máximo de los
+ * dos campos). Todavía no hay backend: si los datos tienen formato válido se
+ * entra directo a la tab Mascotas.
  */
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -15,7 +16,12 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { useApp } from '@/context/AppContext';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
-import { validarEmail, validarPasswordRequerida } from '@/utils/validaciones';
+import {
+  LIMITES,
+  normalizarEmail,
+  validarEmail,
+  validarPasswordRequerida,
+} from '@/utils/validaciones';
 
 const logo = require('@/assets/images/logo.png');
 
@@ -62,7 +68,7 @@ export default function LoginScreen() {
 
     setEnviando(true);
     try {
-      await iniciarSesion(email, password);
+      await iniciarSesion(normalizarEmail(email), password);
       router.replace('/mascotas');
     } catch {
       Alert.alert('No pudimos ingresar', 'Revisá tu conexión e intentá de nuevo.');
@@ -112,6 +118,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoComplete="email"
           autoCorrect={false}
+          maxLength={LIMITES.email}
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
           submitBehavior="submit"
@@ -127,6 +134,7 @@ export default function LoginScreen() {
           error={errores.password}
           autoCapitalize="none"
           autoComplete="password"
+          maxLength={LIMITES.password}
           returnKeyType="go"
           onSubmitEditing={handleIngresar}
         />

@@ -1,6 +1,6 @@
 /**
  * Foto circular grande con un botón de cámara superpuesto.
- * Toda la foto es tocable; se usa para elegir la foto de una mascota o del usuario.
+ * Toda la foto es tocable; se usa para sacar o elegir la foto de una mascota o del usuario.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
@@ -38,7 +38,8 @@ export function FotoEditable({
       onPress={onPress}
       disabled={cargando}
       accessibilityRole="button"
-      accessibilityLabel={foto ? 'Cambiar foto' : 'Elegir foto'}
+      accessibilityLabel={foto ? 'Cambiar foto' : 'Agregar foto'}
+      accessibilityHint="Podés sacar una foto o elegir una de tu galería"
       style={({ pressed }) => [styles.wrapper, pressed && styles.pressed]}
     >
       <View style={styles.foto}>

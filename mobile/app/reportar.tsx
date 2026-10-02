@@ -5,7 +5,7 @@
  * propia es `mi-mascota-perdida.tsx`). Junta los tres componentes nativos:
  * - cámara: escanear el QR de la chapita para identificar a la mascota y
  *   autocompletar sus datos,
- * - fototeca: sacarle o elegir una foto,
+ * - cámara y fototeca: sacarle una foto en el momento o elegir una de la galería,
  * - GPS: precargar en el mini mapa el punto donde se la encontró.
  * El nombre es opcional porque quien la encuentra muchas veces no lo sabe.
  * Al confirmar se crea el reporte "encontrado", vibra, se cierra el modal y
@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
 import { Input } from '@/components/Input';
 import { PermissionNotice } from '@/components/PermissionNotice';
@@ -43,9 +44,17 @@ import type { Mascota } from '@/types/models';
 import { CODIGO_MASCOTA_REGEX } from '@/utils/codigos';
 import { CENTRO_CABA } from '@/utils/mapa';
 import { buscarMascotaPorCodigo } from '@/utils/selectores';
-import { validarRequerido } from '@/utils/validaciones';
+import {
+  LIMITES,
+  limpiarTexto,
+  validarNombreMascota,
+  validarRaza,
+  validarTexto,
+} from '@/utils/validaciones';
 
 type Errores = {
+  nombre?: string;
+  raza?: string;
   descripcion?: string;
 };
 
@@ -145,32 +154,41 @@ export default function ReportarScreen() {
     }
   };
 
-  /** Elige la foto de la mascota desde la galería. */
+  /** Pregunta si sacarle una foto a la mascota o elegirla de la galería. */
   const handleFoto = async () => {
     try {
-      const uri = await fototeca.elegirFoto();
+      const uri = await fototeca.pedirFoto();
       if (uri) setFoto(uri);
     } catch {
-      Alert.alert('No se pudo abrir la galería', 'Probá de nuevo en unos segundos.');
+      Alert.alert('No se pudo conseguir la foto', 'Probá de nuevo en unos segundos.');
     }
   };
 
   /** Valida, crea el reporte, vibra y vuelve a Perdidos mostrando el nuevo marker. */
   const handleReportar = async () => {
+    // Nombre y raza son opcionales (quien la encontró puede no saberlos), pero si se cargan se validan.
     const nuevos: Errores = {
-      descripcion: validarRequerido(descripcion, 'Describí cómo es para que su familia la reconozca.'),
+      nombre: validarNombreMascota(nombre, false),
+      raza: validarRaza(raza, false),
+      descripcion: validarTexto(descripcion, {
+        requerido: 'Describí cómo es para que su familia la reconozca.',
+        min: 5,
+        max: LIMITES.descripcion,
+        formato: 'texto',
+        multilinea: true,
+      }),
     };
     setErrores(nuevos);
-    if (nuevos.descripcion) return;
+    if (Object.values(nuevos).some(Boolean)) return;
 
     setEnviando(true);
     try {
       const reporte = await crearReporte({
         mascotaId,
         estado: 'encontrado',
-        nombre: nombre.trim() || SIN_NOMBRE,
-        raza: raza.trim() || 'Sin especificar',
-        descripcion: descripcion.trim(),
+        nombre: limpiarTexto(nombre) || SIN_NOMBRE,
+        raza: limpiarTexto(raza) || 'Sin especificar',
+        descripcion: limpiarTexto(descripcion, true),
         foto,
         etiquetas,
         lat: coords.lat,
@@ -230,23 +248,39 @@ export default function ReportarScreen() {
                 size={sizes.avatarLg - 32}
               />
               <Text style={styles.fotoAyuda}>
-                {foto ? 'Tocá para cambiar la foto' : 'Sumá una foto: es lo que más ayuda a que su familia la reconozca'}
+                {foto ? 'Tocá para cambiar la foto' : 'Sacale o sumá una foto: es lo que más ayuda a que su familia la reconozca'}
               </Text>
             </View>
+            <AvisoPermisoFoto
+              fototeca={fototeca}
+              motivo="La foto es lo que más ayuda a que su familia la reconozca."
+              onFoto={setFoto}
+              compacto
+            />
 
             <Input
               label="Nombre (si lo sabés)"
               placeholder="Ej. Firulais"
               value={nombre}
-              onChangeText={setNombre}
+              onChangeText={(texto) => {
+                setNombre(texto);
+                if (errores.nombre) setErrores((prev) => ({ ...prev, nombre: undefined }));
+              }}
+              error={errores.nombre}
               autoCapitalize="words"
+              maxLength={LIMITES.nombreMascota}
             />
             <Input
               label="Raza"
               placeholder="Ej. Mestizo"
               value={raza}
-              onChangeText={setRaza}
+              onChangeText={(texto) => {
+                setRaza(texto);
+                if (errores.raza) setErrores((prev) => ({ ...prev, raza: undefined }));
+              }}
+              error={errores.raza}
               autoCapitalize="words"
+              maxLength={LIMITES.raza}
             />
             <Input
               label="Descripción / Señas particulares"
@@ -258,7 +292,7 @@ export default function ReportarScreen() {
               }}
               error={errores.descripcion}
               multiline
-              maxLength={300}
+              maxLength={LIMITES.descripcion}
             />
             <EtiquetasInput etiquetas={etiquetas} onChange={setEtiquetas} />
           </View>

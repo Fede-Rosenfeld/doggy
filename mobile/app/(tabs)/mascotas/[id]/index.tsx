@@ -5,6 +5,8 @@
  * raza y edad, el botón para editar sus datos, el QR de identificación para la placa del collar, las señas
  * particulares, un resumen del carnet sanitario y de los turnos, y el acceso
  * para reportarla como perdida ("Se perdió mi mascota", con sus datos ya cargados).
+ * Si ya está reportada como perdida, en lugar de ese botón muestra el aviso
+ * con la zona y el radio de búsqueda, "Editar reporte" y "Ya apareció".
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -19,11 +21,13 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { QrIdentificacion } from '@/components/QrIdentificacion';
 import { SectionCard } from '@/components/SectionCard';
 import { useApp } from '@/context/AppContext';
+import { useCerrarReporte } from '@/hooks/useCerrarReporte';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import { textoEdad } from '@/utils/etiquetas';
-import { formatearFecha, formatearHora } from '@/utils/fechas';
+import { formatearFecha, formatearHora, tiempoTranscurrido } from '@/utils/fechas';
+import { textoRadio } from '@/utils/mapa';
 import { volver } from '@/utils/navegacion';
-import { buscarMascota, proximoTurno, ultimaVacuna } from '@/utils/selectores';
+import { buscarMascota, proximoTurno, reporteActivo, ultimaVacuna } from '@/utils/selectores';
 
 /** Diámetro de la foto principal. */
 const FOTO = 128;
@@ -34,7 +38,8 @@ const FOTO = 128;
  */
 export default function PerfilMascotaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { mascotas, registros, turnos, cargando } = useApp();
+  const { mascotas, registros, turnos, reportes, cargando } = useApp();
+  const { cerrando, pedirCierre } = useCerrarReporte();
 
   // --- Datos derivados ---
   const mascota = useMemo(() => buscarMascota(mascotas, id), [mascotas, id]);
@@ -45,6 +50,10 @@ export default function PerfilMascotaScreen() {
   const turno = useMemo(
     () => (mascota ? proximoTurno(turnos, mascota.id) : undefined),
     [turnos, mascota],
+  );
+  const reporte = useMemo(
+    () => (mascota ? reporteActivo(reportes, mascota.id) : undefined),
+    [reportes, mascota],
   );
 
   // --- Handlers ---
@@ -67,6 +76,12 @@ export default function PerfilMascotaScreen() {
   const reportarPerdida = () => {
     if (!mascota) return;
     router.push({ pathname: '/mi-mascota-perdida', params: { mascotaId: String(mascota.id) } });
+  };
+
+  /** Abre el reporte activo en modo edición (punto, radio, información). */
+  const editarReporte = () => {
+    if (!reporte) return;
+    router.push({ pathname: '/mi-mascota-perdida', params: { reporteId: String(reporte.id) } });
   };
 
   // --- Render ---
@@ -179,12 +194,46 @@ export default function PerfilMascotaScreen() {
           </View>
         </SectionCard>
 
-        <PrimaryButton
-          title="Reportar como perdida"
-          icon="campaign"
-          variant="secondary"
-          onPress={reportarPerdida}
-        />
+        {reporte ? (
+          <View style={styles.perdida} accessibilityLiveRegion="polite">
+            <View style={styles.perdidaHeader}>
+              <MaterialIcons name="campaign" size={sizes.iconMd} color={colors.tertiaryContainer} />
+              <Text style={styles.perdidaTitulo}>Reportada como perdida</Text>
+            </View>
+            <Text style={styles.perdidaTexto}>
+              {`Desde ${tiempoTranscurrido(reporte.fecha).toLowerCase()} · ${reporte.zona}`}
+              {reporte.radioMetros ? ` · radio ${textoRadio(reporte.radioMetros)}` : ''}
+            </Text>
+            <View style={styles.perdidaAcciones}>
+              <PrimaryButton
+                title="Editar reporte"
+                icon="edit"
+                iconLeft
+                variant="outline"
+                size="sm"
+                onPress={editarReporte}
+                disabled={cerrando}
+                style={styles.perdidaBoton}
+              />
+              <PrimaryButton
+                title="Ya apareció"
+                icon="celebration"
+                iconLeft
+                size="sm"
+                onPress={() => pedirCierre(reporte)}
+                loading={cerrando}
+                style={styles.perdidaBoton}
+              />
+            </View>
+          </View>
+        ) : (
+          <PrimaryButton
+            title="Reportar como perdida"
+            icon="campaign"
+            variant="secondary"
+            onPress={reportarPerdida}
+          />
+        )}
       </ScrollView>
     </View>
   );
@@ -315,5 +364,31 @@ const styles = StyleSheet.create({
   turnosSub: {
     ...typography.bodySm,
     color: colors.onSurfaceVariant,
+  },
+  perdida: {
+    gap: spacing.stackSm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.tertiaryContainer10,
+  },
+  perdidaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  perdidaTitulo: {
+    ...typography.labelMd,
+    color: colors.tertiaryContainer,
+  },
+  perdidaTexto: {
+    ...typography.bodySm,
+    color: colors.onSurface,
+  },
+  perdidaAcciones: {
+    flexDirection: 'row',
+    gap: spacing.stackSm,
+  },
+  perdidaBoton: {
+    flex: 1,
   },
 });

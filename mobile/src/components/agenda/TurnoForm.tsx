@@ -4,6 +4,8 @@
  *
  * Sirve para agendar y para editar: si recibe `turno`, arranca con sus datos
  * y al guardar lo reemplaza; si no, crea uno nuevo en el día elegido.
+ * Motivo y lugar tienen largo máximo y caracteres permitidos, y la fecha no
+ * puede estar a más de 2 años (ver `validaciones.ts`).
  */
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -21,7 +23,13 @@ import {
   parsearFecha,
   parsearHora,
 } from '@/utils/fechas';
-import { validarFechaIngresada, validarHora, validarRequerido } from '@/utils/validaciones';
+import {
+  LIMITES,
+  limpiarTexto,
+  validarFechaTurno,
+  validarHora,
+  validarTexto,
+} from '@/utils/validaciones';
 import { Chip } from '../Chip';
 import { Input } from '../Input';
 import { PrimaryButton } from '../PrimaryButton';
@@ -96,10 +104,20 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
   const validar = (): Errores => {
     const nuevos: Errores = {
       mascota: mascotaId === null ? 'Elegí una mascota.' : undefined,
-      fecha: validarFechaIngresada(fecha),
+      fecha: validarFechaTurno(fecha),
       hora: validarHora(hora),
-      motivo: validarRequerido(motivo, 'Contá el motivo del turno.'),
-      lugar: validarRequerido(lugar, 'Indicá dónde es el turno.'),
+      motivo: validarTexto(motivo, {
+        requerido: 'Contá el motivo del turno.',
+        min: 3,
+        max: LIMITES.motivo,
+        formato: 'texto',
+      }),
+      lugar: validarTexto(lugar, {
+        requerido: 'Indicá dónde es el turno.',
+        min: 3,
+        max: LIMITES.lugar,
+        formato: 'texto',
+      }),
     };
     const cuando = combinarFechaHora(fecha, hora);
     const cambioHorario = !original || original.fecha !== fecha || original.hora !== hora;
@@ -120,8 +138,8 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
       mascotaId,
       categoria,
       fecha: cuando.toISOString(),
-      motivo: motivo.trim(),
-      lugar: lugar.trim(),
+      motivo: limpiarTexto(motivo),
+      lugar: limpiarTexto(lugar),
     };
 
     setGuardando(true);
@@ -222,6 +240,7 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
         }}
         error={errores.motivo}
         autoCapitalize="sentences"
+        maxLength={LIMITES.motivo}
         returnKeyType="next"
         onSubmitEditing={() => lugarRef.current?.focus()}
         submitBehavior="submit"
@@ -238,6 +257,7 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
         }}
         error={errores.lugar}
         autoCapitalize="words"
+        maxLength={LIMITES.lugar}
         returnKeyType="done"
         onSubmitEditing={handleGuardar}
       />

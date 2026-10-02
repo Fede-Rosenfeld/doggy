@@ -1,11 +1,15 @@
 /**
  * Formulario de un registro del carnet sanitario: tipo, nombre, fecha de
  * aplicación, veterinario o clínica y, opcional, la fecha del próximo
- * refuerzo. Todo lo que se carga es una aplicación ya hecha (no hay
- * registros pendientes). Se muestra dentro de un FormModal.
+ * refuerzo. En las vacunas se puede sumar, también opcional, la foto de la
+ * etiqueta (sacada en el momento o elegida de la galería, ver `FotoEtiqueta`).
+ * Todo lo que se carga es una aplicación ya hecha (no hay registros
+ * pendientes). Se muestra dentro de un FormModal.
  *
  * Sirve para dar de alta y para corregir: si recibe `registro`, arranca con
  * sus datos y al guardar lo reemplaza; si no, crea uno nuevo.
+ * Nombre y profesional tienen largo máximo y caracteres permitidos (ver
+ * `validaciones.ts`).
  */
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -16,12 +20,15 @@ import type { NuevoRegistro, RegistroSanitario, TipoRegistro } from '@/types/mod
 import { TIPOS_REGISTRO } from '@/utils/etiquetas';
 import { enmascararFecha, fechaIngresadaAIso, formatearFecha } from '@/utils/fechas';
 import {
+  LIMITES,
+  limpiarTexto,
   validarFechaAplicacion,
   validarProximaDosis,
-  validarRequerido,
+  validarTexto,
 } from '@/utils/validaciones';
 import { Chip } from '../Chip';
 import { Input } from '../Input';
+import { FotoEtiqueta } from './FotoEtiqueta';
 import { PrimaryButton } from '../PrimaryButton';
 
 type Props = {
@@ -61,6 +68,7 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
   const [proximaDosis, setProximaDosis] = useState(
     registro?.proximaDosis ? formatearFecha(registro.proximaDosis) : '',
   );
+  const [fotoEtiqueta, setFotoEtiqueta] = useState<string | null>(registro?.fotoEtiqueta ?? null);
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const fechaRef = useRef<TextInput>(null);
@@ -81,9 +89,19 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
 
   /** Valida todos los campos y devuelve los errores encontrados. */
   const validar = (): Errores => ({
-    nombre: validarRequerido(nombre, 'Ingresá el nombre del registro.'),
+    nombre: validarTexto(nombre, {
+      requerido: 'Ingresá el nombre del registro.',
+      min: 3,
+      max: LIMITES.nombreRegistro,
+      formato: 'texto',
+    }),
     fecha: validarFechaAplicacion(fecha),
-    profesional: validarRequerido(profesional, 'Indicá el veterinario o la clínica.'),
+    profesional: validarTexto(profesional, {
+      requerido: 'Indicá el veterinario o la clínica.',
+      min: 3,
+      max: LIMITES.profesional,
+      formato: 'texto',
+    }),
     proximaDosis: validarProximaDosis(proximaDosis, fecha),
   });
 
@@ -99,10 +117,12 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
     const datos: NuevoRegistro = {
       mascotaId,
       tipo,
-      nombre: nombre.trim(),
+      nombre: limpiarTexto(nombre),
       fecha: iso,
-      profesional: profesional.trim(),
+      profesional: limpiarTexto(profesional),
       ...(isoProxima && { proximaDosis: isoProxima }),
+      // La etiqueta es solo de vacunas: si se cambió el tipo, la foto no se guarda.
+      ...(tipo === 'vacuna' && fotoEtiqueta && { fotoEtiqueta }),
     };
 
     setGuardando(true);
@@ -146,6 +166,7 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
         }}
         error={errores.nombre}
         autoCapitalize="sentences"
+        maxLength={LIMITES.nombreRegistro}
         returnKeyType="next"
         onSubmitEditing={() => fechaRef.current?.focus()}
         submitBehavior="submit"
@@ -181,6 +202,7 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
         }}
         error={errores.profesional}
         autoCapitalize="words"
+        maxLength={LIMITES.profesional}
         returnKeyType="next"
         onSubmitEditing={() => proximaDosisRef.current?.focus()}
         submitBehavior="submit"
@@ -201,6 +223,8 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
         returnKeyType="done"
         onSubmitEditing={handleGuardar}
       />
+
+      {tipo === 'vacuna' && <FotoEtiqueta foto={fotoEtiqueta} onChange={setFotoEtiqueta} />}
 
       <PrimaryButton
         title={registro ? 'Guardar cambios' : 'Guardar registro'}

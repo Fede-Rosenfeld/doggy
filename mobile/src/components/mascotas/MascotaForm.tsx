@@ -1,8 +1,9 @@
 /**
  * Formulario de datos de una mascota, compartido por el alta y la edición.
  *
- * Tiene la foto (elegida de la fototeca del dispositivo), nombre, raza, edad y
- * señas particulares, con validación local. No sabe si está creando o
+ * Tiene la foto (sacada con la cámara o elegida de la galería), nombre, raza, edad y
+ * señas particulares, con validación local (largo máximo y caracteres
+ * permitidos en cada campo, ver `validaciones.ts`). No sabe si está creando o
  * editando: recibe los valores iniciales y le entrega los datos ya validados
  * y limpios a `onGuardar`, que decide qué hacer con ellos. Mientras
  * `onGuardar` corre, el botón muestra el estado de carga.
@@ -10,14 +11,21 @@
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
 import { Input } from '@/components/Input';
-import { PermissionNotice } from '@/components/PermissionNotice';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
 import type { NuevaMascota } from '@/types/models';
-import { validarEdad, validarRequerido } from '@/utils/validaciones';
+import {
+  LIMITES,
+  limpiarTexto,
+  validarEdad,
+  validarNombreMascota,
+  validarRaza,
+  validarTexto,
+} from '@/utils/validaciones';
 
 type Formulario = {
   nombre: string;
@@ -62,10 +70,16 @@ function aFormulario(mascota?: NuevaMascota): Formulario {
  */
 function validarFormulario(form: Formulario): Errores {
   return {
-    nombre: validarRequerido(form.nombre, 'Ingresá el nombre de tu mascota.'),
-    raza: validarRequerido(form.raza, 'Ingresá la raza (o "Mestizo").'),
+    nombre: validarNombreMascota(form.nombre),
+    raza: validarRaza(form.raza),
     edad: validarEdad(form.edad),
-    senas: validarRequerido(form.senas, 'Contá alguna seña para reconocerla.'),
+    senas: validarTexto(form.senas, {
+      requerido: 'Contá alguna seña para reconocerla.',
+      min: 5,
+      max: LIMITES.senas,
+      formato: 'texto',
+      multilinea: true,
+    }),
   };
 }
 
@@ -95,13 +109,19 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   };
 
-  /** Abre la galería y, si el usuario elige una imagen, la pone como foto. */
+  /**
+   * Pone una imagen como foto de la mascota.
+   * @param uri foto sacada o elegida
+   */
+  const ponerFoto = (uri: string) => setForm((prev) => ({ ...prev, foto: uri }));
+
+  /** Pregunta si sacar la foto o elegirla de la galería y, si se consigue, la pone. */
   const handleElegirFoto = async () => {
     try {
-      const uri = await fototeca.elegirFoto();
-      if (uri) setForm((prev) => ({ ...prev, foto: uri }));
+      const uri = await fototeca.pedirFoto();
+      if (uri) ponerFoto(uri);
     } catch {
-      Alert.alert('No se pudo abrir la galería', 'Probá de nuevo en unos segundos.');
+      Alert.alert('No se pudo conseguir la foto', 'Probá de nuevo en unos segundos.');
     }
   };
 
@@ -114,10 +134,10 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
     setGuardando(true);
     try {
       await onGuardar({
-        nombre: form.nombre.trim(),
-        raza: form.raza.trim(),
+        nombre: limpiarTexto(form.nombre),
+        raza: limpiarTexto(form.raza),
         edad: Number(form.edad),
-        senas: form.senas.trim(),
+        senas: limpiarTexto(form.senas, true),
         foto: form.foto,
       });
     } finally {
@@ -136,20 +156,15 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
           cargando={fototeca.eligiendo}
         />
         <Text style={styles.fotoAyuda}>
-          {form.foto ? 'Tocá la foto para cambiarla' : 'Tocá para elegir una foto de tu galería'}
+          {form.foto ? 'Tocá la foto para cambiarla' : 'Tocá para sacarle una foto o elegir una de tu galería'}
         </Text>
       </View>
 
-      {fototeca.permiso === 'denegado' && (
-        <PermissionNotice
-          icon="photo-library"
-          titulo="Necesitamos acceso a tus fotos"
-          mensaje="La foto es lo que más ayuda a que alguien reconozca a tu mascota si se pierde. Podés habilitar el acceso cuando quieras."
-          puedePreguntar={fototeca.puedePreguntar}
-          onReintentar={handleElegirFoto}
-          onAbrirAjustes={fototeca.abrirAjustes}
-        />
-      )}
+      <AvisoPermisoFoto
+        fototeca={fototeca}
+        motivo="La foto es lo que más ayuda a que alguien reconozca a tu mascota si se pierde."
+        onFoto={ponerFoto}
+      />
 
       <View style={styles.card}>
         <Input
@@ -160,6 +175,7 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
           onChangeText={handleChange('nombre')}
           error={errores.nombre}
           autoCapitalize="words"
+          maxLength={LIMITES.nombreMascota}
           returnKeyType="next"
           onSubmitEditing={() => razaRef.current?.focus()}
           submitBehavior="submit"
@@ -175,6 +191,7 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
               onChangeText={handleChange('raza')}
               error={errores.raza}
               autoCapitalize="words"
+              maxLength={LIMITES.raza}
               returnKeyType="next"
               onSubmitEditing={() => edadRef.current?.focus()}
               submitBehavior="submit"
@@ -207,7 +224,7 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
           onChangeText={handleChange('senas')}
           error={errores.senas}
           multiline
-          maxLength={200}
+          maxLength={LIMITES.senas}
         />
       </View>
 

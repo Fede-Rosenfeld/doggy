@@ -9,6 +9,8 @@
  * estado. Si se deniega la ubicación, el mapa queda en CABA con un aviso.
  * El FAB pregunta qué se reporta: "Se perdió mi mascota" o "Encontré una mascota".
  * Si llega `reporteId` por params (después de reportar), se centra en ese reporte.
+ * Si el reporte es de una mascota del usuario, desde el detalle se lo puede
+ * editar (abre "Se perdió mi mascota" en modo edición) o cerrar con "Ya apareció".
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -39,10 +41,12 @@ import { ReporteCard } from '@/components/perdidos/ReporteCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { useApp } from '@/context/AppContext';
+import { useCerrarReporte } from '@/hooks/useCerrarReporte';
 import { useUbicacion } from '@/hooks/useUbicacion';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { ReportePerdida } from '@/types/models';
-import { filtrarReportes, FiltroEstado } from '@/utils/selectores';
+import { filtrarReportes, FiltroEstado, puedeGestionarReporte } from '@/utils/selectores';
+import { LIMITES } from '@/utils/validaciones';
 
 type Modo = 'mapa' | 'lista';
 
@@ -69,7 +73,8 @@ const ESPERA_CIERRE_HOJA_MS = 300;
  * @returns el mapa o la lista de reportes
  */
 export default function PerdidosScreen() {
-  const { reportes, usuario } = useApp();
+  const { reportes, usuario, mascotas } = useApp();
+  const { cerrando, pedirCierre } = useCerrarReporte();
   const { reporteId } = useLocalSearchParams<{ reporteId?: string }>();
   const gps = useUbicacion({ automatico: true });
   const { width } = useWindowDimensions();
@@ -155,6 +160,33 @@ export default function PerdidosScreen() {
     setTimeout(() => mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng }), ESPERA_MAPA_MS);
   }, []);
 
+  /**
+   * "Editar reporte" del detalle: cierra la hoja y abre el formulario con los datos cargados.
+   * @param reporte reporte a editar
+   */
+  const editarReporte = useCallback((reporte: ReportePerdida) => {
+    setDetalleVisible(false);
+    // En iOS no se puede presentar un modal mientras otro se está cerrando.
+    setTimeout(
+      () =>
+        router.push({ pathname: '/mi-mascota-perdida', params: { reporteId: String(reporte.id) } }),
+      ESPERA_CIERRE_HOJA_MS,
+    );
+  }, []);
+
+  /**
+   * "Ya apareció" del detalle: confirma, cierra el reporte y la hoja, y saca la selección del mapa.
+   * @param reporte reporte de la mascota que apareció
+   */
+  const marcarAparecida = useCallback(
+    (reporte: ReportePerdida) =>
+      pedirCierre(reporte, () => {
+        setDetalleVisible(false);
+        setSeleccionadoId((actual) => (actual === reporte.id ? null : actual));
+      }),
+    [pedirCierre],
+  );
+
   /** Pide la posición al GPS y centra el mapa ahí. */
   const handleMiUbicacion = async () => {
     const coords = await gps.obtenerUbicacion();
@@ -220,6 +252,7 @@ export default function PerdidosScreen() {
             autoFocus
             returnKeyType="search"
             autoCorrect={false}
+            maxLength={LIMITES.busqueda}
           />
         )}
         {gps.permiso === 'denegado' && (
@@ -340,6 +373,10 @@ export default function PerdidosScreen() {
         esPropio={!!detalle && detalle.autorId === usuario?.id}
         onClose={() => setDetalleVisible(false)}
         onVerEnMapa={abrirEnMapa}
+        puedeGestionar={!!detalle && puedeGestionarReporte(detalle, usuario?.id, mascotas)}
+        onEditar={editarReporte}
+        onYaAparecio={marcarAparecida}
+        cerrando={cerrando}
       />
 
       {/* Dos reportes distintos: el tutor que perdió a su mascota y el vecino que encontró una. */}

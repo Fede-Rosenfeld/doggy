@@ -1,7 +1,8 @@
 /**
  * Card destacada en mostaza con el próximo refuerzo del carnet: el nombre de
  * la aplicación y la fecha de su `proximaDosis`. Como ese registro no se
- * repite en el historial, la card tiene su propio botón de editar.
+ * repite en el historial, la card tiene su propio botón de editar y, si es
+ * una vacuna con foto de la etiqueta, el link para verla.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
@@ -10,6 +11,7 @@ import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { RegistroSanitario } from '@/types/models';
 import { formatearFecha } from '@/utils/fechas';
 import { IconButton } from '../IconButton';
+import { VerEtiqueta } from './VerEtiqueta';
 
 type Props = {
   registro: RegistroSanitario;
@@ -41,6 +43,7 @@ export function ProximoRefuerzoCard({ registro, titulo = 'Próximo refuerzo', on
           <MaterialIcons name="calendar-today" size={sizes.iconSm} color={colors.onTertiaryFixedVariant} />
           <Text style={styles.fechaTexto}>{formatearFecha(registro.proximaDosis)}</Text>
         </View>
+        <VerEtiqueta registro={registro} color={colors.tertiaryContainer} />
       </View>
       <IconButton
         icon="edit"
