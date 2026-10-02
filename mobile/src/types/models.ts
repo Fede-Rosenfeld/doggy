@@ -55,6 +55,12 @@ export type RegistroSanitario = {
   profesional: string;
   /** Fecha del próximo refuerzo (ISO), si el veterinario la indicó. */
   proximaDosis?: string;
+  /**
+   * Foto de la etiqueta de la vacuna (el sticker con marca, lote y
+   * vencimiento que se pega en la libreta), como constancia. Opcional y solo
+   * en vacunas. Clave de foto local o URI, como el resto de las fotos.
+   */
+  fotoEtiqueta?: string;
 };
 
 export type CategoriaTurno = 'vacunas' | 'veterinario' | 'peluqueria';

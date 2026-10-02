@@ -1,8 +1,10 @@
 /**
  * Formulario de un registro del carnet sanitario: tipo, nombre, fecha de
  * aplicación, veterinario o clínica y, opcional, la fecha del próximo
- * refuerzo. Todo lo que se carga es una aplicación ya hecha (no hay
- * registros pendientes). Se muestra dentro de un FormModal.
+ * refuerzo. En las vacunas se puede sumar, también opcional, la foto de la
+ * etiqueta (sacada en el momento o elegida de la galería, ver `FotoEtiqueta`).
+ * Todo lo que se carga es una aplicación ya hecha (no hay registros
+ * pendientes). Se muestra dentro de un FormModal.
  *
  * Sirve para dar de alta y para corregir: si recibe `registro`, arranca con
  * sus datos y al guardar lo reemplaza; si no, crea uno nuevo.
@@ -26,6 +28,7 @@ import {
 } from '@/utils/validaciones';
 import { Chip } from '../Chip';
 import { Input } from '../Input';
+import { FotoEtiqueta } from './FotoEtiqueta';
 import { PrimaryButton } from '../PrimaryButton';
 
 type Props = {
@@ -65,6 +68,7 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
   const [proximaDosis, setProximaDosis] = useState(
     registro?.proximaDosis ? formatearFecha(registro.proximaDosis) : '',
   );
+  const [fotoEtiqueta, setFotoEtiqueta] = useState<string | null>(registro?.fotoEtiqueta ?? null);
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const fechaRef = useRef<TextInput>(null);
@@ -117,6 +121,8 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
       fecha: iso,
       profesional: limpiarTexto(profesional),
       ...(isoProxima && { proximaDosis: isoProxima }),
+      // La etiqueta es solo de vacunas: si se cambió el tipo, la foto no se guarda.
+      ...(tipo === 'vacuna' && fotoEtiqueta && { fotoEtiqueta }),
     };
 
     setGuardando(true);
@@ -217,6 +223,8 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
         returnKeyType="done"
         onSubmitEditing={handleGuardar}
       />
+
+      {tipo === 'vacuna' && <FotoEtiqueta foto={fotoEtiqueta} onChange={setFotoEtiqueta} />}
 
       <PrimaryButton
         title={registro ? 'Guardar cambios' : 'Guardar registro'}

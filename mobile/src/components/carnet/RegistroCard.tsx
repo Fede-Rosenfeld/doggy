@@ -5,7 +5,9 @@
  * parejo: arriba el ícono del tipo, el nombre, el badge "Aplicada" (todo
  * registro del carnet es una aplicación hecha) y el botón de editar; abajo,
  * separadas por una línea, siempre las mismas tres filas alineadas:
- * aplicación, profesional y refuerzo (con "—" si no tiene).
+ * aplicación, profesional y refuerzo (con "—" si no tiene). Las vacunas
+ * suman una cuarta fila, "Etiqueta", con el link a la foto de la etiqueta
+ * (o "—" si no se cargó), así todas las cards de la pestaña Vacunas quedan iguales.
  */
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
@@ -17,6 +19,7 @@ import { TIPOS_REGISTRO } from '@/utils/etiquetas';
 import { formatearFecha } from '@/utils/fechas';
 import { Badge } from '../Badge';
 import { IconButton } from '../IconButton';
+import { VerEtiqueta } from './VerEtiqueta';
 
 type Props = {
   registro: RegistroSanitario;
@@ -88,6 +91,13 @@ export function RegistroCard({ registro, onEditar }: Props) {
           etiqueta="Refuerzo"
           valor={registro.proximaDosis ? formatearFecha(registro.proximaDosis) : '—'}
         />
+        {registro.tipo === 'vacuna' && (
+          <Fila
+            icono={<MaterialIcons name="sell" size={ICONO} color={colors.onSurfaceVariant} />}
+            etiqueta="Etiqueta"
+            valor={registro.fotoEtiqueta ? <VerEtiqueta registro={registro} /> : '—'}
+          />
+        )}
       </View>
     </View>
   );
@@ -96,7 +106,8 @@ export function RegistroCard({ registro, onEditar }: Props) {
 type FilaProps = {
   icono: ReactNode;
   etiqueta: string;
-  valor: string;
+  /** Texto del valor, o un elemento propio (por ejemplo, un link). */
+  valor: ReactNode;
 };
 
 /**
@@ -109,9 +120,13 @@ function Fila({ icono, etiqueta, valor }: FilaProps) {
     <View style={styles.fila}>
       {icono}
       <Text style={styles.etiqueta}>{etiqueta}</Text>
-      <Text style={styles.valor} numberOfLines={1}>
-        {valor}
-      </Text>
+      {typeof valor === 'string' ? (
+        <Text style={styles.valor} numberOfLines={1}>
+          {valor}
+        </Text>
+      ) : (
+        valor
+      )}
     </View>
   );
 }
