@@ -1,7 +1,7 @@
 /**
  * Pantalla Mi Perfil.
  *
- * Datos del usuario (foto editable desde la galería, nombre, ubicación y
+ * Datos del usuario (foto editable con la cámara o la galería, nombre, ubicación y
  * cantidad de mascotas), contacto de emergencia, familia y cuidadores de cada
  * mascota, menú de opciones y cierre de sesión.
  *
@@ -20,6 +20,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { Badge } from '@/components/Badge';
 import { Cargando } from '@/components/EstadoVista';
 import { FormModal } from '@/components/FormModal';
+import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
 import { Input } from '@/components/Input';
 import { MenuRow } from '@/components/MenuRow';
@@ -74,13 +75,25 @@ export default function PerfilScreen() {
   );
 
   // --- Handlers ---
-  /** Cambia la foto de perfil con una imagen de la galería. */
-  const handleFoto = async () => {
+  /**
+   * Guarda una imagen como foto de perfil.
+   * @param uri foto sacada o elegida
+   */
+  const guardarFoto = async (uri: string) => {
     try {
-      const uri = await fototeca.elegirFoto();
-      if (uri) await actualizarUsuario({ foto: uri });
+      await actualizarUsuario({ foto: uri });
     } catch {
       Alert.alert('No se pudo cambiar la foto', 'Probá de nuevo en unos segundos.');
+    }
+  };
+
+  /** Pregunta si sacar una foto o elegirla de la galería y la pone como foto de perfil. */
+  const handleFoto = async () => {
+    try {
+      const uri = await fototeca.pedirFoto();
+      if (uri) await guardarFoto(uri);
+    } catch {
+      Alert.alert('No se pudo conseguir la foto', 'Probá de nuevo en unos segundos.');
     }
   };
 
@@ -184,6 +197,12 @@ export default function PerfilScreen() {
             onPress={handleFoto}
             cargando={fototeca.eligiendo}
             size={FOTO}
+          />
+          <AvisoPermisoFoto
+            fototeca={fototeca}
+            motivo="Tu foto ayuda a que te reconozcan quienes cuidan a tus mascotas."
+            onFoto={guardarFoto}
+            compacto
           />
           <Text style={styles.nombre}>
             {usuario.nombre} {usuario.apellido}

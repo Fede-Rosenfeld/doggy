@@ -1,7 +1,7 @@
 /**
  * Formulario de datos de una mascota, compartido por el alta y la edición.
  *
- * Tiene la foto (elegida de la fototeca del dispositivo), nombre, raza, edad y
+ * Tiene la foto (sacada con la cámara o elegida de la galería), nombre, raza, edad y
  * señas particulares, con validación local (largo máximo y caracteres
  * permitidos en cada campo, ver `validaciones.ts`). No sabe si está creando o
  * editando: recibe los valores iniciales y le entrega los datos ya validados
@@ -11,9 +11,9 @@
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
 import { Input } from '@/components/Input';
-import { PermissionNotice } from '@/components/PermissionNotice';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
@@ -109,13 +109,19 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   };
 
-  /** Abre la galería y, si el usuario elige una imagen, la pone como foto. */
+  /**
+   * Pone una imagen como foto de la mascota.
+   * @param uri foto sacada o elegida
+   */
+  const ponerFoto = (uri: string) => setForm((prev) => ({ ...prev, foto: uri }));
+
+  /** Pregunta si sacar la foto o elegirla de la galería y, si se consigue, la pone. */
   const handleElegirFoto = async () => {
     try {
-      const uri = await fototeca.elegirFoto();
-      if (uri) setForm((prev) => ({ ...prev, foto: uri }));
+      const uri = await fototeca.pedirFoto();
+      if (uri) ponerFoto(uri);
     } catch {
-      Alert.alert('No se pudo abrir la galería', 'Probá de nuevo en unos segundos.');
+      Alert.alert('No se pudo conseguir la foto', 'Probá de nuevo en unos segundos.');
     }
   };
 
@@ -150,20 +156,15 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
           cargando={fototeca.eligiendo}
         />
         <Text style={styles.fotoAyuda}>
-          {form.foto ? 'Tocá la foto para cambiarla' : 'Tocá para elegir una foto de tu galería'}
+          {form.foto ? 'Tocá la foto para cambiarla' : 'Tocá para sacarle una foto o elegir una de tu galería'}
         </Text>
       </View>
 
-      {fototeca.permiso === 'denegado' && (
-        <PermissionNotice
-          icon="photo-library"
-          titulo="Necesitamos acceso a tus fotos"
-          mensaje="La foto es lo que más ayuda a que alguien reconozca a tu mascota si se pierde. Podés habilitar el acceso cuando quieras."
-          puedePreguntar={fototeca.puedePreguntar}
-          onReintentar={handleElegirFoto}
-          onAbrirAjustes={fototeca.abrirAjustes}
-        />
-      )}
+      <AvisoPermisoFoto
+        fototeca={fototeca}
+        motivo="La foto es lo que más ayuda a que alguien reconozca a tu mascota si se pierde."
+        onFoto={ponerFoto}
+      />
 
       <View style={styles.card}>
         <Input

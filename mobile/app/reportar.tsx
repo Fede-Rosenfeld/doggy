@@ -5,7 +5,7 @@
  * propia es `mi-mascota-perdida.tsx`). Junta los tres componentes nativos:
  * - cámara: escanear el QR de la chapita para identificar a la mascota y
  *   autocompletar sus datos,
- * - fototeca: sacarle o elegir una foto,
+ * - cámara y fototeca: sacarle una foto en el momento o elegir una de la galería,
  * - GPS: precargar en el mini mapa el punto donde se la encontró.
  * El nombre es opcional porque quien la encuentra muchas veces no lo sabe.
  * Al confirmar se crea el reporte "encontrado", vibra, se cierra el modal y
@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
 import { Input } from '@/components/Input';
 import { PermissionNotice } from '@/components/PermissionNotice';
@@ -153,13 +154,13 @@ export default function ReportarScreen() {
     }
   };
 
-  /** Elige la foto de la mascota desde la galería. */
+  /** Pregunta si sacarle una foto a la mascota o elegirla de la galería. */
   const handleFoto = async () => {
     try {
-      const uri = await fototeca.elegirFoto();
+      const uri = await fototeca.pedirFoto();
       if (uri) setFoto(uri);
     } catch {
-      Alert.alert('No se pudo abrir la galería', 'Probá de nuevo en unos segundos.');
+      Alert.alert('No se pudo conseguir la foto', 'Probá de nuevo en unos segundos.');
     }
   };
 
@@ -247,9 +248,15 @@ export default function ReportarScreen() {
                 size={sizes.avatarLg - 32}
               />
               <Text style={styles.fotoAyuda}>
-                {foto ? 'Tocá para cambiar la foto' : 'Sumá una foto: es lo que más ayuda a que su familia la reconozca'}
+                {foto ? 'Tocá para cambiar la foto' : 'Sacale o sumá una foto: es lo que más ayuda a que su familia la reconozca'}
               </Text>
             </View>
+            <AvisoPermisoFoto
+              fototeca={fototeca}
+              motivo="La foto es lo que más ayuda a que su familia la reconozca."
+              onFoto={setFoto}
+              compacto
+            />
 
             <Input
               label="Nombre (si lo sabés)"
