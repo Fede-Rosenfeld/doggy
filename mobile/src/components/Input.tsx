@@ -3,7 +3,8 @@
  *
  * Label arriba, ícono a la izquierda, borde teal claro con foco y mensaje de
  * error debajo. Con `password` oculta el texto y agrega el botón de
- * mostrar/ocultar. Con `multiline` crece para textos largos (señas, descripciones).
+ * mostrar/ocultar. Con `multiline` crece para textos largos (señas, descripciones)
+ * y, si tiene `maxLength`, muestra debajo cuántos caracteres van del máximo.
  * Acepta el resto de las props de TextInput.
  */
 import { MaterialIcons } from '@expo/vector-icons';
@@ -48,6 +49,10 @@ export const Input = forwardRef<TextInput, Props>(function Input(
     setFocused(false);
     onBlur?.(e);
   };
+
+  // En los textos largos se muestra cuánto falta para el máximo.
+  const contador = !!inputProps.multiline && inputProps.maxLength !== undefined;
+  const largo = inputProps.value?.length ?? 0;
 
   /** Alterna entre mostrar y ocultar la contraseña. */
   const toggleHidden = () => setHidden((prev) => !prev);
@@ -98,7 +103,16 @@ export const Input = forwardRef<TextInput, Props>(function Input(
           </Pressable>
         )}
       </View>
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {(!!error || contador) && (
+        <View style={styles.pie}>
+          {!!error && <Text style={styles.error}>{error}</Text>}
+          {contador && (
+            <Text style={styles.contador} accessibilityLabel={`${largo} de ${inputProps.maxLength} caracteres`}>
+              {largo}/{inputProps.maxLength}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 });
@@ -155,8 +169,18 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     paddingTop: 0,
   },
+  pie: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   error: {
     ...typography.bodySm,
     color: colors.error,
+    flex: 1,
+  },
+  contador: {
+    ...typography.bodySm,
+    color: colors.onSurfaceVariant,
+    marginLeft: 'auto',
   },
 });

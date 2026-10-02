@@ -3,7 +3,9 @@
  *
  * Mismo estilo que el Login: fondo teal y el formulario en una card clara.
  * Pide nombre, apellido, email y contraseña con confirmación, y valida todo
- * localmente. Como todavía no hay backend, al crear la cuenta se muestra una
+ * localmente: nombre y apellido solo con letras, email con formato válido y
+ * contraseña de 8 a 64 caracteres, sin espacios, con al menos una letra y un
+ * número. Cada campo tiene su largo máximo. Como todavía no hay backend, al crear la cuenta se muestra una
  * confirmación y se entra a la tab Mascotas.
  */
 import { router } from 'expo-router';
@@ -19,11 +21,14 @@ import { useApp } from '@/context/AppContext';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
 import { volver } from '@/utils/navegacion';
 import {
+  LIMITES,
+  limpiarTexto,
+  normalizarEmail,
   PASSWORD_MIN,
   validarConfirmacion,
   validarEmail,
+  validarNombrePersona,
   validarPasswordNueva,
-  validarRequerido,
 } from '@/utils/validaciones';
 
 type Formulario = {
@@ -52,8 +57,8 @@ const FORM_INICIAL: Formulario = {
  */
 function validarFormulario(form: Formulario): Errores {
   return {
-    nombre: validarRequerido(form.nombre, 'Ingresá tu nombre.'),
-    apellido: validarRequerido(form.apellido, 'Ingresá tu apellido.'),
+    nombre: validarNombrePersona(form.nombre, 'Ingresá tu nombre.'),
+    apellido: validarNombrePersona(form.apellido, 'Ingresá tu apellido.'),
     email: validarEmail(form.email),
     password: validarPasswordNueva(form.password),
     confirmacion: validarConfirmacion(form.password, form.confirmacion),
@@ -87,7 +92,7 @@ export default function RegistroScreen() {
 
   /** Deja la sesión iniciada con la cuenta nueva y entra a la tab Mascotas. */
   const entrarALaApp = async () => {
-    await iniciarSesion(form.email, form.password);
+    await iniciarSesion(normalizarEmail(form.email), form.password);
     router.replace('/mascotas');
   };
 
@@ -99,7 +104,7 @@ export default function RegistroScreen() {
 
     Alert.alert(
       'Cuenta creada',
-      `¡Bienvenido/a a Doggy, ${form.nombre.trim()}! Ya podés empezar a cargar tus mascotas.`,
+      `¡Bienvenido/a a Doggy, ${limpiarTexto(form.nombre)}! Ya podés empezar a cargar tus mascotas.`,
       [{ text: 'Continuar', onPress: entrarALaApp }],
     );
   };
@@ -138,6 +143,7 @@ export default function RegistroScreen() {
               error={errores.nombre}
               autoCapitalize="words"
               autoComplete="given-name"
+              maxLength={LIMITES.nombrePersona}
               returnKeyType="next"
               onSubmitEditing={() => apellidoRef.current?.focus()}
               submitBehavior="submit"
@@ -153,6 +159,7 @@ export default function RegistroScreen() {
               error={errores.apellido}
               autoCapitalize="words"
               autoComplete="family-name"
+              maxLength={LIMITES.nombrePersona}
               returnKeyType="next"
               onSubmitEditing={() => emailRef.current?.focus()}
               submitBehavior="submit"
@@ -172,6 +179,7 @@ export default function RegistroScreen() {
           autoCapitalize="none"
           autoComplete="email"
           autoCorrect={false}
+          maxLength={LIMITES.email}
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
           submitBehavior="submit"
@@ -180,13 +188,14 @@ export default function RegistroScreen() {
           ref={passwordRef}
           label="Contraseña"
           icon="lock"
-          placeholder={`Mínimo ${PASSWORD_MIN} caracteres`}
+          placeholder={`Mínimo ${PASSWORD_MIN}, con letras y números`}
           password
           value={form.password}
           onChangeText={handleChange('password')}
           error={errores.password}
           autoCapitalize="none"
           autoComplete="new-password"
+          maxLength={LIMITES.password}
           returnKeyType="next"
           onSubmitEditing={() => confirmacionRef.current?.focus()}
           submitBehavior="submit"
@@ -202,6 +211,7 @@ export default function RegistroScreen() {
           error={errores.confirmacion}
           autoCapitalize="none"
           autoComplete="new-password"
+          maxLength={LIMITES.password}
           returnKeyType="go"
           onSubmitEditing={handleCrearCuenta}
         />

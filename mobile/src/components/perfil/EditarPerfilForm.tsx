@@ -1,6 +1,8 @@
 /**
  * Formulario "Editar datos personales": nombre, apellido, ubicación, email,
  * teléfono de emergencia y si tiene WhatsApp. Guarda en el contexto global.
+ * Cada campo tiene su largo máximo y sus caracteres permitidos (ver
+ * `validaciones.ts`); el teléfono descarta letras y símbolos mientras se escribe.
  */
 import { useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
@@ -8,7 +10,16 @@ import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { colors, spacing, typography } from '@/theme';
 import type { Usuario } from '@/types/models';
-import { validarEmail, validarRequerido, validarTelefono } from '@/utils/validaciones';
+import {
+  filtrarTelefono,
+  LIMITES,
+  limpiarTexto,
+  normalizarEmail,
+  validarEmail,
+  validarNombrePersona,
+  validarTelefono,
+  validarUbicacion,
+} from '@/utils/validaciones';
 import { Input } from '../Input';
 import { PrimaryButton } from '../PrimaryButton';
 
@@ -28,9 +39,9 @@ type Errores = Partial<Record<Campo, string>>;
  */
 function validar(form: Formulario): Errores {
   return {
-    nombre: validarRequerido(form.nombre, 'Ingresá tu nombre.'),
-    apellido: validarRequerido(form.apellido, 'Ingresá tu apellido.'),
-    ubicacion: validarRequerido(form.ubicacion, 'Ingresá tu barrio y ciudad.'),
+    nombre: validarNombrePersona(form.nombre, 'Ingresá tu nombre.'),
+    apellido: validarNombrePersona(form.apellido, 'Ingresá tu apellido.'),
+    ubicacion: validarUbicacion(form.ubicacion),
     email: validarEmail(form.email),
     telefonoEmergencia: validarTelefono(form.telefonoEmergencia),
   };
@@ -75,11 +86,11 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
     setGuardando(true);
     try {
       await actualizarUsuario({
-        nombre: form.nombre.trim(),
-        apellido: form.apellido.trim(),
-        ubicacion: form.ubicacion.trim(),
-        email: form.email.trim().toLowerCase(),
-        telefonoEmergencia: form.telefonoEmergencia.trim(),
+        nombre: limpiarTexto(form.nombre),
+        apellido: limpiarTexto(form.apellido),
+        ubicacion: limpiarTexto(form.ubicacion),
+        email: normalizarEmail(form.email),
+        telefonoEmergencia: limpiarTexto(form.telefonoEmergencia),
         whatsappHabilitado: whatsapp,
       });
       onGuardado();
@@ -101,6 +112,7 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
             onChangeText={handleChange('nombre')}
             error={errores.nombre}
             autoCapitalize="words"
+            maxLength={LIMITES.nombrePersona}
           />
         </View>
         <View style={styles.mitad}>
@@ -110,6 +122,7 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
             onChangeText={handleChange('apellido')}
             error={errores.apellido}
             autoCapitalize="words"
+            maxLength={LIMITES.nombrePersona}
           />
         </View>
       </View>
@@ -121,6 +134,7 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
         onChangeText={handleChange('ubicacion')}
         error={errores.ubicacion}
         autoCapitalize="words"
+        maxLength={LIMITES.ubicacion}
       />
       <Input
         label="Email"
@@ -131,15 +145,18 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
+        maxLength={LIMITES.email}
       />
       <Input
         label="Teléfono de emergencia"
         icon="phone-iphone"
         placeholder="+54 9 11 1234-5678"
         value={form.telefonoEmergencia}
-        onChangeText={handleChange('telefonoEmergencia')}
+        // Algunos teclados dejan pegar letras: se descartan antes de guardar el valor.
+        onChangeText={(texto) => handleChange('telefonoEmergencia')(filtrarTelefono(texto))}
         error={errores.telefonoEmergencia}
         keyboardType="phone-pad"
+        maxLength={LIMITES.telefono}
       />
       <View style={styles.switchFila}>
         <View style={styles.switchTexto}>

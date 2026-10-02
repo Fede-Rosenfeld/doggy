@@ -46,6 +46,7 @@ import { useUbicacion } from '@/hooks/useUbicacion';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { ReportePerdida } from '@/types/models';
 import { filtrarReportes, FiltroEstado, puedeGestionarReporte } from '@/utils/selectores';
+import { LIMITES } from '@/utils/validaciones';
 
 type Modo = 'mapa' | 'lista';
 
@@ -251,6 +252,7 @@ export default function PerdidosScreen() {
             autoFocus
             returnKeyType="search"
             autoCorrect={false}
+            maxLength={LIMITES.busqueda}
           />
         )}
         {gps.permiso === 'denegado' && (

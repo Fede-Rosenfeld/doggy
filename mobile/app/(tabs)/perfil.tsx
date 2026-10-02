@@ -35,6 +35,7 @@ import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { Mascota } from '@/types/models';
 import { tokenDeTexto } from '@/utils/invitaciones';
+import { LIMITES } from '@/utils/validaciones';
 
 /** Versión que se muestra en el pie (sale de app.json). */
 const VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -363,6 +364,7 @@ export default function PerfilScreen() {
           error={errorLink}
           autoCapitalize="characters"
           autoCorrect={false}
+          maxLength={LIMITES.link}
           returnKeyType="go"
           onSubmitEditing={handleAbrirLink}
         />

@@ -82,8 +82,8 @@ Link de asignación (doggy://asignar?token=...) ─► (modal) Asignación de ma
 
 ### Detalle por pantalla
 
-1. **Login**: email y contraseña con validación local. "Ingresar" entra a la tab Mascotas.
-2. **Registro**: desde "Registrarme". Pide nombre, apellido, email, contraseña (mínimo 6 caracteres) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
+1. **Login**: email y contraseña con validación local (formato del email y largo máximo). "Ingresar" entra a la tab Mascotas.
+2. **Registro**: desde "Registrarme". Pide nombre, apellido (solo letras), email, contraseña (de 8 a 64 caracteres, sin espacios, con al menos una letra y un número) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
 4. **Agregar mascota**: foto desde la galería, nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
 5. **Perfil de la mascota**: foto, raza y edad; botón "Editar mascota"; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre "Se perdió mi mascota" con esa mascota ya elegida. Si la mascota ya tiene un reporte de perdida activo, en lugar de ese botón aparece el aviso "Reportada como perdida" (desde cuándo, zona y radio de búsqueda) con "Editar reporte" y "Ya apareció". "Editar mascota" abre el mismo formulario del alta con los datos precargados (foto, nombre, raza, edad y señas); al guardar vuelve al perfil ya actualizado. El ID único no cambia aunque cambie el nombre, para que la placa ya grabada siga funcionando.
@@ -126,6 +126,16 @@ Link de asignación (doggy://asignar?token=...) ─► (modal) Asignación de ma
 - **Permiso:** cámara, pedido con `useCameraPermissions` recién cuando el usuario toca "Escanear" y declarado con el plugin de `expo-camera` en `app.json` (sin micrófono, porque no se graba audio). Si se niega, se muestra un `PermissionNotice` y queda la alternativa de subir una foto del QR.
 - **Por qué:** quien encuentra un perro suele estar en la calle, apurado y con una mano ocupada. Escanear la chapita identifica a la mascota y trae sus datos en un segundo, sin tipear un código. La cámara solo se enciende a pedido y se apaga al leer para no gastar batería.
 
+## Validación de datos
+
+Todos los formularios validan en local antes de guardar, con las reglas centralizadas en `src/utils/validaciones.ts`. El error aparece en rojo debajo del campo y se borra apenas se corrige.
+
+- **Largo máximo:** cada campo tiene su límite en `LIMITES`, que se usa también como `maxLength` del input, así no se puede escribir de más (nombre y apellido 40, email 100, contraseña 64, ubicación 60, nombre de mascota 30, raza 40, señas 200, descripción e información adicional 300, etiqueta 24, motivo y lugar del turno 80, nombre del registro y profesional 60). Los textos largos muestran el contador de caracteres.
+- **Caracteres permitidos:** nombres y apellidos solo con letras (con tildes, ñ y ü), espacios, guiones y apóstrofes; nombres de mascota, razas y etiquetas con letras, números, espacios, puntos y guiones (y al menos una letra); los textos libres (señas, descripción, motivo, lugar, veterinario, ubicación) con letras, números y la puntuación común, incluidas las comillas y guiones que iOS pone solo. No se aceptan emojis, símbolos como `< > { } * =`, caracteres invisibles ni textos hechos solo de números o signos ("!!!!"); el mensaje dice qué carácter sacar.
+- **Formatos:** email `usuario@dominio.ext` (se guarda en minúsculas), teléfono de 8 a 15 dígitos (las letras se descartan mientras se escribe), edad entera hasta 30 años, fechas `dd/mm/aaaa` reales y horas `HH:MM`.
+- **Rangos de fechas:** una aplicación del carnet no puede ser futura ni de hace más de 30 años; el refuerzo tiene que ser posterior a la aplicación y no más de 5 años después; un turno tiene que ser a futuro y a no más de 2 años.
+- **Limpieza:** antes de guardar se sacan los espacios de los bordes y los repetidos, y en los textos de varias líneas se deja como mucho una línea en blanco seguida (`limpiarTexto`).
+
 ## Datos y arquitectura
 
 La app ya está separada en capas para sumar el backend sin tocar las pantallas:
@@ -142,7 +152,7 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 ## Componentes reutilizables
 
 - `ScreenContainer`: safe area, fondo y scroll con ajuste al teclado.
-- `Input`: label, ícono, foco, error y modo contraseña.
+- `Input`: label, ícono, foco, error y modo contraseña; en los textos largos muestra el contador de caracteres (`120/300`).
 - `PrimaryButton`: variantes primaria (teal), secundaria (mostaza), outline, tonal y de peligro, en dos tamaños.
 - `BackButton`: volver al stack anterior, en tono claro u oscuro.
 - `TabBar`: barra inferior con la píldora de tab activa.

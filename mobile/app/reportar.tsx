@@ -43,9 +43,17 @@ import type { Mascota } from '@/types/models';
 import { CODIGO_MASCOTA_REGEX } from '@/utils/codigos';
 import { CENTRO_CABA } from '@/utils/mapa';
 import { buscarMascotaPorCodigo } from '@/utils/selectores';
-import { validarRequerido } from '@/utils/validaciones';
+import {
+  LIMITES,
+  limpiarTexto,
+  validarNombreMascota,
+  validarRaza,
+  validarTexto,
+} from '@/utils/validaciones';
 
 type Errores = {
+  nombre?: string;
+  raza?: string;
   descripcion?: string;
 };
 
@@ -157,20 +165,29 @@ export default function ReportarScreen() {
 
   /** Valida, crea el reporte, vibra y vuelve a Perdidos mostrando el nuevo marker. */
   const handleReportar = async () => {
+    // Nombre y raza son opcionales (quien la encontró puede no saberlos), pero si se cargan se validan.
     const nuevos: Errores = {
-      descripcion: validarRequerido(descripcion, 'Describí cómo es para que su familia la reconozca.'),
+      nombre: validarNombreMascota(nombre, false),
+      raza: validarRaza(raza, false),
+      descripcion: validarTexto(descripcion, {
+        requerido: 'Describí cómo es para que su familia la reconozca.',
+        min: 5,
+        max: LIMITES.descripcion,
+        formato: 'texto',
+        multilinea: true,
+      }),
     };
     setErrores(nuevos);
-    if (nuevos.descripcion) return;
+    if (Object.values(nuevos).some(Boolean)) return;
 
     setEnviando(true);
     try {
       const reporte = await crearReporte({
         mascotaId,
         estado: 'encontrado',
-        nombre: nombre.trim() || SIN_NOMBRE,
-        raza: raza.trim() || 'Sin especificar',
-        descripcion: descripcion.trim(),
+        nombre: limpiarTexto(nombre) || SIN_NOMBRE,
+        raza: limpiarTexto(raza) || 'Sin especificar',
+        descripcion: limpiarTexto(descripcion, true),
         foto,
         etiquetas,
         lat: coords.lat,
@@ -238,15 +255,25 @@ export default function ReportarScreen() {
               label="Nombre (si lo sabés)"
               placeholder="Ej. Firulais"
               value={nombre}
-              onChangeText={setNombre}
+              onChangeText={(texto) => {
+                setNombre(texto);
+                if (errores.nombre) setErrores((prev) => ({ ...prev, nombre: undefined }));
+              }}
+              error={errores.nombre}
               autoCapitalize="words"
+              maxLength={LIMITES.nombreMascota}
             />
             <Input
               label="Raza"
               placeholder="Ej. Mestizo"
               value={raza}
-              onChangeText={setRaza}
+              onChangeText={(texto) => {
+                setRaza(texto);
+                if (errores.raza) setErrores((prev) => ({ ...prev, raza: undefined }));
+              }}
+              error={errores.raza}
               autoCapitalize="words"
+              maxLength={LIMITES.raza}
             />
             <Input
               label="Descripción / Señas particulares"
@@ -258,7 +285,7 @@ export default function ReportarScreen() {
               }}
               error={errores.descripcion}
               multiline
-              maxLength={300}
+              maxLength={LIMITES.descripcion}
             />
             <EtiquetasInput etiquetas={etiquetas} onChange={setEtiquetas} />
           </View>

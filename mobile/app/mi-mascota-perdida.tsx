@@ -49,6 +49,7 @@ import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { ReportePerdida } from '@/types/models';
 import { CENTRO_CABA, RADIO_POR_DEFECTO, RADIOS_BUSQUEDA, textoRadio } from '@/utils/mapa';
 import { buscarMascota, reporteActivo } from '@/utils/selectores';
+import { LIMITES, limpiarTexto, validarTexto } from '@/utils/validaciones';
 
 /**
  * Pantalla del reporte de una mascota propia (alta o edición).
@@ -87,6 +88,7 @@ export default function MiMascotaPerdidaScreen() {
   const [direccion, setDireccion] = useState<DireccionLegible | null>(null);
   const [infoAdicional, setInfoAdicional] = useState(() => editado?.infoAdicional ?? '');
   const [etiquetas, setEtiquetas] = useState<string[]>(() => editado?.etiquetas ?? []);
+  const [errorInfo, setErrorInfo] = useState<string | undefined>();
   const [enviando, setEnviando] = useState(false);
   // Si el usuario movió el pin (o se edita un punto ya publicado), el GPS ya no lo pisa.
   const pinAjustado = useRef(editando);
@@ -140,9 +142,24 @@ export default function MiMascotaPerdidaScreen() {
     router.navigate('/mascotas/nueva');
   };
 
+  /**
+   * Valida la información adicional (opcional, pero con largo y caracteres permitidos).
+   * @returns true si se puede publicar
+   */
+  const infoValida = (): boolean => {
+    const error = validarTexto(infoAdicional, {
+      max: LIMITES.infoAdicional,
+      formato: 'texto',
+      multilinea: true,
+    });
+    setErrorInfo(error);
+    return !error;
+  };
+
   /** Crea el reporte con los datos del perfil, vibra y vuelve a Perdidos mostrando el marker. */
   const handlePublicar = async () => {
-    if (!mascota) return;
+    if (!mascota || !infoValida()) return;
+    const info = limpiarTexto(infoAdicional, true);
     setEnviando(true);
     try {
       const reporte = await crearReporte({
@@ -159,7 +176,7 @@ export default function MiMascotaPerdidaScreen() {
         zona: direccion?.zona ?? 'CABA',
         fecha: new Date().toISOString(),
         radioMetros,
-        ...(infoAdicional.trim() && { infoAdicional: infoAdicional.trim() }),
+        ...(info && { infoAdicional: info }),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (router.canGoBack()) router.back();
@@ -188,7 +205,7 @@ export default function MiMascotaPerdidaScreen() {
 
   /** Guarda los cambios del reporte editado y cierra el modal. */
   const handleGuardar = async () => {
-    if (!editado) return;
+    if (!editado || !infoValida()) return;
     setEnviando(true);
     try {
       await editarReporte(editado.id, {
@@ -199,7 +216,7 @@ export default function MiMascotaPerdidaScreen() {
         zona: direccion?.zona ?? editado.zona,
         radioMetros,
         // Vacía se borra del reporte, como si nunca se hubiera cargado.
-        infoAdicional: infoAdicional.trim() || undefined,
+        infoAdicional: limpiarTexto(infoAdicional, true) || undefined,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       cerrarModal();
@@ -346,9 +363,13 @@ export default function MiMascotaPerdidaScreen() {
               label="¿Qué tenía puesto? ¿Algo más para saber?"
               placeholder="Ej: buzo rojo y arnés negro, sin chapita. Se asusta con las motos."
               value={infoAdicional}
-              onChangeText={setInfoAdicional}
+              onChangeText={(texto) => {
+                setInfoAdicional(texto);
+                setErrorInfo(undefined);
+              }}
+              error={errorInfo}
               multiline
-              maxLength={300}
+              maxLength={LIMITES.infoAdicional}
             />
             <EtiquetasInput etiquetas={etiquetas} onChange={setEtiquetas} />
           </View>

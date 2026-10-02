@@ -2,7 +2,8 @@
  * Formulario de datos de una mascota, compartido por el alta y la edición.
  *
  * Tiene la foto (elegida de la fototeca del dispositivo), nombre, raza, edad y
- * señas particulares, con validación local. No sabe si está creando o
+ * señas particulares, con validación local (largo máximo y caracteres
+ * permitidos en cada campo, ver `validaciones.ts`). No sabe si está creando o
  * editando: recibe los valores iniciales y le entrega los datos ya validados
  * y limpios a `onGuardar`, que decide qué hacer con ellos. Mientras
  * `onGuardar` corre, el botón muestra el estado de carga.
@@ -17,7 +18,14 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
 import type { NuevaMascota } from '@/types/models';
-import { validarEdad, validarRequerido } from '@/utils/validaciones';
+import {
+  LIMITES,
+  limpiarTexto,
+  validarEdad,
+  validarNombreMascota,
+  validarRaza,
+  validarTexto,
+} from '@/utils/validaciones';
 
 type Formulario = {
   nombre: string;
@@ -62,10 +70,16 @@ function aFormulario(mascota?: NuevaMascota): Formulario {
  */
 function validarFormulario(form: Formulario): Errores {
   return {
-    nombre: validarRequerido(form.nombre, 'Ingresá el nombre de tu mascota.'),
-    raza: validarRequerido(form.raza, 'Ingresá la raza (o "Mestizo").'),
+    nombre: validarNombreMascota(form.nombre),
+    raza: validarRaza(form.raza),
     edad: validarEdad(form.edad),
-    senas: validarRequerido(form.senas, 'Contá alguna seña para reconocerla.'),
+    senas: validarTexto(form.senas, {
+      requerido: 'Contá alguna seña para reconocerla.',
+      min: 5,
+      max: LIMITES.senas,
+      formato: 'texto',
+      multilinea: true,
+    }),
   };
 }
 
@@ -114,10 +128,10 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
     setGuardando(true);
     try {
       await onGuardar({
-        nombre: form.nombre.trim(),
-        raza: form.raza.trim(),
+        nombre: limpiarTexto(form.nombre),
+        raza: limpiarTexto(form.raza),
         edad: Number(form.edad),
-        senas: form.senas.trim(),
+        senas: limpiarTexto(form.senas, true),
         foto: form.foto,
       });
     } finally {
@@ -160,6 +174,7 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
           onChangeText={handleChange('nombre')}
           error={errores.nombre}
           autoCapitalize="words"
+          maxLength={LIMITES.nombreMascota}
           returnKeyType="next"
           onSubmitEditing={() => razaRef.current?.focus()}
           submitBehavior="submit"
@@ -175,6 +190,7 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
               onChangeText={handleChange('raza')}
               error={errores.raza}
               autoCapitalize="words"
+              maxLength={LIMITES.raza}
               returnKeyType="next"
               onSubmitEditing={() => edadRef.current?.focus()}
               submitBehavior="submit"
@@ -207,7 +223,7 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
           onChangeText={handleChange('senas')}
           error={errores.senas}
           multiline
-          maxLength={200}
+          maxLength={LIMITES.senas}
         />
       </View>
 
