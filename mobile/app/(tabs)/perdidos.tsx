@@ -174,19 +174,6 @@ export default function PerdidosScreen() {
     );
   }, []);
 
-  /**
-   * "Ya apareció" del detalle: confirma, cierra el reporte y la hoja, y saca la selección del mapa.
-   * @param reporte reporte de la mascota que apareció
-   */
-  const marcarAparecida = useCallback(
-    (reporte: ReportePerdida) =>
-      pedirCierre(reporte, () => {
-        setDetalleVisible(false);
-        setSeleccionadoId((actual) => (actual === reporte.id ? null : actual));
-      }),
-    [pedirCierre],
-  );
-
   /** Pide la posición al GPS y centra el mapa ahí. */
   const handleMiUbicacion = async () => {
     const coords = await gps.obtenerUbicacion();
@@ -375,7 +362,7 @@ export default function PerdidosScreen() {
         onVerEnMapa={abrirEnMapa}
         puedeGestionar={!!detalle && puedeGestionarReporte(detalle, usuario?.id, mascotas)}
         onEditar={editarReporte}
-        onYaAparecio={marcarAparecida}
+        onYaAparecio={pedirCierre}
         cerrando={cerrando}
       />
 
