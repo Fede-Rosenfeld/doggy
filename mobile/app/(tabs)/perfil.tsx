@@ -30,7 +30,7 @@ import { EditarPerfilForm } from '@/components/perfil/EditarPerfilForm';
 import { InvitarForm } from '@/components/perfil/InvitarForm';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionTitle } from '@/components/SectionTitle';
-import { GUIA_PASEO_URL } from '@/config';
+import { AVISO_SPRINT_2, GUIA_PASEO_URL } from '@/config';
 import { useApp } from '@/context/AppContext';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
@@ -54,8 +54,7 @@ type HojaAsignacion = 'invitar' | 'desasignar' | 'link' | null;
  * @returns el perfil
  */
 export default function PerfilScreen() {
-  const { usuario, mascotas, cuidadores, reportes, actualizarUsuario, cerrarSesion, desasignarme } =
-    useApp();
+  const { usuario, mascotas, cuidadores, reportes, actualizarUsuario, cerrarSesion } = useApp();
   const fototeca = useFototeca();
 
   // --- Estado ---
@@ -66,7 +65,6 @@ export default function PerfilScreen() {
   const [mascotaHoja, setMascotaHoja] = useState<Mascota | null>(null);
   const [textoLink, setTextoLink] = useState('');
   const [errorLink, setErrorLink] = useState<string | undefined>(undefined);
-  const [desasignando, setDesasignando] = useState(false);
 
   // --- Datos derivados ---
   const reportesActivos = useMemo(
@@ -126,19 +124,13 @@ export default function PerfilScreen() {
     return duenos.length === 1 && duenos[0].usuarioId === usuario?.id;
   };
 
-  /** Confirma la desasignación: la mascota sale de la cuenta del usuario. */
-  const handleDesasignarme = async () => {
-    if (!mascotaHoja) return;
-    setDesasignando(true);
-    try {
-      await desasignarme(mascotaHoja.id);
-      setHoja(null);
-      Alert.alert('Listo', `Ya no tenés a ${mascotaHoja.nombre} en tu cuenta.`);
-    } catch (e) {
-      Alert.alert('No se pudo desasignar', e instanceof Error ? e.message : 'Intentá de nuevo.');
-    } finally {
-      setDesasignando(false);
-    }
+  /**
+   * Confirma la desasignación. Necesita el backend
+   * (DELETE /api/mascotas/:id/cuidadores/me), así que por ahora solo avisa.
+   */
+  const handleDesasignarme = () => {
+    setHoja(null);
+    Alert.alert('Desasignarme', AVISO_SPRINT_2);
   };
 
   /** Lee el link o código pegado y abre la pantalla para aceptarlo. */
@@ -362,7 +354,6 @@ export default function PerfilScreen() {
               iconLeft
               variant="danger"
               onPress={handleDesasignarme}
-              loading={desasignando}
             />
             <PrimaryButton title="Cancelar" variant="outline" onPress={cerrarHoja} />
           </>

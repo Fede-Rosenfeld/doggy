@@ -13,8 +13,8 @@
  *
  * Si llega `reporteId`, la pantalla edita ese reporte en vez de crear uno:
  * arranca con su punto, radio, información y etiquetas, la mascota queda fija
- * y "Guardar cambios" lo actualiza. Desde acá también se puede avisar que la
- * mascota ya apareció, lo que cierra el reporte y lo saca del mapa.
+ * y "Guardar cambios" lo actualiza. "Ya apareció" avisa que cerrar el
+ * reporte llega en el Sprint 2 con backend.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -46,7 +46,6 @@ import { useApp } from '@/context/AppContext';
 import { useCerrarReporte } from '@/hooks/useCerrarReporte';
 import { Coordenadas, DireccionLegible, useUbicacion } from '@/hooks/useUbicacion';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
-import type { ReportePerdida } from '@/types/models';
 import { CENTRO_CABA, RADIO_POR_DEFECTO, RADIOS_BUSQUEDA, textoRadio } from '@/utils/mapa';
 import { buscarMascota, reporteActivo } from '@/utils/selectores';
 import { LIMITES, limpiarTexto, validarTexto } from '@/utils/validaciones';
@@ -65,14 +64,8 @@ export default function MiMascotaPerdidaScreen() {
   const gps = useUbicacion({ automatico: true });
   const insets = useSafeAreaInsets();
 
-  // Al cerrarlo desde acá, el modal sigue montado mientras baja: se guarda el
-  // reporte para no mostrar un instante el aviso de "ya no está activo".
-  const [cerradoAca, setCerradoAca] = useState<ReportePerdida | null>(null);
   /** Reporte que se edita; undefined si se está creando uno nuevo. */
-  const editado =
-    (reporteId ? reportes.find((r) => String(r.id) === reporteId) : undefined) ??
-    cerradoAca ??
-    undefined;
+  const editado = reporteId ? reportes.find((r) => String(r.id) === reporteId) : undefined;
   const editando = !!reporteId;
 
   // --- Estado ---
@@ -186,15 +179,6 @@ export default function MiMascotaPerdidaScreen() {
     } finally {
       setEnviando(false);
     }
-  };
-
-  /**
-   * "Ya apareció": confirma, cierra el reporte y el modal.
-   * @param reporte reporte que se está editando
-   */
-  const handleYaAparecio = (reporte: ReportePerdida) => {
-    setCerradoAca(reporte);
-    pedirCierre(reporte, cerrarModal);
   };
 
   /** Cierra el modal; si no hay a dónde volver (link directo), va a Perdidos. */
@@ -389,7 +373,7 @@ export default function MiMascotaPerdidaScreen() {
                 icon="celebration"
                 iconLeft
                 variant="outline"
-                onPress={() => handleYaAparecio(editado)}
+                onPress={() => pedirCierre(editado)}
                 loading={cerrando}
                 disabled={enviando}
               />

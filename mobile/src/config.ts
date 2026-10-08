@@ -17,3 +17,6 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000
  */
 export const GUIA_PASEO_URL =
   'https://buenosaires.gob.ar/gcaba_historico/agenciaambiental/animalesba/perros-y-gatos-en-el-espacio-publico';
+
+/** Aviso para las acciones que necesitan el backend y todavía no están. */
+export const AVISO_SPRINT_2 = 'Se va a implementar en el Sprint 2 con backend.';
