@@ -1,10 +1,10 @@
 /**
  * Asignación de mascota (modal).
  *
- * Es la pantalla que abre un link de asignación (`doggy://asignar?token=XXXX`)
- * o el código cargado a mano desde Perfil. Muestra a qué mascota invitaron
- * al usuario y con qué rol (Dueño / Invitado) y, al aceptar, la mascota pasa
- * a su cuenta y se abre su perfil. Si el link no existe, ya se usó o venció,
+ * Es la pantalla que se abre al cargar un código de asignación desde Perfil.
+ * Muestra a qué mascota invitaron al usuario y con qué rol (Dueño / Invitado)
+ * y, al aceptar, la mascota pasa a su cuenta y se abre su perfil. Si el código
+ * no existe, ya se usó o venció,
  * o el usuario ya está asignado, lo explica.
  */
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,7 +31,7 @@ import { volver } from '@/utils/navegacion';
 const FOTO = 112;
 
 /**
- * Pantalla para aceptar un link de asignación.
+ * Pantalla para aceptar un código de asignación.
  * @returns la invitación, o el estado de carga / error
  */
 export default function AsignarScreen() {
@@ -44,7 +44,7 @@ export default function AsignarScreen() {
   const [error, setError] = useState<string | null>(null);
   const [aceptando, setAceptando] = useState(false);
 
-  // Trae el link apenas se abre la pantalla (la respuesta llega en un callback).
+  // Trae la invitación apenas se abre la pantalla (la respuesta llega en un callback).
   useEffect(() => {
     if (!token) return;
     let vigente = true;
@@ -53,7 +53,7 @@ export default function AsignarScreen() {
         if (vigente) setInvitacion(resultado);
       })
       .catch((e: unknown) => {
-        if (vigente) setError(e instanceof Error ? e.message : 'No pudimos abrir el link.');
+        if (vigente) setError(e instanceof Error ? e.message : 'No pudimos abrir el código.');
       });
     return () => {
       vigente = false;
@@ -61,7 +61,7 @@ export default function AsignarScreen() {
   }, [token, verInvitacion]);
 
   // --- Datos derivados ---
-  const mensajeError = token ? error : 'Al link le falta el código de asignación.';
+  const mensajeError = token ? error : 'Falta el código de asignación.';
   const yaAsignada = invitacion ? mascotas.find((m) => m.id === invitacion.mascotaId) : undefined;
 
   // --- Handlers ---
@@ -74,7 +74,7 @@ export default function AsignarScreen() {
     router.navigate({ pathname: '/mascotas/[id]', params: { id: String(id) } });
   };
 
-  /** Acepta el link: la mascota pasa a la cuenta del usuario con el rol del link. */
+  /** Acepta el código: la mascota pasa a la cuenta del usuario con el rol del código. */
   const handleAceptar = async () => {
     if (!invitacion) return;
     setAceptando(true);
@@ -99,8 +99,8 @@ export default function AsignarScreen() {
     if (mensajeError) {
       return (
         <EstadoVacio
-          icon="link-off"
-          titulo="No pudimos usar este link"
+          icon="error-outline"
+          titulo="No pudimos usar este código"
           mensaje={mensajeError}
           accion={{ titulo: 'Ir a mis mascotas', onPress: () => volver('/mascotas') }}
         />
@@ -112,7 +112,7 @@ export default function AsignarScreen() {
         <EstadoVacio
           icon="how-to-reg"
           titulo={`Ya estás asignado a ${yaAsignada.nombre}`}
-          mensaje="Este link es para sumar a otra persona. Podés reenviárselo a quien corresponda."
+          mensaje="Este código es para sumar a otra persona. Podés reenviárselo a quien corresponda."
           accion={{ titulo: `Ver a ${yaAsignada.nombre}`, onPress: () => irAMascota(yaAsignada.id) }}
         />
       );
@@ -143,7 +143,7 @@ export default function AsignarScreen() {
           </View>
           <Text style={styles.rolDescripcion}>{rol.descripcion}</Text>
           <Text style={styles.rolDescripcion}>Podés desasignarte cuando quieras desde tu perfil.</Text>
-          <Text style={styles.vence}>El link vence el {formatearFecha(invitacion.vence)}.</Text>
+          <Text style={styles.vence}>El código vence el {formatearFecha(invitacion.vence)}.</Text>
         </View>
 
         <PrimaryButton

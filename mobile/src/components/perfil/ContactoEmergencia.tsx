@@ -29,9 +29,6 @@ export function ContactoEmergencia({ usuario }: Props) {
             <Text style={styles.numero}>{usuario.telefonoEmergencia}</Text>
             <MaterialIcons name="verified" size={sizes.iconSm} color={colors.primary} />
           </View>
-          <Text style={styles.detalle}>
-            {usuario.whatsappHabilitado ? 'WhatsApp habilitado' : 'Solo llamadas'}
-          </Text>
         </View>
         <View style={styles.principal}>
           <Text style={styles.principalTexto}>Principal</Text>
@@ -85,10 +82,6 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     fontFamily: typography.headlineLg.fontFamily,
     color: colors.onSurface,
-  },
-  detalle: {
-    ...typography.bodySm,
-    color: colors.onSurfaceVariant,
   },
   principal: {
     paddingHorizontal: spacing.sm,

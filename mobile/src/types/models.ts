@@ -18,7 +18,6 @@ export type Usuario = {
   /** Clave de foto local o URI remota; null si no cargó foto. */
   foto: string | null;
   telefonoEmergencia: string;
-  whatsappHabilitado: boolean;
 };
 
 /** Perro registrado por el usuario (Doggy es solo para perros). */
@@ -111,7 +110,7 @@ export type TipoCuidador = 'familia' | 'clinica' | 'paseador';
 
 /**
  * Rol de una persona sobre una mascota.
- * - dueno: puede asignar a otras personas (generar links de asignación).
+ * - dueno: puede asignar a otras personas (generar códigos de asignación).
  * - invitado: tiene la mascota en su cuenta pero no puede asignar a nadie.
  * Cualquiera de los dos puede desasignarse, salvo el último dueño.
  */
@@ -136,15 +135,15 @@ export type Cuidador = {
 };
 
 /**
- * Link de asignación de una mascota. Lo genera un dueño con un rol; quien lo
- * abre y lo acepta queda asignado con ese rol. Sirve para una sola persona y vence.
+ * Código de asignación de una mascota. Lo genera un dueño con un rol; quien lo
+ * carga y lo acepta queda asignado con ese rol. Sirve para una sola persona y vence.
  */
 export type Invitacion = {
-  /** Código del link (va en la URL). */
+  /** Código de asignación. */
   token: string;
   mascotaId: number;
   rol: RolMascota;
-  /** Dueño que generó el link. */
+  /** Dueño que generó el código. */
   creadaPorId: number;
   /** Fecha ISO de vencimiento. */
   vence: string;

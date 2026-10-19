@@ -69,7 +69,7 @@ type AppContextValue = {
   // --- Asignación de mascotas ---
   generarInvitacion: (mascota: Mascota, rol: RolMascota) => Promise<Invitacion>;
   verInvitacion: (token: string) => Promise<Invitacion>;
-  /** Acepta un link y devuelve la mascota que se sumó a la cuenta. */
+  /** Acepta un código y devuelve la mascota que se sumó a la cuenta. */
   aceptarInvitacion: (token: string) => Promise<Mascota>;
   desasignarme: (mascotaId: number) => Promise<void>;
 };
@@ -215,20 +215,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return actualizado;
   }, []);
 
-  /** Genera un link de asignación (solo si el usuario es dueño de la mascota). */
+  /** Genera un código de asignación (solo si el usuario es dueño de la mascota). */
   const generarInvitacion = useCallback(
     (mascota: Mascota, rol: RolMascota) => cuidadoresService.crearInvitacion(mascota, rol),
     [],
   );
 
-  /** Trae un link para mostrarlo antes de aceptarlo. */
+  /** Trae una invitación por su código para mostrarla antes de aceptarlo. */
   const verInvitacion = useCallback(
     (token: string) => cuidadoresService.obtenerInvitacion(token),
     [],
   );
 
   /**
-   * Acepta un link: el usuario queda asignado y la mascota aparece en su cuenta
+   * Acepta un código: el usuario queda asignado y la mascota aparece en su cuenta
    * (se vuelven a traer las mascotas y las asignaciones).
    */
   const aceptarInvitacion = useCallback(async (token: string) => {

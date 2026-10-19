@@ -32,7 +32,7 @@ export const LIMITES = {
   lugar: 80,
   nombreRegistro: 60,
   profesional: 60,
-  link: 200,
+  codigoAsignacion: 16,
   busqueda: 50,
 } as const;
 

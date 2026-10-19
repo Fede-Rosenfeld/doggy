@@ -5,16 +5,16 @@
  * cantidad de mascotas), contacto de emergencia, familia y cuidadores de cada
  * mascota, menú de opciones y cierre de sesión.
  *
- * Asignación de mascotas: un dueño genera un link con un rol (Dueño /
+ * Asignación de mascotas: un dueño genera un código con un rol (Dueño /
  * Invitado) desde la card de cada mascota; cualquiera puede desasignarse
- * (salvo el último dueño); y "Tengo un link de asignación" permite pegar un
- * link o código recibido para abrir la pantalla de aceptación.
+ * (salvo el último dueño); y "Tengo un código de asignación" permite cargar
+ * el código recibido para abrir la pantalla de aceptación.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '@/components/AppHeader';
 import { Badge } from '@/components/Badge';
@@ -35,7 +35,7 @@ import { useApp } from '@/context/AppContext';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { Mascota } from '@/types/models';
-import { tokenDeTexto } from '@/utils/invitaciones';
+import { codigoDeTexto } from '@/utils/invitaciones';
 import { LIMITES } from '@/utils/validaciones';
 
 /** Versión que se muestra en el pie (sale de app.json). */
@@ -47,7 +47,7 @@ const FOTO = 96;
 const ESPERA_CIERRE_HOJA_MS = 300;
 
 /** Hoja de asignación abierta. */
-type HojaAsignacion = 'invitar' | 'desasignar' | 'link' | null;
+type HojaAsignacion = 'invitar' | 'desasignar' | 'codigo' | null;
 
 /**
  * Pantalla de perfil del usuario.
@@ -59,12 +59,11 @@ export default function PerfilScreen() {
 
   // --- Estado ---
   const [editando, setEditando] = useState(false);
-  const [notificaciones, setNotificaciones] = useState(true);
   const [hoja, setHoja] = useState<HojaAsignacion>(null);
   // La mascota de la hoja se guarda aparte para que no quede vacía mientras se cierra.
   const [mascotaHoja, setMascotaHoja] = useState<Mascota | null>(null);
-  const [textoLink, setTextoLink] = useState('');
-  const [errorLink, setErrorLink] = useState<string | undefined>(undefined);
+  const [textoCodigo, setTextoCodigo] = useState('');
+  const [errorCodigo, setErrorCodigo] = useState<string | undefined>(undefined);
 
   // --- Datos derivados ---
   const reportesActivos = useMemo(
@@ -94,13 +93,6 @@ export default function PerfilScreen() {
       Alert.alert('No se pudo conseguir la foto', 'Probá de nuevo en unos segundos.');
     }
   };
-
-  /**
-   * Muestra un aviso para las secciones que todavía no están.
-   * @param titulo nombre de la sección
-   */
-  const proximamente = (titulo: string) => () =>
-    Alert.alert(titulo, 'Disponible próximamente.');
 
   /**
    * Abre una hoja de asignación para una mascota.
@@ -133,15 +125,15 @@ export default function PerfilScreen() {
     Alert.alert('Desasignarme', AVISO_SPRINT_2);
   };
 
-  /** Lee el link o código pegado y abre la pantalla para aceptarlo. */
-  const handleAbrirLink = () => {
-    const token = tokenDeTexto(textoLink);
+  /** Lee el código cargado y abre la pantalla para aceptarlo. */
+  const handleAbrirCodigo = () => {
+    const token = codigoDeTexto(textoCodigo);
     if (!token) {
-      setErrorLink('Pegá el link completo o el código de 8 caracteres.');
+      setErrorCodigo('Ingresá el código de 8 caracteres.');
       return;
     }
     setHoja(null);
-    setTextoLink('');
+    setTextoCodigo('');
     setTimeout(
       () => router.push({ pathname: '/asignar', params: { token } }),
       ESPERA_CIERRE_HOJA_MS,
@@ -244,7 +236,7 @@ export default function PerfilScreen() {
           />
           <Text style={styles.seccionAyuda}>
             Personas asignadas a cada perrito. Los dueños pueden sumar a otras personas con un
-            link; los invitados, no. Cualquiera puede desasignarse.
+            código; los invitados, no. Cualquiera puede desasignarse.
           </Text>
           {mascotas.map((mascota) => (
             <CuidadoresMascota
@@ -261,21 +253,6 @@ export default function PerfilScreen() {
         {/* 4. Menú */}
         <View style={styles.menu}>
           <MenuRow
-            icon="notifications-active"
-            titulo="Notificaciones"
-            subtitulo="Vacunas, pipetas y turnos. Recordatorios vía WhatsApp y Push."
-            derecha={
-              <Switch
-                value={notificaciones}
-                onValueChange={setNotificaciones}
-                trackColor={{ false: colors.surfaceVariant, true: colors.primaryContainer }}
-                thumbColor={colors.white}
-                accessibilityLabel="Recordatorios activados"
-              />
-            }
-          />
-          <View style={styles.separador} />
-          <MenuRow
             icon="campaign"
             titulo="Mis reportes activos"
             badge={reportesActivos === 1 ? '1 activo' : `${reportesActivos} activos`}
@@ -283,16 +260,14 @@ export default function PerfilScreen() {
           />
           <View style={styles.separador} />
           <MenuRow
-            icon="link"
-            titulo="Tengo un link de asignación"
-            subtitulo="Pegá el link o el código que te mandaron para sumar una mascota."
+            icon="vpn-key"
+            titulo="Tengo un código de asignación"
+            subtitulo="Cargá el código que te mandaron para sumar una mascota."
             onPress={() => {
-              setErrorLink(undefined);
-              setHoja('link');
+              setErrorCodigo(undefined);
+              setHoja('codigo');
             }}
           />
-          <View style={styles.separador} />
-          <MenuRow icon="support-agent" titulo="Ayuda y Soporte" onPress={proximamente('Ayuda y Soporte')} />
           <View style={styles.separador} />
           <MenuRow
             icon="menu-book"
@@ -319,7 +294,7 @@ export default function PerfilScreen() {
         <EditarPerfilForm usuario={usuario} onGuardado={() => setEditando(false)} />
       </FormModal>
 
-      {/* Generar un link de asignación (solo dueños llegan acá). */}
+      {/* Generar un código de asignación (solo dueños llegan acá). */}
       <FormModal
         visible={hoja === 'invitar'}
         titulo={`Asignar a ${mascotaHoja?.nombre ?? ''}`}
@@ -338,7 +313,7 @@ export default function PerfilScreen() {
           <>
             <Text style={styles.hojaTexto}>
               Sos el único dueño de {mascotaHoja.nombre}. Para desasignarte, primero sumá a otra
-              persona como dueña con un link de asignación.
+              persona como dueña con un código de asignación.
             </Text>
             <PrimaryButton title="Entendido" variant="outline" onPress={cerrarHoja} />
           </>
@@ -346,7 +321,7 @@ export default function PerfilScreen() {
           <>
             <Text style={styles.hojaTexto}>
               {mascotaHoja?.nombre} va a salir de tu cuenta junto con su carnet y sus turnos. Las
-              demás personas asignadas la siguen teniendo. Para volver, vas a necesitar un link nuevo.
+              demás personas asignadas la siguen teniendo. Para volver, vas a necesitar un código nuevo.
             </Text>
             <PrimaryButton
               title="Desasignarme"
@@ -360,25 +335,25 @@ export default function PerfilScreen() {
         )}
       </FormModal>
 
-      {/* Pegar un link o código recibido. */}
-      <FormModal visible={hoja === 'link'} titulo="Tengo un link de asignación" onClose={cerrarHoja}>
+      {/* Cargar un código recibido. */}
+      <FormModal visible={hoja === 'codigo'} titulo="Tengo un código de asignación" onClose={cerrarHoja}>
         <Input
-          label="Link o código"
-          icon="link"
+          label="Código"
+          icon="vpn-key"
           placeholder="Ej: TOBY2026"
-          value={textoLink}
+          value={textoCodigo}
           onChangeText={(texto) => {
-            setTextoLink(texto);
-            setErrorLink(undefined);
+            setTextoCodigo(texto);
+            setErrorCodigo(undefined);
           }}
-          error={errorLink}
+          error={errorCodigo}
           autoCapitalize="characters"
           autoCorrect={false}
-          maxLength={LIMITES.link}
+          maxLength={LIMITES.codigoAsignacion}
           returnKeyType="go"
-          onSubmitEditing={handleAbrirLink}
+          onSubmitEditing={handleAbrirCodigo}
         />
-        <PrimaryButton title="Ver invitación" icon="arrow-forward" onPress={handleAbrirLink} />
+        <PrimaryButton title="Ver invitación" icon="arrow-forward" onPress={handleAbrirCodigo} />
       </FormModal>
     </View>
   );

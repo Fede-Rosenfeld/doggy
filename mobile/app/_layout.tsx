@@ -64,7 +64,7 @@ export default function RootLayout() {
         {/* Los reportes se abren desde abajo, por encima de las tabs. */}
         <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="mi-mascota-perdida" options={{ presentation: 'modal' }} />
-        {/* Lo abre un link de asignación de mascota (doggy://asignar?token=...). */}
+        {/* Se abre al cargar un código de asignación de mascota desde Perfil. */}
         <Stack.Screen name="asignar" options={{ presentation: 'modal' }} />
       </Stack>
     </AppProvider>
