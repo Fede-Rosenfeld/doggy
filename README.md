@@ -66,19 +66,17 @@ Tabs
  │                                             └─► (modal) Encontré una mascota ─┴─► vuelve a Perdidos con el nuevo marker
  ├─ Agenda ─────── (modal) Nuevo turno
  └─ Perfil ─────┬─► (modal) Editar datos personales
-                ├─► Familia y Cuidadores ─┬─► (hoja) Asignar: generar link con rol ─► compartir
+                ├─► Familia y Cuidadores ─┬─► (hoja) Asignar: generar código con rol ─► compartir
                 │                         └─► (hoja) Desasignarme
-                ├─► Tengo un link de asignación ─► (modal) Asignación de mascota
+                ├─► Tengo un código de asignación ─► (modal) Asignación de mascota
                 ├─► Mis reportes activos ─► tab Perdidos
                 └─► Cerrar sesión ─► Login
-
-Link de asignación (doggy://asignar?token=...) ─► (modal) Asignación de mascota ─► Perfil de la mascota
 ```
 
-- **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y los modales `mi-mascota-perdida`, `reportar` y `asignar` (`presentation: 'modal'`). `asignar` es también la ruta de los links de asignación (`doggy://asignar?token=...`, esquema `doggy` de `app.json`).
+- **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y los modales `mi-mascota-perdida`, `reportar` y `asignar` (`presentation: 'modal'`). `asignar` se abre al cargar un código de asignación desde Perfil.
 - **Bottom Tabs** (`app/(tabs)/_layout.tsx`): Mascotas, Perdidos, Agenda y Perfil, con una barra propia que marca la tab activa con una píldora.
 - **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`), edición (`[id]/editar`) y carnet (`[id]/carnet`), con la barra de tabs visible.
-- Las acciones que dependen del backend (descargar QR, permisos finos por cuidador, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
+- Las acciones que dependen del backend (descargar QR, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
 
 ### Detalle por pantalla
 
@@ -94,14 +92,14 @@ Link de asignación (doggy://asignar?token=...) ─► (modal) Asignación de ma
    - **Editar reporte y "Ya apareció"**: el reporte de perdida se puede corregir y cerrar desde el detalle en Perdidos o desde el perfil de la mascota. Lo puede hacer quien lo publicó o cualquier persona que tenga la mascota en su cuenta (dueño o invitado), así si la encuentra otro integrante de la familia la saca del mapa sin esperar a quien la reportó. "Editar reporte" abre el mismo modal en modo edición, con el punto, el radio, la información adicional y las etiquetas ya cargados (la mascota y la fecha del extravío no cambian); "Guardar cambios" actualiza el marker y el círculo en el mapa. "Ya apareció" pide confirmación con un aviso nativo, cierra el reporte, vibra y lo saca del mapa y del conteo de "Mis reportes activos".
    - **Encontré una mascota** (modal `reportar`): para quien encontró un perro en la calle. Escáner del QR de la chapita (autocompleta nombre, raza, señas y foto), foto sacada en el momento o elegida de la galería, nombre (opcional: si no se sabe se publica como "Sin identificar"), raza, descripción, etiquetas y un mini mapa con el punto donde se la encontró. "Publicar como encontrada" publica el reporte como encontrado, vibra y muestra el marker teal en Perdidos.
 9. **Agenda**: calendario mensual hecho a mano con `Date` (semana de lunes a domingo, navegación entre meses, día seleccionado, "Hoy" marcado y puntos de color por categoría en los días con turnos). Al tocar un día vibra suave (`Haptics.selectionAsync`) y lista sus turnos con hora, categoría, mascota, motivo y lugar. "Nuevo turno" abre un formulario (mascota, categoría, fecha, hora, motivo y lugar) que valida que el turno sea a futuro. El lápiz de cada turno abre el mismo formulario con sus datos para editarlo; al guardar, la agenda salta al nuevo día si se cambió la fecha. Al editar, la regla de "a futuro" solo aplica si se cambia la fecha o la hora, así se puede corregir el motivo o el lugar de un turno que ya pasó.
-10. **Mi Perfil**: foto de perfil editable, sacada con la cámara o elegida de la galería, nombre, ubicación y cantidad de mascotas registradas (calculada desde el estado global). "Editar datos personales" abre un formulario (nombre, apellido, ubicación, email, teléfono de emergencia y WhatsApp). Card de contacto de emergencia, familia y cuidadores agrupados por mascota, menú (notificaciones, link de asignación, mis reportes activos con el conteo real, ayuda y "Guía de paseos y normativas CABA", que abre en el navegador la página oficial de la Ciudad [Perros y gatos en el espacio público](https://buenosaires.gob.ar/gcaba_historico/agenciaambiental/animalesba/perros-y-gatos-en-el-espacio-publico): correa y collar o pretal, bozal si es agresivo, chapita con nombre y teléfono, levantar la caca y soltarlo solo en caniles. El incumplimiento está penado por el art. 1.3.12 del Código Contravencional, según la Ley 6839/2025, con multas de 150 a 1.000 unidades fijas) y "Cerrar sesión", que vuelve al login sin dejar historial.
+10. **Mi Perfil**: foto de perfil editable, sacada con la cámara o elegida de la galería, nombre, ubicación y cantidad de mascotas registradas (calculada desde el estado global). "Editar datos personales" abre un formulario (nombre, apellido, ubicación, email, teléfono de emergencia). Card de contacto de emergencia, familia y cuidadores agrupados por mascota, menú (código de asignación, mis reportes activos con el conteo real y "Guía de paseos y normativas CABA", que abre en el navegador la página oficial de la Ciudad [Perros y gatos en el espacio público](https://buenosaires.gob.ar/gcaba_historico/agenciaambiental/animalesba/perros-y-gatos-en-el-espacio-publico): correa y collar o pretal, bozal si es agresivo, chapita con nombre y teléfono, levantar la caca y soltarlo solo en caniles. El incumplimiento está penado por el art. 1.3.12 del Código Contravencional, según la Ley 6839/2025, con multas de 150 a 1.000 unidades fijas) y "Cerrar sesión", que vuelve al login sin dejar historial.
 11. **Asignación de mascotas (dueño / invitado).** Cada persona asignada a una mascota tiene un rol:
     - **Dueño**: puede asignar la mascota a otras personas. Quien da de alta una mascota queda como dueño.
     - **Invitado**: tiene la mascota en su cuenta (perfil, carnet, turnos), pero no puede asignarla a nadie.
 
-    En Perfil → Familia y Cuidadores, cada mascota lista a sus personas con su rol (el usuario marcado como "Vos"). Solo si el usuario es dueño aparece "+ Asignar a…", que abre una hoja para elegir el rol y generar un link (`doggy://asignar?token=XXXX`; en Expo Go, la URL de desarrollo equivalente) con un código de 8 caracteres, para compartir con la hoja nativa. El link sirve para una sola persona y vence a los 7 días. Al abrirlo (o al pegar el link o el código en "Tengo un link de asignación") se ve la mascota y el rol ofrecido; "Aceptar" la suma a la cuenta y abre su perfil. Si el link no existe, ya se usó, venció o el usuario ya está asignado, la pantalla lo explica.
+    En Perfil → Familia y Cuidadores, cada mascota lista a sus personas con su rol (el usuario marcado como "Vos"). Solo si el usuario es dueño aparece "+ Asignar a…", que abre una hoja para elegir el rol y generar un código de 8 caracteres, para compartir con la hoja nativa. El código sirve para una sola persona y vence a los 7 días. Al cargarlo en "Tengo un código de asignación" se ve la mascota y el rol ofrecido; "Aceptar" la suma a la cuenta y abre su perfil. Si el código no existe, ya se usó, venció o el usuario ya está asignado, la pantalla lo explica.
 
-    Cualquiera puede **desasignarse** con "Desasignarme de…": la mascota sale de su cuenta (con su carnet y turnos) y las demás personas la siguen teniendo. El único dueño no puede desasignarse, para que la mascota no quede sin nadie que la administre; la app le pide sumar antes a otro dueño. Para probarlo con los datos de ejemplo: en "Tengo un link de asignación" cargar el código **TOBY2026**, que suma a Toby (de otra usuaria) como invitado.
+    Cualquiera puede **desasignarse** con "Desasignarme de…": la mascota sale de su cuenta (con su carnet y turnos) y las demás personas la siguen teniendo. El único dueño no puede desasignarse, para que la mascota no quede sin nadie que la administre; la app le pide sumar antes a otro dueño. Para probarlo con los datos de ejemplo: en "Tengo un código de asignación" cargar el código **TOBY2026**, que suma a Toby (de otra usuaria) como invitado.
 
 ## Componentes nativos
 
@@ -146,9 +144,9 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 ```
 
 - `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
-- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA, turnos de octubre de 2026, y Toby, de otra usuaria, con el link de asignación `TOBY2026` para probar el flujo de invitado).
+- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA, turnos de octubre de 2026, y Toby, de otra usuaria, con el código de asignación `TOBY2026` para probar el flujo de invitado).
 - `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
-- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar y editar registro sanitario, agregar y editar turno, actualizar usuario, generar, ver y aceptar links de asignación, desasignarse, iniciar y cerrar sesión).
+- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar y editar registro sanitario, agregar y editar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
 
 ## Componentes reutilizables
 
@@ -191,8 +189,8 @@ Pantalla → AppContext (estado global) → services → [hoy: datos en memoria 
 - `MenuRow`: fila de menú con ícono, badge, flecha o un elemento propio (Switch).
 - `SectionTitle`: título de sección con ícono en círculo y badge.
 - `perfil/ContactoEmergencia`, `perfil/CuidadoresMascota`, `perfil/EditarPerfilForm`: piezas del perfil de usuario. `CuidadoresMascota` muestra el rol de cada persona y, según el rol del usuario, "Asignar" (solo dueños) y "Desasignarme".
-- `perfil/InvitarForm`: elige el rol (Dueño / Invitado), genera el link de asignación y lo comparte.
-- `src/utils/invitaciones.ts`: arma el link a partir del código (`expo-linking`) y saca el código de un link pegado.
+- `perfil/InvitarForm`: elige el rol (Dueño / Invitado), genera el código de asignación y lo comparte.
+- `src/utils/invitaciones.ts`: normaliza el código de asignación que carga el usuario.
 
 ## Estructura
 
@@ -231,4 +229,4 @@ doggy/
   ```
 
 - **Código único de vacuna (SENASA):** cada aplicación del carnet va a llevar el código único de la vacuna, validado contra una API de SENASA (o la fuente oficial que corresponda), para que el carnet sirva como constancia. Queda marcado con un `TODO` en `RegistroSanitario` (`src/types/models.ts`).
-- **Pendientes que dependen del backend:** login real con token, persistencia de mascotas, reportes y turnos, subida de fotos, baja de turnos, links de asignación entre usuarios reales (hoy se prueban con un solo usuario y el código de ejemplo), recordatorios por notificaciones push y descarga del QR como imagen.
+- **Pendientes que dependen del backend:** login real con token, persistencia de mascotas, reportes y turnos, subida de fotos, baja de turnos, códigos de asignación entre usuarios reales (hoy se prueban con un solo usuario y el código de ejemplo), recordatorios por notificaciones push y descarga del QR como imagen.

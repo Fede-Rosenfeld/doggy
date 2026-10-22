@@ -1,14 +1,14 @@
 /**
  * Formulario "Editar datos personales": nombre, apellido, ubicación, email,
- * teléfono de emergencia y si tiene WhatsApp. Guarda en el contexto global.
+ * teléfono de emergencia. Guarda en el contexto global.
  * Cada campo tiene su largo máximo y sus caracteres permitidos (ver
  * `validaciones.ts`); el teléfono descarta letras y símbolos mientras se escribe.
  */
 import { useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
-import { colors, spacing, typography } from '@/theme';
+import { spacing } from '@/theme';
 import type { Usuario } from '@/types/models';
 import {
   filtrarTelefono,
@@ -63,7 +63,6 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
     email: usuario.email,
     telefonoEmergencia: usuario.telefonoEmergencia,
   });
-  const [whatsapp, setWhatsapp] = useState(usuario.whatsappHabilitado);
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
 
@@ -91,7 +90,6 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
         ubicacion: limpiarTexto(form.ubicacion),
         email: normalizarEmail(form.email),
         telefonoEmergencia: limpiarTexto(form.telefonoEmergencia),
-        whatsappHabilitado: whatsapp,
       });
       onGuardado();
     } catch {
@@ -158,19 +156,6 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
         keyboardType="phone-pad"
         maxLength={LIMITES.telefono}
       />
-      <View style={styles.switchFila}>
-        <View style={styles.switchTexto}>
-          <Text style={styles.switchTitulo}>WhatsApp habilitado</Text>
-          <Text style={styles.switchAyuda}>Quien encuentre a tu mascota va a poder escribirte.</Text>
-        </View>
-        <Switch
-          value={whatsapp}
-          onValueChange={setWhatsapp}
-          trackColor={{ false: colors.surfaceVariant, true: colors.primaryContainer }}
-          thumbColor={colors.white}
-          accessibilityLabel="WhatsApp habilitado"
-        />
-      </View>
 
       <PrimaryButton
         title="Guardar cambios"
@@ -194,22 +179,6 @@ const styles = StyleSheet.create({
   },
   mitad: {
     flex: 1,
-  },
-  switchFila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  switchTexto: {
-    flex: 1,
-  },
-  switchTitulo: {
-    ...typography.labelMd,
-    color: colors.onSurface,
-  },
-  switchAyuda: {
-    ...typography.bodySm,
-    color: colors.onSurfaceVariant,
   },
   boton: {
     marginTop: spacing.sm,

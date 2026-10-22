@@ -1,7 +1,7 @@
 /**
- * Formulario para generar un link de asignación de una mascota (solo para
+ * Formulario para generar un código de asignación de una mascota (solo para
  * dueños). Se elige el rol con el que va a quedar quien lo acepte (Dueño o
- * Invitado), se genera el link y se comparte con la hoja nativa del sistema.
+ * Invitado), se genera el código y se comparte con la hoja nativa del sistema.
  * Se muestra dentro de un FormModal.
  */
 import { MaterialIcons } from '@expo/vector-icons';
@@ -13,7 +13,6 @@ import { colors, radius, sizes, spacing, typography } from '@/theme';
 import type { Invitacion, Mascota, RolMascota } from '@/types/models';
 import { ROLES_MASCOTA, rolMascota } from '@/utils/etiquetas';
 import { formatearFecha } from '@/utils/fechas';
-import { linkDeInvitacion } from '@/utils/invitaciones';
 import { PrimaryButton } from '../PrimaryButton';
 
 type Props = {
@@ -21,9 +20,9 @@ type Props = {
 };
 
 /**
- * Formulario de link de asignación.
+ * Formulario de código de asignación.
  * @param props.mascota mascota a asignar
- * @returns el selector de rol y, una vez generado, el link con "Compartir"
+ * @returns el selector de rol y, una vez generado, el código con "Compartir"
  */
 export function InvitarForm({ mascota }: Props) {
   const { generarInvitacion } = useApp();
@@ -33,30 +32,27 @@ export function InvitarForm({ mascota }: Props) {
   const [invitacion, setInvitacion] = useState<Invitacion | null>(null);
   const [generando, setGenerando] = useState(false);
 
-  const link = invitacion ? linkDeInvitacion(invitacion.token) : null;
-
   // --- Handlers ---
-  /** Genera el link con el rol elegido. */
+  /** Genera el código con el rol elegido. */
   const handleGenerar = async () => {
     setGenerando(true);
     try {
       setInvitacion(await generarInvitacion(mascota, rol));
     } catch (e) {
-      Alert.alert('No se pudo generar el link', e instanceof Error ? e.message : 'Intentá de nuevo.');
+      Alert.alert('No se pudo generar el código', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setGenerando(false);
     }
   };
 
-  /** Abre la hoja de compartir del sistema con el link. */
+  /** Abre la hoja de compartir del sistema con el código. */
   const handleCompartir = async () => {
-    if (!invitacion || !link) return;
+    if (!invitacion) return;
     try {
       await Share.share({
         message:
           `Te invito a ${mascota.nombre} en Doggy como ${rolMascota(invitacion.rol).label.toLowerCase()}. ` +
-          `Abrí este link desde el celular: ${link} ` +
-          `(o cargá el código ${invitacion.token} en Perfil → "Tengo un link de asignación").`,
+          `Cargá el código ${invitacion.token} en Perfil → "Tengo un código de asignación".`,
       });
     } catch {
       Alert.alert('No se pudo compartir', 'Probá de nuevo en unos segundos.');
@@ -64,25 +60,22 @@ export function InvitarForm({ mascota }: Props) {
   };
 
   // --- Render ---
-  if (invitacion && link) {
+  if (invitacion) {
     return (
       <View style={styles.form}>
         <View style={styles.listo}>
           <MaterialIcons name="check-circle" size={sizes.iconMd} color={colors.primary} />
           <Text style={styles.listoTexto}>
-            Link generado para sumar a alguien como{' '}
+            Código generado para sumar a alguien como{' '}
             <Text style={styles.resaltado}>{rolMascota(invitacion.rol).label.toLowerCase()}</Text> de{' '}
             {mascota.nombre}.
           </Text>
         </View>
 
-        <View style={styles.linkCaja}>
+        <View style={styles.codigoCaja}>
           <Text style={styles.label}>Código</Text>
           <Text style={styles.codigo} selectable>
             {invitacion.token}
-          </Text>
-          <Text style={styles.link} selectable numberOfLines={2}>
-            {link}
           </Text>
         </View>
 
@@ -90,7 +83,7 @@ export function InvitarForm({ mascota }: Props) {
           Sirve para una sola persona y vence el {formatearFecha(invitacion.vence)}.
         </Text>
 
-        <PrimaryButton title="Compartir link" icon="share" iconLeft onPress={handleCompartir} />
+        <PrimaryButton title="Compartir código" icon="share" iconLeft onPress={handleCompartir} />
         <PrimaryButton
           title="Generar otro"
           icon="refresh"
@@ -129,8 +122,8 @@ export function InvitarForm({ mascota }: Props) {
       })}
 
       <PrimaryButton
-        title="Generar link"
-        icon="link"
+        title="Generar código"
+        icon="vpn-key"
         iconLeft
         onPress={handleGenerar}
         loading={generando}
@@ -195,7 +188,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: typography.labelMd.fontFamily,
   },
-  linkCaja: {
+  codigoCaja: {
     gap: spacing.xs,
     padding: spacing.md,
     borderRadius: radius.lg,
@@ -207,10 +200,6 @@ const styles = StyleSheet.create({
     ...typography.headlineMd,
     color: colors.primary,
     letterSpacing: 2,
-  },
-  link: {
-    ...typography.bodySm,
-    color: colors.onSurfaceVariant,
   },
   ayuda: {
     ...typography.bodySm,
