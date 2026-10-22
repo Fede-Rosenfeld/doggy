@@ -73,7 +73,7 @@ const ESPERA_CIERRE_HOJA_MS = 300;
  * @returns el mapa o la lista de reportes
  */
 export default function PerdidosScreen() {
-  const { reportes, usuario, mascotas } = useApp();
+  const { reportes, usuario, mascotas, error, recargar } = useApp();
   const { cerrando, pedirCierre } = useCerrarReporte();
   const { reporteId } = useLocalSearchParams<{ reporteId?: string }>();
   const gps = useUbicacion({ automatico: true });
@@ -216,7 +216,15 @@ export default function PerdidosScreen() {
   };
 
   // --- Render ---
-  const vacio = (
+  // Si la carga falló, la lista vacía no significa que no haya reportes.
+  const vacio = error ? (
+    <EstadoVacio
+      icon="cloud-off"
+      titulo="No pudimos cargar los reportes"
+      mensaje={error}
+      accion={{ titulo: 'Reintentar', onPress: recargar }}
+    />
+  ) : (
     <EstadoVacio
       icon="search-off"
       titulo="No hay reportes"

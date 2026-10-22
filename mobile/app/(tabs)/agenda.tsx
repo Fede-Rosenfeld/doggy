@@ -28,7 +28,7 @@ import { hoy as hoyLocal, parsearFecha } from '@/utils/fechas';
  * @returns el calendario y los turnos del día elegido
  */
 export default function AgendaScreen() {
-  const { turnos, mascotas } = useApp();
+  const { turnos, mascotas, error, recargar } = useApp();
   const hoy = useMemo(() => hoyLocal(), []);
 
   // --- Estado ---
@@ -149,7 +149,14 @@ export default function AgendaScreen() {
             </View>
           </View>
 
-          {delDia.length === 0 ? (
+          {delDia.length === 0 && error ? (
+            <EstadoVacio
+              icon="cloud-off"
+              titulo="No pudimos cargar tus turnos"
+              mensaje={error}
+              accion={{ titulo: 'Reintentar', onPress: recargar }}
+            />
+          ) : delDia.length === 0 ? (
             <EstadoVacio
               icon="event-available"
               titulo="Sin turnos este día"
