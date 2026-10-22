@@ -1,25 +1,25 @@
 /**
  * Service de mascotas del usuario.
  *
- * La "base" tiene mascotas de varios usuarios; al usuario logueado se le
- * devuelven solo aquellas a las que está asignado (como dueño o invitado).
+ * El servidor devuelve solo las mascotas a las que está asignado el usuario
+ * (como dueño o invitado). Las escrituras todavía usan la lista en memoria
+ * hasta que se conecten en la Etapa 3.
  */
 import { mascotas as mascotasMock, USUARIO_ID } from '@/data/mock';
 import type { Mascota, NuevaMascota } from '@/types/models';
 import { generarCodigoMascota } from '@/utils/codigos';
-import { asignarCreador, idsMascotasDe } from './cuidadores';
-import { siguienteId, simularRespuesta } from './http';
+import { asignarCreador } from './cuidadores';
+import { pedirJson, siguienteId, simularRespuesta } from './http';
 
 let mascotas: Mascota[] = mascotasMock;
 
 /**
  * Lista las mascotas a las que está asignado el usuario.
- * Endpoint futuro: GET /api/mascotas -> 200 Mascota[]
+ * Endpoint: GET /api/mascotas -> 200 Mascota[]
  * @returns las mascotas
  */
 export async function obtenerMascotas(): Promise<Mascota[]> {
-  const asignadas = new Set(idsMascotasDe(USUARIO_ID));
-  return simularRespuesta(mascotas.filter((m) => asignadas.has(m.id)));
+  return pedirJson<Mascota[]>('/api/mascotas');
 }
 
 /**

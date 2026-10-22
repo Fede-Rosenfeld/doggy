@@ -3,18 +3,18 @@
  */
 import { usuario as usuarioMock } from '@/data/mock';
 import type { DatosUsuario, Usuario } from '@/types/models';
-import { simularRespuesta } from './http';
+import { pedirJson, simularRespuesta } from './http';
 
-// "Base de datos" en memoria mientras no haya backend.
+// Copia en memoria para el PATCH, que todavía no está conectado (Etapa 3).
 let usuarioActual: Usuario = usuarioMock;
 
 /**
  * Trae el perfil del usuario.
- * Endpoint futuro: GET /api/usuarios/me -> 200 Usuario
+ * Endpoint: GET /api/usuarios/me -> 200 Usuario
  * @returns el usuario
  */
 export async function obtenerUsuario(): Promise<Usuario> {
-  return simularRespuesta(usuarioActual);
+  return pedirJson<Usuario>('/api/usuarios/me');
 }
 
 /**

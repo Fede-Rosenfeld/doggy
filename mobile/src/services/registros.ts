@@ -3,17 +3,18 @@
  */
 import { registrosSanitarios } from '@/data/mock';
 import type { NuevoRegistro, RegistroSanitario } from '@/types/models';
-import { siguienteId, simularRespuesta } from './http';
+import { pedirJson, siguienteId, simularRespuesta } from './http';
 
 let registros: RegistroSanitario[] = registrosSanitarios;
 
 /**
  * Lista los registros sanitarios de todas las mascotas del usuario.
- * Endpoint futuro: GET /api/registros -> 200 RegistroSanitario[]
+ * Las fechas llegan como AAAA-MM-DD y se leen con `parsearFecha` (día local).
+ * Endpoint: GET /api/registros -> 200 RegistroSanitario[]
  * @returns los registros
  */
 export async function obtenerRegistros(): Promise<RegistroSanitario[]> {
-  return simularRespuesta(registros);
+  return pedirJson<RegistroSanitario[]>('/api/registros');
 }
 
 /**

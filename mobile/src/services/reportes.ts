@@ -3,17 +3,17 @@
  */
 import { reportes as reportesMock, USUARIO_ID } from '@/data/mock';
 import type { NuevoReporte, ReportePerdida } from '@/types/models';
-import { siguienteId, simularRespuesta } from './http';
+import { pedirJson, siguienteId, simularRespuesta } from './http';
 
 let reportes: ReportePerdida[] = reportesMock;
 
 /**
  * Lista los reportes activos de la zona.
- * Endpoint futuro: GET /api/reportes -> 200 ReportePerdida[]
+ * Endpoint: GET /api/reportes -> 200 ReportePerdida[]
  * @returns los reportes
  */
 export async function obtenerReportes(): Promise<ReportePerdida[]> {
-  return simularRespuesta(reportes);
+  return pedirJson<ReportePerdida[]>('/api/reportes');
 }
 
 /**

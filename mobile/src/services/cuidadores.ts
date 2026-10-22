@@ -14,9 +14,10 @@ import {
   USUARIO_ID,
 } from '@/data/mock';
 import type { Cuidador, Invitacion, Mascota, RolMascota } from '@/types/models';
-import { siguienteId, simularRespuesta } from './http';
+import { pedirJson, siguienteId, simularRespuesta } from './http';
 
-// "Base de datos" en memoria mientras no haya backend.
+// Listas en memoria para las escrituras, que todavía no están conectadas (Etapa 3).
+// La lectura de cuidadores ya viene del servidor.
 let cuidadores: Cuidador[] = cuidadoresMock;
 let invitaciones: Invitacion[] = invitacionesMock;
 
@@ -81,12 +82,11 @@ export function asignarCreador(mascotaId: number): void {
 
 /**
  * Lista las personas asignadas a las mascotas del usuario logueado (él incluido).
- * Endpoint futuro: GET /api/cuidadores -> 200 Cuidador[]
+ * Endpoint: GET /api/cuidadores -> 200 Cuidador[]
  * @returns las asignaciones
  */
 export async function obtenerCuidadores(): Promise<Cuidador[]> {
-  const mias = new Set(idsMascotasDe(USUARIO_ID));
-  return simularRespuesta(cuidadores.filter((c) => mias.has(c.mascotaId)));
+  return pedirJson<Cuidador[]>('/api/cuidadores');
 }
 
 /**
