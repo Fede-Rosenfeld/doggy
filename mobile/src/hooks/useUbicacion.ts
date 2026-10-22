@@ -83,13 +83,68 @@ function formatearDireccion(direccion: Location.LocationGeocodedAddress): Direcc
 }
 
 /**
+ * Resultado de una lectura del GPS, sin tocar el estado de React.
+ * `permiso` es null si no se llegó a consultar (por ejemplo, con la ubicación
+ * del sistema apagada) y `coords` es null si no se obtuvo la posición.
+ */
+type LecturaGps = {
+  coords: Coordenadas | null;
+  permiso: EstadoPermiso | null;
+  puedePreguntar: boolean | null;
+  error: string | null;
+};
+
+/**
+ * Lee la posición siguiendo los pasos del hook: disponibilidad → permiso →
+ * lectura puntual con precisión alta. No toca el estado: devuelve qué pasó.
+ * @returns el resultado de la lectura
+ */
+async function leerGps(): Promise<LecturaGps> {
+  let permiso: EstadoPermiso | null = null;
+  let puedePreguntar: boolean | null = null;
+  try {
+    // 1. Disponibilidad: el usuario puede tener la ubicación apagada en el sistema.
+    const serviciosActivos = await Location.hasServicesEnabledAsync();
+    if (!serviciosActivos) {
+      return {
+        coords: null,
+        permiso,
+        puedePreguntar,
+        error: 'Activá la ubicación del dispositivo para usar el mapa.',
+      };
+    }
+
+    // 2. Permiso.
+    const resultado = await asegurarPermiso();
+    permiso = resultado.concedido ? 'concedido' : 'denegado';
+    puedePreguntar = resultado.puedePreguntar;
+    if (!resultado.concedido) return { coords: null, permiso, puedePreguntar, error: null };
+
+    // 3. Lectura puntual de la posición.
+    const posicion = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
+    const coords = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
+    return { coords, permiso, puedePreguntar, error: null };
+  } catch {
+    return {
+      coords: null,
+      permiso,
+      puedePreguntar,
+      error: 'No pudimos obtener tu ubicación. Probá de nuevo.',
+    };
+  }
+}
+
+/**
  * Hook de GPS con estados de carga, error y permiso.
  * @param opciones `automatico` para leer la ubicación al montar
  * @returns la ubicación y las funciones para pedirla y traducirla a dirección
  */
 export function useUbicacion({ automatico = false }: Opciones = {}): UseUbicacion {
   const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
-  const [cargando, setCargando] = useState(false);
+  // En modo automático arranca cargando: la lectura empieza apenas se monta.
+  const [cargando, setCargando] = useState(automatico);
   const [error, setError] = useState<string | null>(null);
   const [permiso, setPermiso] = useState<EstadoPermiso>('sin-consultar');
   const [puedePreguntar, setPuedePreguntar] = useState(true);
@@ -103,39 +158,27 @@ export function useUbicacion({ automatico = false }: Opciones = {}): UseUbicacio
     };
   }, []);
 
+  /**
+   * Pasa al estado el resultado de una lectura del GPS (si la pantalla sigue abierta).
+   * @param lectura lo que devolvió `leerGps`
+   */
+  const aplicarLectura = useCallback((lectura: LecturaGps) => {
+    if (!montado.current) return;
+    if (lectura.puedePreguntar !== null) setPuedePreguntar(lectura.puedePreguntar);
+    if (lectura.permiso !== null) setPermiso(lectura.permiso);
+    if (lectura.coords) setUbicacion(lectura.coords);
+    setError(lectura.error);
+    setCargando(false);
+  }, []);
+
   /** Verifica servicios y permiso, y lee la posición con precisión alta. */
   const obtenerUbicacion = useCallback(async (): Promise<Coordenadas | null> => {
     setCargando(true);
     setError(null);
-    try {
-      // 1. Disponibilidad: el usuario puede tener la ubicación apagada en el sistema.
-      const serviciosActivos = await Location.hasServicesEnabledAsync();
-      if (!serviciosActivos) {
-        if (montado.current) setError('Activá la ubicación del dispositivo para usar el mapa.');
-        return null;
-      }
-
-      // 2. Permiso.
-      const { concedido, puedePreguntar: sePuede } = await asegurarPermiso();
-      if (!montado.current) return null;
-      setPuedePreguntar(sePuede);
-      setPermiso(concedido ? 'concedido' : 'denegado');
-      if (!concedido) return null;
-
-      // 3. Lectura puntual de la posición.
-      const posicion = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      const coords = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
-      if (montado.current) setUbicacion(coords);
-      return coords;
-    } catch {
-      if (montado.current) setError('No pudimos obtener tu ubicación. Probá de nuevo.');
-      return null;
-    } finally {
-      if (montado.current) setCargando(false);
-    }
-  }, []);
+    const lectura = await leerGps();
+    aplicarLectura(lectura);
+    return lectura.coords;
+  }, [aplicarLectura]);
 
   /** Traduce coordenadas a una dirección; si falla devuelve null y el llamador decide qué mostrar. */
   const obtenerDireccion = useCallback(async (coords: Coordenadas): Promise<DireccionLegible | null> => {
@@ -155,9 +198,11 @@ export function useUbicacion({ automatico = false }: Opciones = {}): UseUbicacio
     await Linking.openSettings();
   }, []);
 
+  // Lectura automática al montar: el estado inicial ya marca cargando y sin
+  // error, así que solo se lee el GPS y el resultado se aplica en el callback.
   useEffect(() => {
-    if (automatico) obtenerUbicacion();
-  }, [automatico, obtenerUbicacion]);
+    if (automatico) leerGps().then(aplicarLectura);
+  }, [automatico, aplicarLectura]);
 
   return {
     ubicacion,

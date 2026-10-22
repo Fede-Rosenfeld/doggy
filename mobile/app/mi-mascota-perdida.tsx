@@ -99,16 +99,18 @@ export default function MiMascotaPerdidaScreen() {
     if (gps.ubicacion && !pinAjustado.current) setCoords(gps.ubicacion);
   }, [gps.ubicacion]);
 
-  // Cada vez que cambia el punto se busca la dirección legible.
+  // Cada vez que cambia el punto se busca la dirección legible. Se depende de
+  // la función (estable) y no de `gps`, que es un objeto nuevo en cada render.
+  const { obtenerDireccion } = gps;
   useEffect(() => {
     let vigente = true;
-    gps.obtenerDireccion(coords).then((resultado) => {
+    obtenerDireccion(coords).then((resultado) => {
       if (vigente) setDireccion(resultado);
     });
     return () => {
       vigente = false;
     };
-  }, [coords, gps.obtenerDireccion]);
+  }, [coords, obtenerDireccion]);
 
   // --- Handlers ---
   /**

@@ -42,7 +42,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { useApp } from '@/context/AppContext';
 import { useCerrarReporte } from '@/hooks/useCerrarReporte';
-import { useUbicacion } from '@/hooks/useUbicacion';
+import { Coordenadas, useUbicacion } from '@/hooks/useUbicacion';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { ReportePerdida } from '@/types/models';
 import { filtrarReportes, FiltroEstado, puedeGestionarReporte } from '@/utils/selectores';
@@ -102,23 +102,35 @@ export default function PerdidosScreen() {
   const anchoCard = width - spacing.containerMargin * 2 - ASOMA;
 
   // Recién llegado de reportar: se muestra el nuevo marker seleccionado y centrado.
-  // El ref evita repetirlo cada vez que se vuelve a la tab con el mismo param.
-  const reporteProcesado = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    if (!reporteId || reporteProcesado.current === reporteId) return;
+  // El estado se ajusta durante el render (patrón de React para "cambió un
+  // param"), una sola vez por reporte: `reporteRecibido` evita repetirlo cada
+  // vez que se vuelve a la tab con el mismo param. Si el reporte todavía no
+  // está cargado, se reintenta en el render siguiente.
+  const [reporteRecibido, setReporteRecibido] = useState<string | undefined>(undefined);
+  const [destino, setDestino] = useState<Coordenadas | null>(null);
+  if (reporteId && reporteId !== reporteRecibido) {
     const reporte = reportes.find((r) => String(r.id) === reporteId);
-    if (!reporte) return;
-    reporteProcesado.current = reporteId;
-    setModo('mapa');
-    setFiltro('todos');
-    setBusqueda('');
-    setSeleccionadoId(reporte.id);
-    setTimeout(() => {
-      mapaRef.current?.centrar({ lat: reporte.lat, lng: reporte.lng });
+    if (reporte) {
+      setReporteRecibido(reporteId);
+      setModo('mapa');
+      setFiltro('todos');
+      setBusqueda('');
+      setSeleccionadoId(reporte.id);
+      setDestino({ lat: reporte.lat, lng: reporte.lng });
+    }
+  }
+
+  // Lo imperativo (mover la cámara y el carrusel) queda en un efecto, esperando
+  // a que el mapa termine de montarse.
+  useEffect(() => {
+    if (!destino) return;
+    const timer = setTimeout(() => {
+      mapaRef.current?.centrar(destino);
       // El más nuevo queda primero en el carrusel (orden por fecha).
       carruselRef.current?.scrollToOffset({ offset: 0, animated: true });
     }, ESPERA_MAPA_MS);
-  }, [reporteId, reportes]);
+    return () => clearTimeout(timer);
+  }, [destino]);
 
   // --- Handlers ---
   /**

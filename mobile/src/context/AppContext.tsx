@@ -86,6 +86,25 @@ function mensajeDeError(error: unknown): string {
 }
 
 /**
+ * Pide todos los datos iniciales en paralelo (evita pedir uno detrás de otro).
+ * No toca el estado: solo devuelve lo que respondieron los services.
+ * @returns usuario, mascotas, registros, turnos, reportes y cuidadores, en ese orden
+ */
+function pedirTodo() {
+  return Promise.all([
+    usuarioService.obtenerUsuario(),
+    mascotasService.obtenerMascotas(),
+    registrosService.obtenerRegistros(),
+    turnosService.obtenerTurnos(),
+    reportesService.obtenerReportes(),
+    cuidadoresService.obtenerCuidadores(),
+  ]);
+}
+
+/** Lo que devuelve `pedirTodo`. */
+type DatosIniciales = Awaited<ReturnType<typeof pedirTodo>>;
+
+/**
  * Provider que envuelve la app y mantiene el estado global.
  * @param props.children el árbol de la app
  * @returns el provider con el estado y las acciones
@@ -102,35 +121,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // --- Carga inicial ---
-  /** Trae todos los datos en paralelo (evita pedir uno detrás de otro). */
+  /**
+   * Guarda en el estado los datos que trajo `pedirTodo`.
+   * @param datos usuario, mascotas, registros, turnos, reportes y cuidadores
+   */
+  const aplicarDatos = useCallback(([u, m, r, t, rep, c]: DatosIniciales) => {
+    setUsuario(u);
+    setMascotas(m);
+    setRegistros(r);
+    setTurnos(t);
+    setReportes(rep);
+    setCuidadores(c);
+  }, []);
+
+  /** Vuelve a cargar todo desde cero (por ejemplo, con "Reintentar"). */
   const recargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      const [u, m, r, t, rep, c] = await Promise.all([
-        usuarioService.obtenerUsuario(),
-        mascotasService.obtenerMascotas(),
-        registrosService.obtenerRegistros(),
-        turnosService.obtenerTurnos(),
-        reportesService.obtenerReportes(),
-        cuidadoresService.obtenerCuidadores(),
-      ]);
-      setUsuario(u);
-      setMascotas(m);
-      setRegistros(r);
-      setTurnos(t);
-      setReportes(rep);
-      setCuidadores(c);
+      aplicarDatos(await pedirTodo());
     } catch (e) {
       setError(mensajeDeError(e));
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [aplicarDatos]);
 
+  // Al montar, el estado ya arranca con cargando = true y sin error: solo falta
+  // traer los datos. El estado se actualiza en los callbacks de la promesa, y
+  // `vigente` evita tocarlo si el provider se desmontó antes de que respondan.
   useEffect(() => {
-    recargar();
-  }, [recargar]);
+    let vigente = true;
+    pedirTodo()
+      .then((datos) => {
+        if (vigente) aplicarDatos(datos);
+      })
+      .catch((e: unknown) => {
+        if (vigente) setError(mensajeDeError(e));
+      })
+      .finally(() => {
+        if (vigente) setCargando(false);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [aplicarDatos]);
 
   // --- Acciones ---
   /** Inicia sesión y guarda el usuario que devuelve el servidor. */

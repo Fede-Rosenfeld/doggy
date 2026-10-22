@@ -18,9 +18,10 @@ type IconName = ComponentProps<typeof MaterialIcons>['name'];
  * @returns función que recibe color y tamaño y dibuja el ícono
  */
 function tabIcon(name: IconName) {
-  return ({ color, size }: { color: ColorValue; size: number }) => (
-    <MaterialIcons name={name} color={color} size={size} />
-  );
+  // Función con nombre: React la muestra así en las herramientas de desarrollo.
+  return function IconoTab({ color, size }: { color: ColorValue; size: number }) {
+    return <MaterialIcons name={name} color={color} size={size} />;
+  };
 }
 
 /** Layout de tabs de la app. */

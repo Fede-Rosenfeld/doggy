@@ -32,9 +32,15 @@ export function ReporteMarker({ reporte, seleccionado, onPress }: Props) {
   // siga actualizándose un momento después de cada cambio y después se apaga
   // (tracksViewChanges siempre en true consume mucha batería con varios pines).
   const [redibujar, setRedibujar] = useState(true);
-
-  useEffect(() => {
+  // Valor de `seleccionado` del render anterior, para detectar el cambio sin un efecto.
+  const [seleccionadoPrevio, setSeleccionadoPrevio] = useState(seleccionado);
+  if (seleccionado !== seleccionadoPrevio) {
+    setSeleccionadoPrevio(seleccionado);
     setRedibujar(true);
+  }
+
+  // Después de cada cambio (y al montar), se apaga el redibujado pasado un momento.
+  useEffect(() => {
     const timer = setTimeout(() => setRedibujar(false), REDIBUJO_MS);
     return () => clearTimeout(timer);
   }, [seleccionado]);
