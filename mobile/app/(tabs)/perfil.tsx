@@ -18,7 +18,7 @@ import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native
 
 import { AppHeader } from '@/components/AppHeader';
 import { Badge } from '@/components/Badge';
-import { Cargando } from '@/components/EstadoVista';
+import { Cargando, EstadoVacio } from '@/components/EstadoVista';
 import { FormModal } from '@/components/FormModal';
 import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
@@ -54,7 +54,8 @@ type HojaAsignacion = 'invitar' | 'desasignar' | 'codigo' | null;
  * @returns el perfil
  */
 export default function PerfilScreen() {
-  const { usuario, mascotas, cuidadores, reportes, actualizarUsuario, cerrarSesion } = useApp();
+  const { usuario, mascotas, cuidadores, reportes, error, recargar, actualizarUsuario, cerrarSesion } =
+    useApp();
   const fototeca = useFototeca();
 
   // --- Estado ---
@@ -156,11 +157,21 @@ export default function PerfilScreen() {
   };
 
   // --- Render ---
+  // Sin usuario: si la carga falló se ofrece reintentar, si no, todavía está cargando.
   if (!usuario) {
     return (
       <View style={styles.screen}>
         <AppHeader />
-        <Cargando />
+        {error ? (
+          <EstadoVacio
+            icon="cloud-off"
+            titulo="No pudimos cargar tu perfil"
+            mensaje={error}
+            accion={{ titulo: 'Reintentar', onPress: recargar }}
+          />
+        ) : (
+          <Cargando />
+        )}
       </View>
     );
   }
