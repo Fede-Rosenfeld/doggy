@@ -70,11 +70,28 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 - Todo error llega como `{ error: "mensaje en español" }`. La app muestra ese mensaje tal cual, sin armar textos propios por status, salvo en casos puntuales (por ejemplo, un 401 lleva al login).
 - Una respuesta 204 no trae body: la app no tiene que intentar leer JSON de ella.
 
-### Decisiones
+## Decisiones
+
+### Contrato con doggy-backend
 
 - **Resuelta: 410 para links de asignación.** `GET /api/invitaciones/:token` y `POST /api/invitaciones/:token/aceptar` responden 410 si el código venció o ya se usó, y 404 si no existe.
 - **Pendiente (Etapa 3): `PUT` en los services.** Los comentarios de `registros.ts` y `turnos.ts` dicen `PUT`; se pasan a `PATCH` cuando se conecten esos services.
 - **Pendiente: 204 en `pedirJson`.** Hoy siempre hace `response.json()`, que falla con un 204 sin body. Hay que contemplarlo antes de conectar los DELETE.
+- **Pendiente: link a `doggy-backend` en el README.** El repo todavía no existe en GitHub; cuando se cree, sumar el link en "Cómo correrlo → Backend".
+
+### Código
+
+- **Resuelta: efectos con setState (`react-hooks/set-state-in-effect`).** No se silencia con `eslint-disable`. Se resuelve así:
+  - cargar datos al montar: separar una función que pide y devuelve los datos sin tocar el estado (como `pedirTodo` en `AppContext` o `leerGps` en `useUbicacion`) de otra que los aplica, y aplicarlos en el `.then` de la promesa, con una bandera `vigente` para la limpieza. La regla marca cualquier función con setState que se llame desde el efecto, aunque el setState esté después de un `await`;
+  - reaccionar a un cambio de prop o param: ajustar el estado durante el render guardando el valor anterior (como `seleccionadoPrevio` en `ReporteMarker` o `reporteRecibido` en Perdidos), y dejar en el efecto solo lo imperativo (timers, mover el mapa);
+  - dependencias de un hook que devuelve un objeto nuevo en cada render (como `gps`): desestructurar la función estable (`const { obtenerDireccion } = gps`) y depender de ella, nunca del objeto entero, porque genera un loop.
+
+### Para revisar
+
+- **Header de los modales en iOS.** La variante `bar` de `ScreenHeader` suma `insets.top`. En los modales tipo hoja (`reportar`, `mi-mascota-perdida`, `asignar`) puede sobrar espacio arriba. Verificar en un iPhone y, si sobra, no sumar el inset dentro de un modal.
+- **Título del mes del calendario en web.** `adjustsFontSizeToFit` no funciona en el navegador: en pantallas de 320 px "Septiembre 2026" se corta con "…". En el celular se achica bien.
+- **Foto de Nieve.** El reporte de ejemplo de Nieve (`src/data/mock.ts`) no tiene foto y muestra el avatar con la inicial. Falta una foto de un perro blanco.
+- **Metadatos de `icon.png`.** El archivo original del logo (`mobile/assets/images/icon.png`) conserva sus metadatos de procedencia (C2PA); los íconos derivados (splash, logo y adaptive icon) no los tienen porque se volvieron a guardar. Queda a decisión del equipo si se deja así.
 
 ## Gestos (gesture-handler + reanimated)
 
