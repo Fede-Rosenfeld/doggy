@@ -76,6 +76,10 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 
 - **Resuelta: 410 para links de asignación.** `GET /api/invitaciones/:token` y `POST /api/invitaciones/:token/aceptar` responden 410 si el código venció o ya se usó, y 404 si no existe.
 - **Pendiente (Etapa 3): `PUT` en los services.** Los comentarios de `registros.ts` y `turnos.ts` dicen `PUT`; se pasan a `PATCH` cuando se conecten esos services.
+- **Pendiente (Etapa 3): flujos que escriben en el mock y leen de la API.** Desde la Etapa 2 las lecturas van a la API y las escrituras siguen en memoria, y dos flujos quedan rotos hasta conectar sus POST:
+  - **Alta de mascota:** `crearMascota` la guarda en el mock y `asignarCreador` asigna al usuario como dueño en la lista local, pero después `agregarMascota` (AppContext) vuelve a pedir los cuidadores a la API, que no tiene esa asignación. La mascota queda sin cuidadores y desaparece al recargar. Se arregla con `POST /api/mascotas`, que crea la mascota y la asignación en el servidor.
+  - **Aceptar un código de asignación:** `aceptarInvitacion` asigna al usuario en el mock, pero AppContext vuelve a pedir mascotas y cuidadores a la API, que no la conoce, y tira "No encontramos la mascota asignada." Se arregla con `GET /api/invitaciones/:token` y `POST /api/invitaciones/:token/aceptar`.
+  - Al conectarlos se borran `idsMascotasDe` (ya no la usa nadie) y `asignarCreador` de `services/cuidadores.ts`.
 - **Pendiente: 204 en `pedirJson`.** Hoy siempre hace `response.json()`, que falla con un 204 sin body. Hay que contemplarlo antes de conectar los DELETE.
 
 ### Código
