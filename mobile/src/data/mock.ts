@@ -37,7 +37,6 @@ export const usuario: Usuario = {
   ubicacion: 'Palermo, Buenos Aires',
   foto: 'sofia',
   telefonoEmergencia: '+54 9 11 4589-2310',
-  whatsappHabilitado: true,
 };
 
 export const mascotas: Mascota[] = [
@@ -71,7 +70,7 @@ export const mascotas: Mascota[] = [
     senas: 'Pelo claro con manchas marrones en las orejas.',
     foto: 'milo',
   },
-  // Mascota de otra usuaria (Lucía): Sofía no la ve hasta aceptar el link de asignación.
+  // Mascota de otra usuaria (Lucía): Sofía no la ve hasta aceptar el código de asignación.
   {
     id: 4,
     tutorId: 20,
@@ -234,7 +233,7 @@ export const reportes: ReportePerdida[] = [
   },
 ];
 
-/** Usuaria dueña de Toby: sirve para probar un link de asignación de otra persona. */
+/** Usuaria dueña de Toby: sirve para probar un código de asignación de otra persona. */
 const LUCIA_ID = 20;
 
 /**
@@ -325,8 +324,8 @@ export const cuidadores: Cuidador[] = [
 ];
 
 /**
- * Links de asignación ya generados. El de Toby lo creó Lucía para que Sofía
- * lo acepte: se prueba desde Perfil → "Tengo un link de asignación" con el
+ * Códigos de asignación ya generados. El de Toby lo creó Lucía para que Sofía
+ * lo acepte: se prueba desde Perfil → "Tengo un código de asignación" con el
  * código TOBY2026.
  */
 export const invitaciones: Invitacion[] = [

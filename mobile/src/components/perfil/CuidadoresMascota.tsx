@@ -3,12 +3,12 @@
  * las personas asignadas con su rol (Dueño / Invitado); el usuario logueado
  * aparece marcado como "Vos".
  *
- * Solo si el usuario es dueño se muestra "Asignar", que genera un link de
+ * Solo si el usuario es dueño se muestra "Asignar", que genera un código de
  * asignación. Cualquiera puede desasignarse con "Desasignarme".
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { Cuidador, Mascota, RolMascota, TipoCuidador, Usuario } from '@/types/models';
@@ -20,7 +20,7 @@ type Props = {
   cuidadores: Cuidador[];
   /** Usuario logueado: su fila muestra sus datos actuales y la marca "Vos". */
   usuario: Usuario;
-  /** Abre el formulario para generar un link de asignación. */
+  /** Abre el formulario para generar un código de asignación. */
   onAsignar: (mascota: Mascota) => void;
   /** Abre la confirmación para desasignarse. */
   onDesasignarme: (mascota: Mascota) => void;
@@ -67,11 +67,6 @@ export function CuidadoresMascota({ mascota, cuidadores, usuario, onAsignar, onD
     return a.rol === b.rol ? 0 : a.rol === 'dueno' ? -1 : 1;
   });
 
-  /** Gestionar permisos finos necesita el backend: por ahora avisa. */
-  const handlePermisos = () => {
-    Alert.alert('Permisos', `Disponible próximamente. Vas a poder definir qué ve cada cuidador de ${mascota.nombre}.`);
-  };
-
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -87,14 +82,6 @@ export function CuidadoresMascota({ mascota, cuidadores, usuario, onAsignar, onD
           </View>
           <Text style={styles.cantidad}>{textoCantidad(cuidadores.length)}</Text>
         </View>
-        <Pressable
-          onPress={handlePermisos}
-          accessibilityRole="button"
-          accessibilityLabel={`Gestionar permisos de ${mascota.nombre}`}
-          style={({ pressed }) => [styles.ajustes, pressed && styles.ajustesPressed]}
-        >
-          <MaterialIcons name="tune" size={sizes.iconSm + 2} color={colors.onSurfaceVariant} />
-        </Pressable>
       </View>
 
       {ordenados.map((cuidador) => {
@@ -204,16 +191,6 @@ const styles = StyleSheet.create({
     ...typography.labelSm,
     fontFamily: typography.bodySm.fontFamily,
     color: colors.onSurfaceVariant,
-  },
-  ajustes: {
-    width: sizes.avatarSm - 8,
-    height: sizes.avatarSm - 8,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ajustesPressed: {
-    backgroundColor: colors.surfaceContainer,
   },
   cuidador: {
     flexDirection: 'row',

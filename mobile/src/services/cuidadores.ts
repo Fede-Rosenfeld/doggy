@@ -1,9 +1,9 @@
 /**
- * Service de las personas asignadas a cada mascota y de los links de asignación.
+ * Service de las personas asignadas a cada mascota y de los códigos de asignación.
  *
  * Reglas (las mismas que va a validar el backend):
- * - Solo un dueño de la mascota puede generar links de asignación.
- * - Un link sirve para una sola persona y vence a los 7 días.
+ * - Solo un dueño de la mascota puede generar códigos de asignación.
+ * - Un código sirve para una sola persona y vence a los 7 días.
  * - Cualquiera puede desasignarse, salvo que sea el último dueño: la mascota
  *   no puede quedar sin nadie que pueda administrarla.
  */
@@ -20,15 +20,15 @@ import { siguienteId, simularRespuesta } from './http';
 let cuidadores: Cuidador[] = cuidadoresMock;
 let invitaciones: Invitacion[] = invitacionesMock;
 
-/** Días que dura un link de asignación. */
+/** Días que dura un código de asignación. */
 const DIAS_VIGENCIA = 7;
 const DIA_MS = 24 * 60 * 60 * 1000;
-/** Caracteres del código del link (sin 0/O ni 1/I, que se confunden al leerlos). */
+/** Caracteres del código de asignación (sin 0/O ni 1/I, que se confunden al leerlos). */
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const LARGO_TOKEN = 8;
 
 /**
- * Genera un código al azar para el link.
+ * Genera un código de asignación al azar.
  * @returns código de 8 caracteres
  */
 function generarToken(): string {
@@ -90,7 +90,7 @@ export async function obtenerCuidadores(): Promise<Cuidador[]> {
 }
 
 /**
- * Genera un link de asignación. Solo lo puede hacer un dueño de la mascota.
+ * Genera un código de asignación. Solo lo puede hacer un dueño de la mascota.
  * Endpoint futuro: POST /api/mascotas/:id/invitaciones  { rol } -> 201 Invitacion
  * @param mascota mascota a la que se invita
  * @param rol rol con el que va a quedar quien acepte
@@ -114,29 +114,29 @@ export async function crearInvitacion(mascota: Mascota, rol: RolMascota): Promis
 }
 
 /**
- * Busca un link de asignación y verifica que se pueda usar.
+ * Busca un código de asignación y verifica que se pueda usar.
  * Endpoint futuro: GET /api/invitaciones/:token -> 200 Invitacion | 404 | 410
- * @param token código del link
+ * @param token código de asignación
  * @returns la invitación
  * @throws si no existe, ya se usó o venció
  */
 export async function obtenerInvitacion(token: string): Promise<Invitacion> {
   const invitacion = invitaciones.find((i) => i.token === token.trim().toUpperCase());
-  if (!invitacion) throw new Error('Este link de asignación no existe. Revisá que esté completo.');
-  if (invitacion.usada) throw new Error('Este link ya se usó. Pedile a un dueño que te mande uno nuevo.');
+  if (!invitacion) throw new Error('Este código de asignación no existe. Revisá que esté bien escrito.');
+  if (invitacion.usada) throw new Error('Este código ya se usó. Pedile a un dueño que te mande uno nuevo.');
   if (new Date(invitacion.vence) < new Date()) {
-    throw new Error('Este link venció. Pedile a un dueño que te mande uno nuevo.');
+    throw new Error('Este código venció. Pedile a un dueño que te mande uno nuevo.');
   }
   return simularRespuesta(invitacion);
 }
 
 /**
- * Acepta un link: asigna al usuario logueado a la mascota con el rol del link
+ * Acepta un código: asigna al usuario logueado a la mascota con el rol del código
  * y lo marca como usado.
  * Endpoint futuro: POST /api/invitaciones/:token/aceptar -> 200 Cuidador
- * @param token código del link
+ * @param token código de asignación
  * @returns la asignación creada
- * @throws si el link no se puede usar o el usuario ya está asignado
+ * @throws si el código no se puede usar o el usuario ya está asignado
  */
 export async function aceptarInvitacion(token: string): Promise<Cuidador> {
   const invitacion = await obtenerInvitacion(token);
