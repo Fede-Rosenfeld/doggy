@@ -51,7 +51,7 @@ Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (An
 
 ### Backend
 
-El backend está en otro repositorio, `doggy-backend`, y se levanta aparte (las instrucciones están en su README). Conviene clonarlo al lado de este:
+El backend está en otro repositorio, [`doggy-backend`](https://github.com/ignaciogonzalezinigo1/doggy-backend), y se levanta aparte (las instrucciones están en su README). Conviene clonarlo al lado de este:
 
 ```
 carpeta-de-trabajo/

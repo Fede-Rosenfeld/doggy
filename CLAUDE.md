@@ -77,7 +77,6 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 - **Resuelta: 410 para links de asignación.** `GET /api/invitaciones/:token` y `POST /api/invitaciones/:token/aceptar` responden 410 si el código venció o ya se usó, y 404 si no existe.
 - **Pendiente (Etapa 3): `PUT` en los services.** Los comentarios de `registros.ts` y `turnos.ts` dicen `PUT`; se pasan a `PATCH` cuando se conecten esos services.
 - **Pendiente: 204 en `pedirJson`.** Hoy siempre hace `response.json()`, que falla con un 204 sin body. Hay que contemplarlo antes de conectar los DELETE.
-- **Pendiente: link a `doggy-backend` en el README.** El repo todavía no existe en GitHub; cuando se cree, sumar el link en "Cómo correrlo → Backend".
 
 ### Código
 
