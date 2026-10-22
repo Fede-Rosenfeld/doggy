@@ -18,6 +18,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppProvider } from '@/context/AppContext';
 import { colors } from '@/theme';
@@ -50,23 +51,26 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.surface },
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        {/* Los reportes se abren desde abajo, por encima de las tabs. */}
-        <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="mi-mascota-perdida" options={{ presentation: 'modal' }} />
-        {/* Se abre al cargar un código de asignación de mascota desde Perfil. */}
-        <Stack.Screen name="asignar" options={{ presentation: 'modal' }} />
-      </Stack>
-    </AppProvider>
+    // Raíz de react-native-gesture-handler: sin ella, ningún gesto de la app responde.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppProvider>
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.surface },
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          {/* Los reportes se abren desde abajo, por encima de las tabs. */}
+          <Stack.Screen name="reportar" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="mi-mascota-perdida" options={{ presentation: 'modal' }} />
+          {/* Se abre al cargar un código de asignación de mascota desde Perfil. */}
+          <Stack.Screen name="asignar" options={{ presentation: 'modal' }} />
+        </Stack>
+      </AppProvider>
+    </GestureHandlerRootView>
   );
 }
