@@ -28,7 +28,7 @@ import { buscarMascota } from '@/utils/selectores';
  */
 export default function EditarMascotaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { mascotas, cargando, editarMascota } = useApp();
+  const { mascotas, cargando, error, recargar, editarMascota } = useApp();
 
   // --- Datos derivados ---
   const mascota = useMemo(() => buscarMascota(mascotas, id), [mascotas, id]);
@@ -56,6 +56,13 @@ export default function EditarMascotaScreen() {
         <ScreenHeader title="Editar mascota" />
         {cargando ? (
           <Cargando />
+        ) : error ? (
+          <EstadoVacio
+            icon="cloud-off"
+            titulo="No pudimos cargar tus mascotas"
+            mensaje={error}
+            accion={{ titulo: 'Reintentar', onPress: recargar }}
+          />
         ) : (
           <EstadoVacio
             icon="search-off"

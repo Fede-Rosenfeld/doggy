@@ -38,7 +38,7 @@ const FOTO = 128;
  */
 export default function PerfilMascotaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { mascotas, registros, turnos, reportes, cargando } = useApp();
+  const { mascotas, registros, turnos, reportes, cargando, error, recargar } = useApp();
   const { cerrando, pedirCierre } = useCerrarReporte();
 
   // --- Datos derivados ---
@@ -91,6 +91,13 @@ export default function PerfilMascotaScreen() {
         <AppHeader backTo="/mascotas" />
         {cargando ? (
           <Cargando />
+        ) : error ? (
+          <EstadoVacio
+            icon="cloud-off"
+            titulo="No pudimos cargar tus mascotas"
+            mensaje={error}
+            accion={{ titulo: 'Reintentar', onPress: recargar }}
+          />
         ) : (
           <EstadoVacio
             icon="search-off"

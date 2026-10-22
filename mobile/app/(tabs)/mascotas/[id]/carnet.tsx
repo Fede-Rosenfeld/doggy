@@ -37,7 +37,7 @@ const PESTANAS = TIPOS_REGISTRO.map((t) => ({ valor: t.valor, label: t.pestana }
  */
 export default function CarnetSanitarioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { mascotas, registros, cargando } = useApp();
+  const { mascotas, registros, cargando, error, recargar } = useApp();
 
   // --- Estado ---
   const [tipo, setTipo] = useState<TipoRegistro>('vacuna');
@@ -92,6 +92,13 @@ export default function CarnetSanitarioScreen() {
         <ScreenHeader title="Carnet Sanitario" variant="bar" />
         {cargando ? (
           <Cargando />
+        ) : error ? (
+          <EstadoVacio
+            icon="cloud-off"
+            titulo="No pudimos cargar tus mascotas"
+            mensaje={error}
+            accion={{ titulo: 'Reintentar', onPress: recargar }}
+          />
         ) : (
           <EstadoVacio
             icon="search-off"
