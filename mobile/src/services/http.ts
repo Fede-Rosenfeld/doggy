@@ -1,15 +1,22 @@
 /**
  * Utilidades compartidas por los services.
  *
- * Hoy los services trabajan contra datos en memoria y simulan la demora de
- * la red. En el Sprint 2 cada función pasa a hacer
- * `fetch(`${API_URL}/api/...`)` y a revisar `response.ok`, como en la
- * Práctica Prisma; `pedirJson` queda listo para eso.
+ * Las lecturas ya van a la API con `pedirJson`. Las escrituras todavía
+ * trabajan contra datos en memoria con `simularRespuesta`, hasta que se
+ * conecten en la Etapa 3.
  */
 import { API_URL } from '@/config';
 
 /** Demora simulada de una respuesta, en milisegundos. */
 const LATENCIA_MS = 350;
+/**
+ * Tiempo máximo de espera de un pedido. Si la IP de la API está mal o la PC
+ * no está en la misma red, fetch puede tardar mucho en fallar: así la app
+ * muestra el error en vez de quedarse cargando.
+ */
+const TIEMPO_MAXIMO_MS = 10000;
+/** Mensaje cuando no se pudo llegar al servidor (sin red, IP equivocada o API apagada). */
+const MENSAJE_SIN_CONEXION = 'No pudimos conectarnos con el servidor. Revisá tu conexión y probá de nuevo.';
 
 /**
  * Simula una respuesta del servidor: espera un poco y devuelve una copia de los datos,
@@ -24,17 +31,31 @@ export function simularRespuesta<T>(datos: T): Promise<T> {
 }
 
 /**
- * Hace un pedido a la API y devuelve el JSON. Todavía no se usa: es la versión
- * real que van a llamar los services cuando exista el backend.
+ * Hace un pedido a la API y devuelve el JSON.
  * @param ruta ruta de la API, por ejemplo "/api/mascotas"
  * @param opciones método, headers y body del fetch
  * @returns el cuerpo de la respuesta ya parseado
+ * @throws con el `{ error }` del servidor, o con un mensaje de conexión si no
+ *   respondió dentro de `TIEMPO_MAXIMO_MS`
  */
 export async function pedirJson<T>(ruta: string, opciones?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${ruta}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opciones,
-  });
+  const controlador = new AbortController();
+  const temporizador = setTimeout(() => controlador.abort(), TIEMPO_MAXIMO_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${ruta}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opciones,
+      signal: controlador.signal,
+    });
+  } catch (error) {
+    // Sin red, IP equivocada, API apagada o se cortó por tiempo: el detalle
+    // técnico queda en la consola y el usuario ve un mensaje claro.
+    console.warn(`No se pudo llamar a ${ruta}:`, error);
+    throw new Error(MENSAJE_SIN_CONEXION);
+  } finally {
+    clearTimeout(temporizador);
+  }
   if (!response.ok) {
     const cuerpo = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(cuerpo.error ?? `Error ${response.status} al llamar a ${ruta}`);
