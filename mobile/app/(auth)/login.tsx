@@ -70,8 +70,8 @@ export default function LoginScreen() {
     try {
       await iniciarSesion(normalizarEmail(email), password);
       router.replace('/mascotas');
-    } catch {
-      Alert.alert('No pudimos ingresar', 'Revisá tu conexión e intentá de nuevo.');
+    } catch (e) {
+      Alert.alert('No pudimos ingresar', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setEnviando(false);
     }

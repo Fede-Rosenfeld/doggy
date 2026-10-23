@@ -44,8 +44,8 @@ export default function EditarMascotaScreen() {
       const actualizada = await editarMascota(mascota.id, datos);
       volver({ pathname: '/mascotas/[id]', params: { id: String(mascota.id) } });
       Alert.alert('¡Listo!', `Guardamos los cambios de ${actualizada.nombre}.`);
-    } catch {
-      Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
+    } catch (e) {
+      Alert.alert('No se pudo guardar', e instanceof Error ? e.message : 'Intentá de nuevo.');
     }
   };
 

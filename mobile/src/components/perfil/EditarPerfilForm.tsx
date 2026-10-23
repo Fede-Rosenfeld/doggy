@@ -92,8 +92,8 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
         telefonoEmergencia: limpiarTexto(form.telefonoEmergencia),
       });
       onGuardado();
-    } catch {
-      Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
+    } catch (e) {
+      Alert.alert('No se pudo guardar', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setGuardando(false);
     }

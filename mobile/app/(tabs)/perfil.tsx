@@ -94,8 +94,8 @@ export default function PerfilScreen() {
   const guardarFoto = async (uri: string) => {
     try {
       await actualizarUsuario({ foto: uri });
-    } catch {
-      Alert.alert('No se pudo cambiar la foto', 'Probá de nuevo en unos segundos.');
+    } catch (e) {
+      Alert.alert('No se pudo cambiar la foto', e instanceof Error ? e.message : 'Intentá de nuevo.');
     }
   };
 

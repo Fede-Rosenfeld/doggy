@@ -202,8 +202,8 @@ export default function ReportarScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (router.canGoBack()) router.back();
       router.navigate({ pathname: '/perdidos', params: { reporteId: String(reporte.id) } });
-    } catch {
-      Alert.alert('No se pudo publicar', 'Revisá tu conexión e intentá de nuevo.');
+    } catch (e) {
+      Alert.alert('No se pudo publicar', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setEnviando(false);
     }

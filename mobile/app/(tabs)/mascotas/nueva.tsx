@@ -33,8 +33,8 @@ export default function NuevaMascotaScreen() {
       const creada = await agregarMascota(datos);
       volver('/mascotas');
       Alert.alert('¡Listo!', `${creada.nombre} ya tiene su ID único: ${creada.codigo}`);
-    } catch {
-      Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
+    } catch (e) {
+      Alert.alert('No se pudo guardar', e instanceof Error ? e.message : 'Intentá de nuevo.');
     }
   };
 

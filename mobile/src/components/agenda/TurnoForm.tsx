@@ -146,8 +146,8 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
     try {
       const guardado = turno ? await editarTurno(turno.id, datos) : await agregarTurno(datos);
       onGuardado(guardado);
-    } catch {
-      Alert.alert('No se pudo guardar', 'Revisá tu conexión e intentá de nuevo.');
+    } catch (e) {
+      Alert.alert('No se pudo guardar', e instanceof Error ? e.message : 'Intentá de nuevo.');
     } finally {
       setGuardando(false);
     }
