@@ -156,16 +156,16 @@ Todos los formularios validan en local antes de guardar, con las reglas centrali
 
 ## Datos y arquitectura
 
-La app ya está separada en capas para sumar el backend sin tocar las pantallas:
+La app está separada en capas: las pantallas no saben de dónde vienen los datos.
 
 ```
-Pantalla → AppContext (estado global) → services → [hoy: datos en memoria | Sprint 2: fetch a la API]
+Pantalla → AppContext (estado global) → services → fetch a la API (doggy-backend)
 ```
 
 - `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
-- `src/data/mock.ts`: datos de ejemplo (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA, turnos de octubre de 2026, y Toby, de otra usuaria, con el código de asignación `TOBY2026` para probar el flujo de invitado).
-- `src/services/`: una función `async` por operación, con el endpoint REST que le va a corresponder (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.). Hoy simulan la demora de la red.
-- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar y editar registro sanitario, agregar y editar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
+- Datos de ejemplo: los carga el seed de `doggy-backend` (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA, turnos de octubre de 2026, y Toby, de otra usuaria, con el código de asignación `TOBY2026` para probar el flujo de invitado).
+- `src/services/`: una función `async` por operación, con su endpoint REST comentado (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.).
+- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar, editar y borrar registro sanitario, agregar, editar y borrar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
 
 ## Componentes reutilizables
 
@@ -230,8 +230,8 @@ doggy/
         ├── components/      componentes reutilizables
         ├── context/         estado global
         ├── hooks/           hooks propios
-        ├── services/        acceso a datos (hoy mocks, luego la API)
-        ├── data/            datos de ejemplo
+        ├── services/        acceso a la API
+        ├── data/            fotos incluidas en la app
         ├── types/           modelos
         ├── utils/           validaciones y helpers
         └── config.ts        URL de la API (EXPO_PUBLIC_API_URL)
