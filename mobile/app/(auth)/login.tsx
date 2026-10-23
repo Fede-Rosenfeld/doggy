@@ -1,10 +1,10 @@
 /**
  * Pantalla de Login.
  *
- * Primera pantalla del flujo. Muestra el logo y un formulario de email y
- * contraseña con validación local (formato del email y largo máximo de los
- * dos campos). Todavía no hay backend: si los datos tienen formato válido se
- * entra directo a la tab Mascotas.
+ * Primera pantalla para quien no tiene sesión. Muestra el logo y un
+ * formulario de email y contraseña con validación local (formato del email y
+ * largo máximo de los dos campos). Con datos válidos hace el login contra la
+ * API y entra a la tab Mascotas; si el servidor lo rechaza, muestra su mensaje.
  */
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -57,8 +57,12 @@ export default function LoginScreen() {
     if (errores.password) setErrores((prev) => ({ ...prev, password: undefined }));
   };
 
-  /** Valida el formulario, inicia la sesión y entra a la app reemplazando el login en el historial. */
+  /**
+   * Valida el formulario, inicia la sesión (guarda el token y carga los datos)
+   * y entra a la app reemplazando el login en el historial.
+   */
   const handleIngresar = async () => {
+    if (enviando) return;
     const nuevos: Errores = {
       email: validarEmail(email),
       password: validarPasswordRequerida(password),

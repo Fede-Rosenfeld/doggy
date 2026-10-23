@@ -5,8 +5,10 @@
  * Pide nombre, apellido, email y contraseña con confirmación, y valida todo
  * localmente: nombre y apellido solo con letras, email con formato válido y
  * contraseña de 8 a 64 caracteres, sin espacios, con al menos una letra y un
- * número. Cada campo tiene su largo máximo. Como todavía no hay backend, al crear la cuenta se muestra una
- * confirmación y se entra a la tab Mascotas.
+ * número. Cada campo tiene su largo máximo. Con todo válido crea la cuenta
+ * contra la API, deja la sesión abierta y entra a la tab Mascotas con un
+ * saludo que invita a completar el perfil. Si el servidor la rechaza (por
+ * ejemplo, el email ya tiene cuenta), muestra su mensaje.
  */
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -70,11 +72,12 @@ function validarFormulario(form: Formulario): Errores {
  * @returns el formulario de registro
  */
 export default function RegistroScreen() {
-  const { iniciarSesion } = useApp();
+  const { registrarse } = useApp();
 
   // --- Estado ---
   const [form, setForm] = useState<Formulario>(FORM_INICIAL);
   const [errores, setErrores] = useState<Errores>({});
+  const [enviando, setEnviando] = useState(false);
   const apellidoRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -90,23 +93,35 @@ export default function RegistroScreen() {
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   };
 
-  /** Deja la sesión iniciada con la cuenta nueva y entra a la tab Mascotas. */
-  const entrarALaApp = async () => {
-    await iniciarSesion(normalizarEmail(form.email), form.password);
-    router.replace('/mascotas');
-  };
-
-  /** Valida y, si todo está bien, confirma el alta y entra a la app. */
-  const handleCrearCuenta = () => {
+  /**
+   * Valida y, si todo está bien, crea la cuenta (queda la sesión abierta),
+   * entra a la tab Mascotas sin dejar el registro en el historial y saluda.
+   */
+  const handleCrearCuenta = async () => {
+    if (enviando) return;
     const nuevos = validarFormulario(form);
     setErrores(nuevos);
     if (Object.values(nuevos).some(Boolean)) return;
 
-    Alert.alert(
-      'Cuenta creada',
-      `¡Bienvenido/a a Doggy, ${limpiarTexto(form.nombre)}! Ya podés empezar a cargar tus mascotas.`,
-      [{ text: 'Continuar', onPress: entrarALaApp }],
-    );
+    const nombre = limpiarTexto(form.nombre);
+    setEnviando(true);
+    try {
+      await registrarse({
+        nombre,
+        apellido: limpiarTexto(form.apellido),
+        email: normalizarEmail(form.email),
+        password: form.password,
+      });
+      router.replace('/mascotas');
+      Alert.alert(
+        'Cuenta creada',
+        `¡Bienvenido/a a Doggy, ${nombre}! Ya podés cargar tus mascotas. Completá tu ubicación y tu teléfono de emergencia desde Perfil.`,
+      );
+    } catch (e) {
+      Alert.alert('No pudimos crear la cuenta', e instanceof Error ? e.message : 'Intentá de nuevo.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   /** Vuelve al login (o lo abre si no hay historial). */
@@ -221,6 +236,7 @@ export default function RegistroScreen() {
           icon="person-add"
           variant="secondary"
           onPress={handleCrearCuenta}
+          loading={enviando}
           style={styles.submit}
         />
       </View>

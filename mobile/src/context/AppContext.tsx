@@ -1,9 +1,14 @@
 /**
  * Estado global de la app (Context API).
  *
- * Al montarse carga en paralelo todos los datos desde los services y los
- * expone a las pantallas junto con las acciones para modificarlos. Cada
- * acción llama primero al service (la API) y recién con la respuesta
+ * Maneja la sesión: al abrir la app, si hay un token guardado carga los
+ * datos y entra directo; si no, queda en el login. Los datos se piden recién
+ * con una sesión abierta (login, registro o token guardado), todos en
+ * paralelo, y se exponen a las pantallas junto con las acciones para
+ * modificarlos. Al cerrar la sesión, o si el servidor responde 401, se borra
+ * el token y se vacía todo, así otro usuario no ve datos del anterior.
+ *
+ * Cada acción llama primero al service (la API) y recién con la respuesta
  * actualiza el estado, siempre creando arrays nuevos. Si el servidor responde
  * con un error, la acción lo deja pasar para que la pantalla muestre el mensaje.
  */
@@ -16,12 +21,17 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { Alert } from 'react-native';
+import { router } from 'expo-router';
 
 import * as authService from '@/services/auth';
+import type { DatosRegistro, SesionAbierta } from '@/services/auth';
 import * as cuidadoresService from '@/services/cuidadores';
 import * as mascotasService from '@/services/mascotas';
 import * as registrosService from '@/services/registros';
 import * as reportesService from '@/services/reportes';
+import { registrarAlVencerSesion } from '@/services/http';
+import * as sesionService from '@/services/sesion';
 import * as turnosService from '@/services/turnos';
 import * as usuarioService from '@/services/usuario';
 import type {
@@ -41,7 +51,16 @@ import type {
   Usuario,
 } from '@/types/models';
 
+/**
+ * Estado de la sesión: `restaurando` mientras se lee el token guardado al
+ * abrir la app (se ve la splash), `abierta` con un usuario logueado y
+ * `cerrada` cuando hay que pasar por el login.
+ */
+export type EstadoSesion = 'restaurando' | 'abierta' | 'cerrada';
+
 type AppContextValue = {
+  // --- Sesión ---
+  sesion: EstadoSesion;
   // --- Datos ---
   usuario: Usuario | null;
   mascotas: Mascota[];
@@ -49,13 +68,15 @@ type AppContextValue = {
   turnos: Turno[];
   reportes: ReportePerdida[];
   cuidadores: Cuidador[];
-  /** true mientras se hace la carga inicial. */
+  /** true mientras se cargan los datos de la sesión. */
   cargando: boolean;
   /** Mensaje de error de la última carga, si falló. */
   error: string | null;
   // --- Acciones ---
   recargar: () => Promise<void>;
   iniciarSesion: (email: string, password: string) => Promise<void>;
+  /** Crea la cuenta y deja la sesión abierta con ella. */
+  registrarse: (datos: DatosRegistro) => Promise<void>;
   cerrarSesion: () => Promise<void>;
   agregarMascota: (datos: NuevaMascota) => Promise<Mascota>;
   editarMascota: (id: number, cambios: Partial<NuevaMascota>) => Promise<Mascota>;
@@ -109,22 +130,42 @@ function pedirTodo() {
 type DatosIniciales = Awaited<ReturnType<typeof pedirTodo>>;
 
 /**
+ * Lee el token guardado y, si hay, pide los datos de esa sesión. No toca el
+ * estado. Si el token venció, el 401 lo maneja `http.ts` (vuelve al login).
+ * @returns los datos, o null si no había sesión guardada
+ */
+async function restaurarSesion(): Promise<DatosIniciales | null> {
+  const token = await sesionService.cargarToken();
+  return token ? pedirTodo() : null;
+}
+
+/**
+ * Vuelve al login sin dejar historial: cierra los modales abiertos y
+ * reemplaza la pantalla actual, así "atrás" no vuelve a la app.
+ */
+function volverAlLogin() {
+  if (router.canDismiss()) router.dismissAll();
+  router.replace('/login');
+}
+
+/**
  * Provider que envuelve la app y mantiene el estado global.
  * @param props.children el árbol de la app
  * @returns el provider con el estado y las acciones
  */
 export function AppProvider({ children }: { children: ReactNode }) {
   // --- Estado ---
+  const [sesion, setSesion] = useState<EstadoSesion>('restaurando');
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
   const [registros, setRegistros] = useState<RegistroSanitario[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [reportes, setReportes] = useState<ReportePerdida[]>([]);
   const [cuidadores, setCuidadores] = useState<Cuidador[]>([]);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Carga inicial ---
+  // --- Carga de datos ---
   /**
    * Guarda en el estado los datos que trajo `pedirTodo`.
    * @param datos usuario, mascotas, registros, turnos, reportes y cuidadores
@@ -138,7 +179,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCuidadores(c);
   }, []);
 
-  /** Vuelve a cargar todo desde cero (por ejemplo, con "Reintentar"). */
+  /** Vacía todos los datos y deja la sesión cerrada (logout o sesión vencida). */
+  const limpiarEstado = useCallback(() => {
+    setSesion('cerrada');
+    setUsuario(null);
+    setMascotas([]);
+    setRegistros([]);
+    setTurnos([]);
+    setReportes([]);
+    setCuidadores([]);
+    setCargando(false);
+    setError(null);
+  }, []);
+
+  /** Vuelve a cargar todo desde cero (después del login o con "Reintentar"). */
   const recargar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -151,38 +205,85 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [aplicarDatos]);
 
-  // Al montar, el estado ya arranca con cargando = true y sin error: solo falta
-  // traer los datos. El estado se actualiza en los callbacks de la promesa, y
-  // `vigente` evita tocarlo si el provider se desmontó antes de que respondan.
+  // Al abrir la app se busca una sesión guardada. El estado se actualiza en los
+  // callbacks de la promesa, y `vigente` evita tocarlo si el provider se
+  // desmontó antes de que respondan.
   useEffect(() => {
     let vigente = true;
-    pedirTodo()
+    restaurarSesion()
       .then((datos) => {
-        if (vigente) aplicarDatos(datos);
+        if (!vigente) return;
+        if (datos) aplicarDatos(datos);
+        setSesion(datos ? 'abierta' : 'cerrada');
       })
       .catch((e: unknown) => {
-        if (vigente) setError(mensajeDeError(e));
-      })
-      .finally(() => {
-        if (vigente) setCargando(false);
+        if (!vigente) return;
+        // Con token pero sin servidor (sin red, API apagada) se entra igual:
+        // las pantallas muestran el error con "Reintentar".
+        setError(mensajeDeError(e));
+        setSesion(sesionService.tokenDeSesion() ? 'abierta' : 'cerrada');
       });
     return () => {
       vigente = false;
     };
   }, [aplicarDatos]);
 
-  // --- Acciones ---
-  /** Inicia sesión y guarda el usuario que devuelve el servidor. */
-  const iniciarSesion = useCallback(async (email: string, password: string) => {
-    const u = await authService.iniciarSesion(email, password);
-    setUsuario(u);
-  }, []);
+  // Si un pedido responde 401, `http.ts` ya borró el token: acá se vacía el
+  // estado y se vuelve al login con un aviso.
+  useEffect(() => {
+    registrarAlVencerSesion(() => {
+      limpiarEstado();
+      volverAlLogin();
+      Alert.alert('Tu sesión venció', 'Volvé a ingresar con tu email y contraseña.');
+    });
+    return () => registrarAlVencerSesion(null);
+  }, [limpiarEstado]);
 
-  /** Cierra la sesión y olvida al usuario. */
+  // --- Acciones ---
+  /**
+   * Guarda el token de una sesión nueva y carga los datos de ese usuario.
+   * @param nueva usuario y token que devolvió el servidor
+   */
+  const abrirSesion = useCallback(
+    async (nueva: SesionAbierta) => {
+      await sesionService.guardarToken(nueva.token);
+      setUsuario(nueva.usuario);
+      setSesion('abierta');
+      await recargar();
+    },
+    [recargar],
+  );
+
+  /** Inicia sesión con email y contraseña y carga los datos del usuario. */
+  const iniciarSesion = useCallback(
+    async (email: string, password: string) => {
+      await abrirSesion(await authService.iniciarSesion(email, password));
+    },
+    [abrirSesion],
+  );
+
+  /** Crea la cuenta y entra con ella. */
+  const registrarse = useCallback(
+    async (datos: DatosRegistro) => {
+      await abrirSesion(await authService.registrarse(datos));
+    },
+    [abrirSesion],
+  );
+
+  /**
+   * Cierra la sesión en el servidor, borra el token y vacía todo el estado.
+   * Si el servidor no responde, igual se cierra en el celular: sin el token
+   * guardado nadie más puede usar esa sesión desde la app.
+   */
   const cerrarSesion = useCallback(async () => {
-    await authService.cerrarSesion();
-    setUsuario(null);
-  }, []);
+    try {
+      await authService.cerrarSesion();
+    } catch (e) {
+      console.warn('No se pudo cerrar la sesión en el servidor:', e);
+    }
+    await sesionService.borrarToken();
+    limpiarEstado();
+  }, [limpiarEstado]);
 
   /** Crea una mascota, la suma al final de la lista y trae su asignación (el usuario como dueño). */
   const agregarMascota = useCallback(async (datos: NuevaMascota) => {
@@ -312,6 +413,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // useMemo evita re-renderizar a todos los consumidores si no cambió nada.
   const value = useMemo<AppContextValue>(
     () => ({
+      sesion,
       usuario,
       mascotas,
       registros,
@@ -322,6 +424,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       error,
       recargar,
       iniciarSesion,
+      registrarse,
       cerrarSesion,
       agregarMascota,
       editarMascota,
@@ -341,6 +444,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       desasignarme,
     }),
     [
+      sesion,
       usuario,
       mascotas,
       registros,
@@ -351,6 +455,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       error,
       recargar,
       iniciarSesion,
+      registrarse,
       cerrarSesion,
       agregarMascota,
       editarMascota,
