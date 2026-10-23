@@ -63,7 +63,7 @@ Cada función de `services/` tiene comentado su endpoint, con la ruta y el cuerp
 - `POST /api/auth/logout` → 204 sin body; desde ahí ese token responde 401.
 - **Todas las demás rutas mandan `Authorization: Bearer <token>`**, salvo `/api/health`. Sin header, con un token que no existe, vencido (30 días) o cerrado, responden **401**: la app borra el token y vuelve al login.
 - El token es aleatorio (64 caracteres hex) y el servidor guarda solo su SHA-256 en la tabla `Sesion`, así el logout lo invalida al instante.
-- En la app, el token se guarda con `expo-secure-store` (`mobile/src/services/sesion.ts`) para que la sesión sobreviva al cerrar la app, y `pedirJson`/`pedirSinRespuesta` lo suman al header. Un 401 de cualquier ruta salvo el login borra el token, limpia el estado y vuelve al login con un aviso.
+- En la app, el token se guarda con `expo-secure-store` (`mobile/src/services/sesion.ts`) para que la sesión sobreviva al cerrar la app, y `pedirJson`/`pedirSinRespuesta` lo suman al header. Un 401 de cualquier ruta salvo el login (credenciales incorrectas) y el logout (token ya cerrado) borra el token, limpia el estado y vuelve al login con un aviso.
 
 ### Códigos de estado
 
