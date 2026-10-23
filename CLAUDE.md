@@ -24,8 +24,8 @@ doggy (este repo): pantallas → AppContext → services → HTTP ──► dogg
 ## Conectar el frontend sin tocar las pantallas
 
 - Las pantallas y `mobile/src/context/AppContext.tsx` **no deberían cambiar** al conectar el backend.
-- Lo que cambia son las funciones de `mobile/src/services/`: pasan de `simularRespuesta()` a `pedirJson()` (`mobile/src/services/http.ts`), manteniendo la misma firma y los mismos tipos de retorno.
-- `pedirJson` revisa `response.ok` y lanza un `Error` con el `{ error }` que manda el servidor. El contexto ya captura esos errores.
+- Lo que cambia son las funciones de `mobile/src/services/`: usan `pedirJson()` o, para los 204, `pedirSinRespuesta()` (`mobile/src/services/http.ts`), manteniendo la misma firma y los mismos tipos de retorno.
+- Los dos revisan `response.ok` y lanzan un `Error` con el `{ error }` que manda el servidor. El contexto deja pasar esos errores y cada pantalla o formulario muestra el mensaje.
 - Si una pantalla necesita un cambio para el backend, frená y explicá por qué antes de tocarla.
 
 ## Contrato con doggy-backend
@@ -41,13 +41,19 @@ Cada función de `services/` tiene comentado su endpoint, con la ruta y el cuerp
 | Auth | `POST /api/auth/login`, `POST /api/auth/logout` |
 | Usuario | `GET /api/usuarios/me`, `PATCH /api/usuarios/me` |
 | Mascotas | `GET /api/mascotas`, `POST /api/mascotas`, `PATCH /api/mascotas/:id` |
-| Registros | `GET /api/registros`, `POST /api/mascotas/:id/registros`, `PATCH /api/registros/:id` |
-| Turnos | `GET /api/turnos`, `POST /api/turnos`, `PATCH /api/turnos/:id` |
-| Reportes | `GET /api/reportes`, `POST /api/reportes`, `PATCH /api/reportes/:id`, `DELETE /api/reportes/:id` |
+| Registros | `GET /api/registros`, `POST /api/mascotas/:id/registros`, `PATCH /api/registros/:id`, `DELETE /api/registros/:id` |
+| Turnos | `GET /api/turnos`, `POST /api/turnos`, `PATCH /api/turnos/:id`, `DELETE /api/turnos/:id` |
+| Reportes | `GET /api/reportes`, `POST /api/reportes`, `PATCH /api/reportes/:id` (también para cerrarlo) |
 | Cuidadores | `GET /api/cuidadores`, `DELETE /api/mascotas/:id/cuidadores/me` |
 | Invitaciones | `POST /api/mascotas/:id/invitaciones`, `GET /api/invitaciones/:token`, `POST /api/invitaciones/:token/aceptar` |
 
 - Los modelos de `mobile/src/types/models.ts` son la forma del JSON que viaja: ids numéricos, fechas como string ISO y relaciones por id.
+- Para modificar se usa **PATCH, nunca PUT**: un campo que no viene no se toca.
+- **Para borrar un opcional en un PATCH se manda `null`** (`proximaDosis`, `fotoEtiqueta`, `infoAdicional`, `foto`). Mandar `undefined` no sirve: `JSON.stringify` lo descarta y el servidor deja el valor viejo.
+- **Cerrar un reporte ("Ya apareció") es `PATCH /api/reportes/:id` con `{ cerrado: true }`**, no un DELETE: el reporte queda guardado como historial y `GET /api/reportes` devuelve solo los activos. Un reporte cerrado no se puede editar ni reabrir (409).
+- **Permisos:** solo se escribe sobre mascotas a las que el usuario está asignado, como dueño o invitado (403 si no). Generar códigos de asignación es solo para dueños. Un reporte `encontrado` puede llevar el `mascotaId` de una mascota ajena (la que identificó el QR).
+- **Quién edita o cierra un reporte:** quien lo publicó o cualquier usuario asignado a la mascota del reporte. Un reporte sin `mascotaId` solo lo edita o cierra su autor. Si no, 403.
+- Una mascota tiene como mucho un reporte `perdido` activo (409 si ya tiene uno).
 - Las reglas de `mobile/src/utils/validaciones.ts` (`LIMITES`, caracteres permitidos, formatos y rangos de fechas) son las mismas que aplica el servidor. Si una cambia acá, cambia allá.
 
 ### Códigos de estado
@@ -68,7 +74,8 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 | 500 | error imprevisto |
 
 - Todo error llega como `{ error: "mensaje en español" }`. La app muestra ese mensaje tal cual, sin armar textos propios por status, salvo en casos puntuales (por ejemplo, un 401 lleva al login).
-- Una respuesta 204 no trae body: la app no tiene que intentar leer JSON de ella.
+- Los errores genéricos de largo y caracteres llevan el campo adelante ("Nombre: puede tener hasta 30 caracteres."), porque la app los muestra en un Alert y no debajo del input.
+- Una respuesta 204 no trae body: la app no tiene que intentar leer JSON de ella (se pide con `pedirSinRespuesta`).
 
 ## Decisiones
 
