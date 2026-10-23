@@ -74,7 +74,6 @@ const ESPERA_CIERRE_HOJA_MS = 300;
  */
 export default function PerdidosScreen() {
   const { reportes, usuario, mascotas, error, recargar } = useApp();
-  const { cerrando, pedirCierre } = useCerrarReporte();
   const { reporteId } = useLocalSearchParams<{ reporteId?: string }>();
   const gps = useUbicacion({ automatico: true });
   const { width } = useWindowDimensions();
@@ -93,6 +92,10 @@ export default function PerdidosScreen() {
   const [detalleVisible, setDetalleVisible] = useState(false);
   const mapaRef = useRef<MapaReportesHandle>(null);
   const carruselRef = useRef<FlatList<ReportePerdida>>(null);
+
+  /** Cierra la hoja de detalle (por ejemplo, cuando el reporte ya se cerró). */
+  const cerrarDetalle = useCallback(() => setDetalleVisible(false), []);
+  const { cerrando, pedirCierre } = useCerrarReporte(cerrarDetalle);
 
   // --- Datos derivados ---
   const visibles = useMemo(
@@ -381,7 +384,7 @@ export default function PerdidosScreen() {
         visible={detalleVisible}
         reporte={detalle}
         esPropio={!!detalle && detalle.autorId === usuario?.id}
-        onClose={() => setDetalleVisible(false)}
+        onClose={cerrarDetalle}
         onVerEnMapa={abrirEnMapa}
         puedeGestionar={!!detalle && puedeGestionarReporte(detalle, usuario?.id, mascotas)}
         onEditar={editarReporte}

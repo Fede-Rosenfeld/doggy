@@ -13,8 +13,8 @@
  *
  * Si llega `reporteId`, la pantalla edita ese reporte en vez de crear uno:
  * arranca con su punto, radio, información y etiquetas, la mascota queda fija
- * y "Guardar cambios" lo actualiza. "Ya apareció" avisa que cerrar el
- * reporte llega en el Sprint 2 con backend.
+ * y "Guardar cambios" lo actualiza. "Ya apareció" pide confirmación, cierra
+ * el reporte (sale del mapa) y cierra el modal.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -60,7 +60,6 @@ export default function MiMascotaPerdidaScreen() {
     reporteId?: string;
   }>();
   const { mascotas, reportes, crearReporte, editarReporte } = useApp();
-  const { cerrando, pedirCierre } = useCerrarReporte();
   const gps = useUbicacion({ automatico: true });
   const insets = useSafeAreaInsets();
 
@@ -188,6 +187,9 @@ export default function MiMascotaPerdidaScreen() {
     if (router.canGoBack()) router.back();
     else router.navigate('/perdidos');
   };
+
+  // "Ya apareció": cuando el reporte se cierra, no queda nada para editar y se cierra el modal.
+  const { cerrando, pedirCierre } = useCerrarReporte(cerrarModal);
 
   /** Guarda los cambios del reporte editado y cierra el modal. */
   const handleGuardar = async () => {
