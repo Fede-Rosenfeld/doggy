@@ -71,9 +71,12 @@ Después de cambiar el `.env`, reiniciá Expo con `npx expo start -c`.
 ## Pantallas y flujo de navegación
 
 ```
-Login ──► Registro
-  │
-  ▼  (router.replace: "atrás" no vuelve al login)
+Abrir la app ─► ¿token guardado? ─ sí ─► Tabs
+                       │ no
+                       ▼
+                     Login ──► Registro
+                       │
+                       ▼  (router.replace: "atrás" no vuelve al login)
 Tabs
  ├─ Mascotas ───┬─► Agregar mascota
  │              └─► Perfil de la mascota ─┬─► Editar mascota
@@ -95,12 +98,13 @@ Tabs
 - **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y los modales `mi-mascota-perdida`, `reportar` y `asignar` (`presentation: 'modal'`). `asignar` se abre al cargar un código de asignación desde Perfil.
 - **Bottom Tabs** (`app/(tabs)/_layout.tsx`): Mascotas, Perdidos, Agenda y Perfil, con una barra propia que marca la tab activa con una píldora.
 - **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`), edición (`[id]/editar`) y carnet (`[id]/carnet`), con la barra de tabs visible.
+- **Sesión:** el token del login o el registro se guarda con `expo-secure-store` (`src/services/sesion.ts`), así la sesión sobrevive al cerrar la app. Mientras se lee al abrirla sigue la splash, para no mostrar el login un instante. Si cualquier pedido responde 401 (sesión vencida o cerrada), se borra el token, se vacía el estado y se vuelve al login sin historial, con un aviso.
 - Las acciones que dependen del backend (descargar QR, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
 
 ### Detalle por pantalla
 
-1. **Login**: email y contraseña con validación local (formato del email y largo máximo). "Ingresar" entra a la tab Mascotas.
-2. **Registro**: desde "Registrarme". Pide nombre, apellido (solo letras), email, contraseña (de 8 a 64 caracteres, sin espacios, con al menos una letra y un número) y confirmación. Al crear la cuenta muestra una confirmación y entra a la app. "Ingresar" o la flecha vuelven al login.
+1. **Login**: email y contraseña con validación local (formato del email y largo máximo). "Ingresar" hace el login contra la API, carga los datos de esa cuenta y entra a la tab Mascotas; si el servidor lo rechaza, muestra su mensaje ("Email o contraseña incorrectos").
+2. **Registro**: desde "Registrarme". Pide nombre, apellido (solo letras), email, contraseña (de 8 a 64 caracteres, sin espacios, con al menos una letra y un número) y confirmación. Crea la cuenta contra la API (si el email ya existe, muestra el mensaje del servidor), entra a la app y saluda invitando a completar ubicación y teléfono desde Perfil. "Ingresar" o la flecha vuelven al login.
 3. **Mis Mascotas**: listado de mascotas con foto, nombre y raza. Tocar una card abre su perfil, el botón "+" abre el alta y el avatar del header lleva a Perfil.
 4. **Agregar mascota**: foto (al tocarla se elige entre sacarla en el momento con la cámara o elegirla de la galería), nombre, raza, edad y señas particulares. Al guardar se genera su ID único `DOGGY-XXXX-NOMBRE` y vuelve al listado, donde ya aparece.
 5. **Perfil de la mascota**: foto, raza y edad; botón "Editar mascota"; código QR real generado con el ID único (para grabar en la placa del collar), con "Compartir" (hoja nativa de compartir) y "Descargar QR" (próximamente); señas particulares; resumen del carnet sanitario con la última vacuna ("Ver historial completo" abre el carnet); próximo turno ("Ir a la Agenda de Turnos" cambia a la tab Agenda) y "Reportar como perdida", que abre "Se perdió mi mascota" con esa mascota ya elegida. Si la mascota ya tiene un reporte de perdida activo, en lugar de ese botón aparece el aviso "Reportada como perdida" (desde cuándo, zona y radio de búsqueda) con "Editar reporte" y "Ya apareció". "Editar mascota" abre el mismo formulario del alta con los datos precargados (foto, nombre, raza, edad y señas); al guardar vuelve al perfil ya actualizado. El ID único no cambia aunque cambie el nombre, para que la placa ya grabada siga funcionando.
@@ -163,9 +167,9 @@ Pantalla → AppContext (estado global) → services → fetch a la API (doggy-b
 ```
 
 - `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
-- Datos de ejemplo: los carga el seed de `doggy-backend` (Sofía Romero y sus mascotas Luna, Roco y Milo, reportes en CABA, turnos de octubre de 2026, y Toby, de otra usuaria, con el código de asignación `TOBY2026` para probar el flujo de invitado).
+- Datos de ejemplo: los carga el seed de `doggy-backend`, con varios usuarios que entran con la contraseña `doggy1234` (por ejemplo, `sofia.romero@mail.com` o `lucia.gomez@mail.com`). Sofía Romero tiene a Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026; Toby es de Lucía, con el código de asignación `TOBY2026` para probar el flujo de invitado.
 - `src/services/`: una función `async` por operación, con su endpoint REST comentado (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.).
-- `src/context/AppContext.tsx`: carga todo en paralelo al iniciar y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar, editar y borrar registro sanitario, agregar, editar y borrar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
+- `src/context/AppContext.tsx`: maneja la sesión (restaurarla al abrir la app, login, registro y logout), carga todo en paralelo recién con una sesión abierta, lo vacía al cerrarla y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar, editar y borrar registro sanitario, agregar, editar y borrar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
 
 ## Componentes reutilizables
 
@@ -220,7 +224,7 @@ doggy/
     ├── assets/images/       logo, ícono y splash
     ├── app/                 rutas (Expo Router)
     │   ├── _layout.tsx      Stack raíz, fuentes y splash
-    │   ├── index.tsx        redirige a /login
+    │   ├── index.tsx        entra a las tabs o al login según haya sesión
     │   ├── (auth)/          login y registro
     │   ├── (tabs)/          Mascotas, Perdidos, Agenda y Perfil
     │   │   └── mascotas/    stack interno: listado, alta, perfil y carnet
@@ -242,4 +246,4 @@ doggy/
 - **Sprint 2 — Backend:** la API va en un repositorio aparte, `doggy-backend` (Express + TypeScript + Prisma + SQLite), siguiendo la arquitectura en capas vista en la práctica (Expo → HTTP → Express → Prisma → SQLite). Este repo nunca contiene código del backend: la app solo conoce la API por HTTP. Cada función de `src/services/` reemplaza la simulación por ``pedirJson(`${API_URL}/api/...`)``, que revisa `response.ok` y devuelve el error del servidor; las pantallas y el contexto no cambian. Los endpoints, los modelos de `src/types/models.ts` y los códigos de estado son el contrato entre los dos repos (detallado en `CLAUDE.md`): si algo cambia, cambia en los dos. La URL se configura con `EXPO_PUBLIC_API_URL` (ver [Backend](#backend)).
 - **Sprint 2 — Gestos:** interacciones con `react-native-gesture-handler` + `react-native-reanimated`, siempre con una alternativa tocable.
 - **Código único de vacuna (SENASA):** cada aplicación del carnet va a llevar el código único de la vacuna, validado contra una API de SENASA (o la fuente oficial que corresponda), para que el carnet sirva como constancia. Queda marcado con un `TODO` en `RegistroSanitario` (`src/types/models.ts`).
-- **Pendientes que dependen del backend:** login real con token, persistencia de mascotas, reportes y turnos, subida de fotos, baja de turnos, códigos de asignación entre usuarios reales (hoy se prueban con un solo usuario y el código de ejemplo), recordatorios por notificaciones push y descarga del QR como imagen.
+- **Pendientes que dependen del backend:** recuperar contraseña, subida de fotos, recordatorios por notificaciones push y descarga del QR como imagen.
