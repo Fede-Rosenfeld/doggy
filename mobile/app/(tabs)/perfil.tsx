@@ -3,7 +3,8 @@
  *
  * Datos del usuario (foto editable con la cámara o la galería, nombre, ubicación y
  * cantidad de mascotas), contacto de emergencia, familia y cuidadores de cada
- * mascota, menú de opciones y cierre de sesión.
+ * mascota, menú de opciones y cierre de sesión. Una cuenta recién creada no
+ * tiene ubicación ni teléfono: en su lugar se invita a completarlos.
  *
  * Asignación de mascotas: un dueño genera un código con un rol (Dueño /
  * Invitado) desde la card de cada mascota; cualquiera puede desasignarse
@@ -79,6 +80,7 @@ export default function PerfilScreen() {
   const [textoCodigo, setTextoCodigo] = useState('');
   const [errorCodigo, setErrorCodigo] = useState<string | undefined>(undefined);
   const [desasignando, setDesasignando] = useState(false);
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
 
   // --- Datos derivados ---
   const reportesActivos = useMemo(
@@ -176,8 +178,12 @@ export default function PerfilScreen() {
     }
   };
 
-  /** Cierra la sesión y vuelve al login sin dejar historial. */
+  /**
+   * Cierra la sesión (en el servidor y en el celular, con todo el estado) y
+   * vuelve al login sin dejar historial.
+   */
   const handleCerrarSesion = async () => {
+    setCerrandoSesion(true);
     await cerrarSesion();
     router.replace('/login');
   };
@@ -230,7 +236,9 @@ export default function PerfilScreen() {
           </Text>
           <View style={styles.ubicacion}>
             <MaterialIcons name="location-on" size={sizes.iconSm} color={colors.primary} />
-            <Text style={styles.ubicacionTexto}>{usuario.ubicacion}</Text>
+            <Text style={styles.ubicacionTexto}>
+              {usuario.ubicacion || 'Agregá tu barrio'}
+            </Text>
           </View>
           <View style={styles.mascotasBadge}>
             <MaterialIcons name="pets" size={sizes.iconSm} color={colors.primary} />
@@ -322,6 +330,7 @@ export default function PerfilScreen() {
           variant="danger"
           size="sm"
           onPress={handleCerrarSesion}
+          loading={cerrandoSesion}
           style={styles.cerrar}
         />
         <Text style={styles.version}>Doggy v{VERSION}</Text>

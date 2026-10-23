@@ -1,6 +1,8 @@
 /**
  * Card de contacto de emergencia del usuario: el teléfono que ve quien
  * escanea el QR de la chapita. Se edita desde "Editar datos personales".
+ * Si todavía no lo cargó (cuenta recién creada), en lugar del número invita
+ * a agregarlo.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
@@ -18,6 +20,7 @@ type Props = {
  * @returns la card
  */
 export function ContactoEmergencia({ usuario }: Props) {
+  const telefono = usuario.telefonoEmergencia;
   return (
     <View style={styles.card}>
       <View style={styles.telefono}>
@@ -25,19 +28,27 @@ export function ContactoEmergencia({ usuario }: Props) {
           <MaterialIcons name="phone-iphone" size={sizes.iconMd - 2} color={colors.primary} />
         </View>
         <View style={styles.textos}>
-          <View style={styles.numeroFila}>
-            <Text style={styles.numero}>{usuario.telefonoEmergencia}</Text>
-            <MaterialIcons name="verified" size={sizes.iconSm} color={colors.primary} />
+          {telefono ? (
+            <View style={styles.numeroFila}>
+              <Text style={styles.numero}>{telefono}</Text>
+              <MaterialIcons name="verified" size={sizes.iconSm} color={colors.primary} />
+            </View>
+          ) : (
+            <Text style={styles.sinTelefono}>Todavía no cargaste un teléfono</Text>
+          )}
+        </View>
+        {!!telefono && (
+          <View style={styles.principal}>
+            <Text style={styles.principalTexto}>Principal</Text>
           </View>
-        </View>
-        <View style={styles.principal}>
-          <Text style={styles.principalTexto}>Principal</Text>
-        </View>
+        )}
       </View>
       <View style={styles.nota}>
         <MaterialIcons name="edit" size={16} color={colors.primary} />
         <Text style={styles.notaTexto}>
-          Editable en <Text style={styles.notaFuerte}>Editar datos personales</Text>
+          {telefono ? 'Editable en ' : 'Agregalo en '}
+          <Text style={styles.notaFuerte}>Editar datos personales</Text>
+          {telefono ? '' : ' para que puedan avisarte si encuentran a tu perro.'}
         </Text>
       </View>
     </View>
@@ -82,6 +93,10 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     fontFamily: typography.headlineLg.fontFamily,
     color: colors.onSurface,
+  },
+  sinTelefono: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
   },
   principal: {
     paddingHorizontal: spacing.sm,
