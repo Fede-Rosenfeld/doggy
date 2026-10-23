@@ -9,9 +9,13 @@
  * Invitado) desde la card de cada mascota; cualquiera puede desasignarse
  * (salvo el último dueño); y "Tengo un código de asignación" permite cargar
  * el código recibido para abrir la pantalla de aceptación.
+ *
+ * Háptica: al desasignarse vibra con `expo-haptics` para confirmar que salió
+ * bien (o avisar que falló). No pide permisos.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -30,7 +34,7 @@ import { EditarPerfilForm } from '@/components/perfil/EditarPerfilForm';
 import { InvitarForm } from '@/components/perfil/InvitarForm';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionTitle } from '@/components/SectionTitle';
-import { AVISO_SPRINT_2, GUIA_PASEO_URL } from '@/config';
+import { GUIA_PASEO_URL } from '@/config';
 import { useApp } from '@/context/AppContext';
 import { useFototeca } from '@/hooks/useFototeca';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
@@ -54,8 +58,17 @@ type HojaAsignacion = 'invitar' | 'desasignar' | 'codigo' | null;
  * @returns el perfil
  */
 export default function PerfilScreen() {
-  const { usuario, mascotas, cuidadores, reportes, error, recargar, actualizarUsuario, cerrarSesion } =
-    useApp();
+  const {
+    usuario,
+    mascotas,
+    cuidadores,
+    reportes,
+    error,
+    recargar,
+    actualizarUsuario,
+    desasignarme,
+    cerrarSesion,
+  } = useApp();
   const fototeca = useFototeca();
 
   // --- Estado ---
@@ -65,6 +78,7 @@ export default function PerfilScreen() {
   const [mascotaHoja, setMascotaHoja] = useState<Mascota | null>(null);
   const [textoCodigo, setTextoCodigo] = useState('');
   const [errorCodigo, setErrorCodigo] = useState<string | undefined>(undefined);
+  const [desasignando, setDesasignando] = useState(false);
 
   // --- Datos derivados ---
   const reportesActivos = useMemo(
@@ -118,12 +132,24 @@ export default function PerfilScreen() {
   };
 
   /**
-   * Confirma la desasignación. Necesita el backend
-   * (DELETE /api/mascotas/:id/cuidadores/me), así que por ahora solo avisa.
+   * Desasigna al usuario de la mascota de la hoja (ya confirmado en la hoja):
+   * la mascota sale de su cuenta, vibra y se cierra la hoja. Si el servidor
+   * no lo deja (por ejemplo, quedó como único dueño), muestra su mensaje.
    */
-  const handleDesasignarme = () => {
-    setHoja(null);
-    Alert.alert('Desasignarme', AVISO_SPRINT_2);
+  const handleDesasignarme = async () => {
+    if (!mascotaHoja) return;
+    setDesasignando(true);
+    try {
+      await desasignarme(mascotaHoja.id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setHoja(null);
+      Alert.alert('Listo', `${mascotaHoja.nombre} ya no está en tu cuenta.`);
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('No se pudo desasignar', e instanceof Error ? e.message : 'Intentá de nuevo.');
+    } finally {
+      setDesasignando(false);
+    }
   };
 
   /** Lee el código cargado y abre la pantalla para aceptarlo. */
@@ -340,8 +366,14 @@ export default function PerfilScreen() {
               iconLeft
               variant="danger"
               onPress={handleDesasignarme}
+              loading={desasignando}
             />
-            <PrimaryButton title="Cancelar" variant="outline" onPress={cerrarHoja} />
+            <PrimaryButton
+              title="Cancelar"
+              variant="outline"
+              onPress={cerrarHoja}
+              disabled={desasignando}
+            />
           </>
         )}
       </FormModal>
