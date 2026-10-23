@@ -1,14 +1,12 @@
 /**
- * Utilidades compartidas por los services.
+ * Utilidades compartidas por los services para hablar con la API.
  *
- * Las lecturas ya van a la API con `pedirJson`. Las escrituras todavía
- * trabajan contra datos en memoria con `simularRespuesta`, hasta que se
- * conecten en la Etapa 3.
+ * `pedirJson` es para las respuestas con body (GET, POST, PATCH) y
+ * `pedirSinRespuesta` para los 204 de los DELETE, que no traen nada para leer.
+ * Los dos lanzan un `Error` con el mensaje del servidor si algo sale mal.
  */
 import { API_URL } from '@/config';
 
-/** Demora simulada de una respuesta, en milisegundos. */
-const LATENCIA_MS = 350;
 /**
  * Tiempo máximo de espera de un pedido. Si la IP de la API está mal o la PC
  * no está en la misma red, fetch puede tardar mucho en fallar: así la app
@@ -19,26 +17,14 @@ const TIEMPO_MAXIMO_MS = 10000;
 const MENSAJE_SIN_CONEXION = 'No pudimos conectarnos con el servidor. Revisá tu conexión y probá de nuevo.';
 
 /**
- * Simula una respuesta del servidor: espera un poco y devuelve una copia de los datos,
- * así nadie puede modificar el "servidor" por referencia.
- * @param datos lo que respondería la API
- * @returns una promesa con la copia de los datos
- */
-export function simularRespuesta<T>(datos: T): Promise<T> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(JSON.parse(JSON.stringify(datos)) as T), LATENCIA_MS);
-  });
-}
-
-/**
- * Hace un pedido a la API y devuelve el JSON.
+ * Hace un pedido a la API y revisa que haya salido bien.
  * @param ruta ruta de la API, por ejemplo "/api/mascotas"
  * @param opciones método, headers y body del fetch
- * @returns el cuerpo de la respuesta ya parseado
+ * @returns la respuesta, sin leer el body
  * @throws con el `{ error }` del servidor, o con un mensaje de conexión si no
  *   respondió dentro de `TIEMPO_MAXIMO_MS`
  */
-export async function pedirJson<T>(ruta: string, opciones?: RequestInit): Promise<T> {
+async function pedir(ruta: string, opciones?: RequestInit): Promise<Response> {
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), TIEMPO_MAXIMO_MS);
   let response: Response;
@@ -60,14 +46,38 @@ export async function pedirJson<T>(ruta: string, opciones?: RequestInit): Promis
     const cuerpo = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(cuerpo.error ?? `Error ${response.status} al llamar a ${ruta}`);
   }
+  return response;
+}
+
+/**
+ * Hace un pedido a la API y devuelve el JSON.
+ * @param ruta ruta de la API, por ejemplo "/api/mascotas"
+ * @param opciones método, headers y body del fetch
+ * @returns el cuerpo de la respuesta ya parseado
+ * @throws igual que `pedir`
+ */
+export async function pedirJson<T>(ruta: string, opciones?: RequestInit): Promise<T> {
+  const response = await pedir(ruta, opciones);
   return (await response.json()) as T;
 }
 
 /**
- * Calcula el próximo id libre de una lista (imita el autoincrement de la base).
- * @param lista registros existentes
- * @returns el id siguiente al mayor
+ * Hace un pedido cuya respuesta no trae body (un 204 de un DELETE). Solo
+ * revisa `response.ok`: no intenta leer JSON, que fallaría con el body vacío.
+ * @param ruta ruta de la API
+ * @param opciones método, headers y body del fetch
+ * @throws igual que `pedir`
  */
-export function siguienteId(lista: { id: number }[]): number {
-  return lista.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+export async function pedirSinRespuesta(ruta: string, opciones?: RequestInit): Promise<void> {
+  await pedir(ruta, opciones);
+}
+
+/**
+ * Arma las opciones de un pedido que manda un body JSON.
+ * @param method POST o PATCH
+ * @param body datos a mandar (los `undefined` se descartan: para borrar un campo, `null`)
+ * @returns las opciones para `pedirJson`
+ */
+export function conCuerpo(method: 'POST' | 'PATCH', body: unknown): RequestInit {
+  return { method, body: JSON.stringify(body) };
 }
