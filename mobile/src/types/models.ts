@@ -1,10 +1,8 @@
 /**
  * Modelos de datos de Doggy.
  *
- * Están pensados como los futuros modelos de Prisma del backend: ids
- * numéricos, fechas como string ISO 8601 y relaciones por id
- * (por ejemplo, `mascotaId`). Así, cuando los services pasen a usar fetch,
- * las pantallas no tienen que cambiar.
+ * Son la forma del JSON que viaja con doggy-backend: ids numéricos, fechas
+ * como string ISO 8601 y relaciones por id (por ejemplo, `mascotaId`).
  */
 
 /** Usuario dueño de la cuenta (tutor de las mascotas). */
@@ -157,4 +155,11 @@ export type NuevaMascota = Omit<Mascota, 'id' | 'codigo' | 'tutorId'>;
 export type NuevoRegistro = Omit<RegistroSanitario, 'id'>;
 export type NuevoTurno = Omit<Turno, 'id'>;
 export type NuevoReporte = Omit<ReportePerdida, 'id' | 'autorId'>;
+/**
+ * Cambios de un reporte publicado (PATCH): lo que no viene no se toca y
+ * `infoAdicional: null` la borra (un `undefined` no viaja en el JSON).
+ */
+export type CambiosReporte = Partial<Omit<NuevoReporte, 'infoAdicional'>> & {
+  infoAdicional?: string | null;
+};
 export type DatosUsuario = Partial<Omit<Usuario, 'id'>>;

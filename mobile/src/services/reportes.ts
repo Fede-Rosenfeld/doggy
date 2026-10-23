@@ -1,11 +1,11 @@
 /**
  * Service de reportes de mascotas perdidas y encontradas (mapa comunitario).
+ *
+ * Un reporte lo edita o lo cierra quien lo publicó o cualquier persona
+ * asignada a la mascota (lo controla el servidor).
  */
-import { reportes as reportesMock, USUARIO_ID } from '@/data/mock';
-import type { NuevoReporte, ReportePerdida } from '@/types/models';
-import { pedirJson, siguienteId, simularRespuesta } from './http';
-
-let reportes: ReportePerdida[] = reportesMock;
+import type { CambiosReporte, NuevoReporte, ReportePerdida } from '@/types/models';
+import { conCuerpo, pedirJson } from './http';
 
 /**
  * Lista los reportes activos de la zona.
@@ -18,41 +18,37 @@ export async function obtenerReportes(): Promise<ReportePerdida[]> {
 
 /**
  * Publica un reporte nuevo.
- * Endpoint futuro: POST /api/reportes  { ...datos } -> 201 ReportePerdida
+ * Endpoint: POST /api/reportes
+ *   { estado, mascotaId, nombre, raza, descripcion, foto, etiquetas, lat, lng, zona, fecha,
+ *     radioMetros?, infoAdicional? } -> 201 ReportePerdida
  * @param datos datos del reporte
  * @returns el reporte creado
  */
 export async function crearReporte(datos: NuevoReporte): Promise<ReportePerdida> {
-  const nuevo: ReportePerdida = { ...datos, id: siguienteId(reportes), autorId: USUARIO_ID };
-  reportes = [...reportes, nuevo];
-  return simularRespuesta(nuevo);
+  return pedirJson<ReportePerdida>('/api/reportes', conCuerpo('POST', datos));
 }
 
 /**
  * Modifica un reporte ya publicado (por ejemplo, el punto o el radio de búsqueda).
- * Endpoint futuro: PATCH /api/reportes/:id  { ...cambios } -> 200 ReportePerdida
+ * Las etiquetas que vienen reemplazan a todas; `infoAdicional: null` la borra.
+ * Endpoint: PATCH /api/reportes/:id  { ...cambios } -> 200 ReportePerdida
  * @param id id del reporte
  * @param cambios campos a modificar
  * @returns el reporte actualizado
  */
 export async function actualizarReporte(
   id: number,
-  cambios: Partial<NuevoReporte>,
+  cambios: CambiosReporte,
 ): Promise<ReportePerdida> {
-  const actual = reportes.find((r) => r.id === id);
-  if (!actual) throw new Error('El reporte no existe.');
-  const actualizado: ReportePerdida = { ...actual, ...cambios };
-  reportes = reportes.map((r) => (r.id === id ? actualizado : r));
-  return simularRespuesta(actualizado);
+  return pedirJson<ReportePerdida>(`/api/reportes/${id}`, conCuerpo('PATCH', cambios));
 }
 
 /**
- * Cierra un reporte porque la mascota ya apareció: deja de estar activo y sale del mapa.
- * Endpoint futuro: DELETE /api/reportes/:id -> 204
+ * Cierra un reporte porque la mascota ya apareció: deja de estar activo y sale
+ * del mapa. No se borra: el servidor lo guarda como historial.
+ * Endpoint: PATCH /api/reportes/:id  { cerrado: true } -> 200 ReportePerdida
  * @param id id del reporte
  */
 export async function cerrarReporte(id: number): Promise<void> {
-  if (!reportes.some((r) => r.id === id)) throw new Error('El reporte no existe.');
-  reportes = reportes.filter((r) => r.id !== id);
-  return simularRespuesta(undefined);
+  await pedirJson<ReportePerdida>(`/api/reportes/${id}`, conCuerpo('PATCH', { cerrado: true }));
 }

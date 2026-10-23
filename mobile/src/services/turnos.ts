@@ -1,11 +1,8 @@
 /**
  * Service de turnos de la agenda.
  */
-import { turnos as turnosMock } from '@/data/mock';
 import type { NuevoTurno, Turno } from '@/types/models';
-import { pedirJson, siguienteId, simularRespuesta } from './http';
-
-let turnos: Turno[] = turnosMock;
+import { conCuerpo, pedirJson, pedirSinRespuesta } from './http';
 
 /**
  * Lista los turnos del usuario.
@@ -18,26 +15,30 @@ export async function obtenerTurnos(): Promise<Turno[]> {
 
 /**
  * Agenda un turno nuevo.
- * Endpoint futuro: POST /api/turnos  { ...datos } -> 201 Turno
+ * Endpoint: POST /api/turnos  { mascotaId, categoria, fecha, motivo, lugar } -> 201 Turno
  * @param datos datos del turno
  * @returns el turno creado
  */
 export async function crearTurno(datos: NuevoTurno): Promise<Turno> {
-  const nuevo: Turno = { ...datos, id: siguienteId(turnos) };
-  turnos = [...turnos, nuevo];
-  return simularRespuesta(nuevo);
+  return pedirJson<Turno>('/api/turnos', conCuerpo('POST', datos));
 }
 
 /**
- * Reemplaza los datos de un turno (cambio de fecha, hora, lugar, etc.).
- * Endpoint futuro: PUT /api/turnos/:id  { ...datos } -> 200 Turno
+ * Modifica un turno con todos los datos del formulario (cambio de fecha, hora, lugar, etc.).
+ * Endpoint: PATCH /api/turnos/:id  { mascotaId, categoria, fecha, motivo, lugar } -> 200 Turno
  * @param id id del turno
  * @param datos datos completos del turno
  * @returns el turno actualizado
  */
 export async function actualizarTurno(id: number, datos: NuevoTurno): Promise<Turno> {
-  if (!turnos.some((t) => t.id === id)) throw new Error('El turno no existe.');
-  const actualizado: Turno = { ...datos, id };
-  turnos = turnos.map((t) => (t.id === id ? actualizado : t));
-  return simularRespuesta(actualizado);
+  return pedirJson<Turno>(`/api/turnos/${id}`, conCuerpo('PATCH', datos));
+}
+
+/**
+ * Borra un turno de la agenda.
+ * Endpoint: DELETE /api/turnos/:id -> 204
+ * @param id id del turno
+ */
+export async function borrarTurno(id: number): Promise<void> {
+  await pedirSinRespuesta(`/api/turnos/${id}`, { method: 'DELETE' });
 }

@@ -1,11 +1,8 @@
 /**
  * Service del carnet sanitario (vacunas, desparasitaciones y otros registros).
  */
-import { registrosSanitarios } from '@/data/mock';
 import type { NuevoRegistro, RegistroSanitario } from '@/types/models';
-import { pedirJson, siguienteId, simularRespuesta } from './http';
-
-let registros: RegistroSanitario[] = registrosSanitarios;
+import { conCuerpo, pedirJson, pedirSinRespuesta } from './http';
 
 /**
  * Lista los registros sanitarios de todas las mascotas del usuario.
@@ -19,20 +16,24 @@ export async function obtenerRegistros(): Promise<RegistroSanitario[]> {
 
 /**
  * Agrega un registro al carnet de una mascota.
- * Endpoint futuro: POST /api/mascotas/:id/registros  { ...datos } -> 201 RegistroSanitario
+ * Endpoint: POST /api/mascotas/:id/registros
+ *   { tipo, nombre, fecha, profesional, proximaDosis?, fotoEtiqueta? } -> 201 RegistroSanitario
  * @param datos datos del registro, incluido el mascotaId
  * @returns el registro creado
  */
 export async function crearRegistro(datos: NuevoRegistro): Promise<RegistroSanitario> {
-  const nuevo: RegistroSanitario = { ...datos, id: siguienteId(registros) };
-  registros = [...registros, nuevo];
-  return simularRespuesta(nuevo);
+  return pedirJson<RegistroSanitario>(
+    `/api/mascotas/${datos.mascotaId}/registros`,
+    conCuerpo('POST', datos),
+  );
 }
 
 /**
- * Reemplaza los datos de un registro (para corregir uno mal cargado).
- * Es un reemplazo completo: si `proximaDosis` no viene, el registro queda sin refuerzo.
- * Endpoint futuro: PUT /api/registros/:id  { ...datos } -> 200 RegistroSanitario
+ * Corrige un registro mal cargado con todos los datos del formulario. Los
+ * opcionales que no vienen se mandan como `null` para que el servidor los
+ * borre: si se sacó el refuerzo o la foto de la etiqueta, el registro queda sin ellos.
+ * Endpoint: PATCH /api/registros/:id
+ *   { tipo, nombre, fecha, profesional, proximaDosis | null, fotoEtiqueta | null } -> 200 RegistroSanitario
  * @param id id del registro
  * @param datos datos completos del registro
  * @returns el registro actualizado
@@ -41,8 +42,20 @@ export async function actualizarRegistro(
   id: number,
   datos: NuevoRegistro,
 ): Promise<RegistroSanitario> {
-  if (!registros.some((r) => r.id === id)) throw new Error('El registro no existe.');
-  const actualizado: RegistroSanitario = { ...datos, id };
-  registros = registros.map((r) => (r.id === id ? actualizado : r));
-  return simularRespuesta(actualizado);
+  // El servidor ignora el mascotaId: un registro no cambia de mascota.
+  const cuerpo = {
+    ...datos,
+    proximaDosis: datos.proximaDosis ?? null,
+    fotoEtiqueta: datos.fotoEtiqueta ?? null,
+  };
+  return pedirJson<RegistroSanitario>(`/api/registros/${id}`, conCuerpo('PATCH', cuerpo));
+}
+
+/**
+ * Borra un registro del carnet.
+ * Endpoint: DELETE /api/registros/:id -> 204
+ * @param id id del registro
+ */
+export async function borrarRegistro(id: number): Promise<void> {
+  await pedirSinRespuesta(`/api/registros/${id}`, { method: 'DELETE' });
 }

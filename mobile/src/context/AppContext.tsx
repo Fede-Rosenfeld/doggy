@@ -3,8 +3,9 @@
  *
  * Al montarse carga en paralelo todos los datos desde los services y los
  * expone a las pantallas junto con las acciones para modificarlos. Cada
- * acción llama primero al service (que en el Sprint 2 va a ser la API) y
- * recién con la respuesta actualiza el estado, siempre creando arrays nuevos.
+ * acción llama primero al service (la API) y recién con la respuesta
+ * actualiza el estado, siempre creando arrays nuevos. Si el servidor responde
+ * con un error, la acción lo deja pasar para que la pantalla muestre el mensaje.
  */
 import {
   createContext,
@@ -24,6 +25,7 @@ import * as reportesService from '@/services/reportes';
 import * as turnosService from '@/services/turnos';
 import * as usuarioService from '@/services/usuario';
 import type {
+  CambiosReporte,
   Cuidador,
   DatosUsuario,
   Invitacion,
@@ -58,13 +60,15 @@ type AppContextValue = {
   agregarMascota: (datos: NuevaMascota) => Promise<Mascota>;
   editarMascota: (id: number, cambios: Partial<NuevaMascota>) => Promise<Mascota>;
   crearReporte: (datos: NuevoReporte) => Promise<ReportePerdida>;
-  editarReporte: (id: number, cambios: Partial<NuevoReporte>) => Promise<ReportePerdida>;
+  editarReporte: (id: number, cambios: CambiosReporte) => Promise<ReportePerdida>;
   /** Cierra un reporte porque la mascota apareció: sale del mapa. */
   cerrarReporte: (id: number) => Promise<void>;
   agregarRegistro: (datos: NuevoRegistro) => Promise<RegistroSanitario>;
   editarRegistro: (id: number, datos: NuevoRegistro) => Promise<RegistroSanitario>;
+  borrarRegistro: (id: number) => Promise<void>;
   agregarTurno: (datos: NuevoTurno) => Promise<Turno>;
   editarTurno: (id: number, datos: NuevoTurno) => Promise<Turno>;
+  borrarTurno: (id: number) => Promise<void>;
   actualizarUsuario: (datos: DatosUsuario) => Promise<Usuario>;
   // --- Asignación de mascotas ---
   generarInvitacion: (mascota: Mascota, rol: RolMascota) => Promise<Invitacion>;
@@ -203,7 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /** Modifica un reporte publicado y lo reemplaza en la lista. */
-  const editarReporte = useCallback(async (id: number, cambios: Partial<NuevoReporte>) => {
+  const editarReporte = useCallback(async (id: number, cambios: CambiosReporte) => {
     const actualizado = await reportesService.actualizarReporte(id, cambios);
     setReportes((prev) => prev.map((r) => (r.id === id ? actualizado : r)));
     return actualizado;
@@ -229,6 +233,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return actualizado;
   }, []);
 
+  /** Borra un registro del carnet y lo saca de la lista. */
+  const borrarRegistro = useCallback(async (id: number) => {
+    await registrosService.borrarRegistro(id);
+    setRegistros((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
   /** Agenda un turno. */
   const agregarTurno = useCallback(async (datos: NuevoTurno) => {
     const nuevo = await turnosService.crearTurno(datos);
@@ -241,6 +251,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const actualizado = await turnosService.actualizarTurno(id, datos);
     setTurnos((prev) => prev.map((t) => (t.id === id ? actualizado : t)));
     return actualizado;
+  }, []);
+
+  /** Borra un turno de la agenda y lo saca de la lista. */
+  const borrarTurno = useCallback(async (id: number) => {
+    await turnosService.borrarTurno(id);
+    setTurnos((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   /** Actualiza los datos personales del usuario. */
@@ -309,8 +325,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cerrarReporte,
       agregarRegistro,
       editarRegistro,
+      borrarRegistro,
       agregarTurno,
       editarTurno,
+      borrarTurno,
       actualizarUsuario,
       generarInvitacion,
       verInvitacion,
@@ -336,8 +354,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cerrarReporte,
       agregarRegistro,
       editarRegistro,
+      borrarRegistro,
       agregarTurno,
       editarTurno,
+      borrarTurno,
       actualizarUsuario,
       generarInvitacion,
       verInvitacion,

@@ -1,12 +1,8 @@
 /**
  * Service del usuario logueado (perfil y contacto de emergencia).
  */
-import { usuario as usuarioMock } from '@/data/mock';
 import type { DatosUsuario, Usuario } from '@/types/models';
-import { pedirJson, simularRespuesta } from './http';
-
-// Copia en memoria para el PATCH, que todavía no está conectado (Etapa 3).
-let usuarioActual: Usuario = usuarioMock;
+import { conCuerpo, pedirJson } from './http';
 
 /**
  * Trae el perfil del usuario.
@@ -18,12 +14,12 @@ export async function obtenerUsuario(): Promise<Usuario> {
 }
 
 /**
- * Actualiza datos del perfil.
- * Endpoint futuro: PATCH /api/usuarios/me  { ...datos } -> 200 Usuario
+ * Actualiza datos del perfil. `foto: null` borra la foto.
+ * Endpoint: PATCH /api/usuarios/me
+ *   { nombre?, apellido?, email?, ubicacion?, telefonoEmergencia?, foto? } -> 200 Usuario
  * @param datos campos a modificar
  * @returns el usuario actualizado
  */
 export async function actualizarUsuario(datos: DatosUsuario): Promise<Usuario> {
-  usuarioActual = { ...usuarioActual, ...datos };
-  return simularRespuesta(usuarioActual);
+  return pedirJson<Usuario>('/api/usuarios/me', conCuerpo('PATCH', datos));
 }

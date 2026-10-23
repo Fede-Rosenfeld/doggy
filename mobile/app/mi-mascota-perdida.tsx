@@ -201,8 +201,8 @@ export default function MiMascotaPerdidaScreen() {
         // Si no se pudo traducir el punto, queda la zona que ya tenía.
         zona: direccion?.zona ?? editado.zona,
         radioMetros,
-        // Vacía se borra del reporte, como si nunca se hubiera cargado.
-        infoAdicional: limpiarTexto(infoAdicional, true) || undefined,
+        // Vacía se borra del reporte con null (un undefined no viaja en el JSON).
+        infoAdicional: limpiarTexto(infoAdicional, true) || null,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       cerrarModal();
