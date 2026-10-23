@@ -280,16 +280,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /**
    * Acepta un código: el usuario queda asignado y la mascota aparece en su cuenta
-   * (se vuelven a traer las mascotas y las asignaciones).
+   * (se vuelven a traer las mascotas, las asignaciones, el carnet y los turnos,
+   * así la mascota nueva llega con todo lo suyo).
    */
   const aceptarInvitacion = useCallback(async (token: string) => {
     const asignacion = await cuidadoresService.aceptarInvitacion(token);
-    const [m, c] = await Promise.all([
+    const [m, c, r, t] = await Promise.all([
       mascotasService.obtenerMascotas(),
       cuidadoresService.obtenerCuidadores(),
+      registrosService.obtenerRegistros(),
+      turnosService.obtenerTurnos(),
     ]);
     setMascotas(m);
     setCuidadores(c);
+    setRegistros(r);
+    setTurnos(t);
     const mascota = m.find((x) => x.id === asignacion.mascotaId);
     if (!mascota) throw new Error('No encontramos la mascota asignada.');
     return mascota;
