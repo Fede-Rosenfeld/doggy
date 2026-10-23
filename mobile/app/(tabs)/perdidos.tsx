@@ -309,7 +309,10 @@ export default function PerdidosScreen() {
 
           <View style={styles.panel}>
             <SegmentedControl opciones={MODOS} valor={modo} onChange={setModo} variant="pill" />
-            {visibles.length === 0 ? (
+            {/* Si la carga falló, el mapa vacío no dice nada: se muestra el error. */}
+            {visibles.length === 0 && error ? (
+              vacio
+            ) : visibles.length === 0 ? (
               <Text style={styles.sinResultados}>No hay reportes con ese criterio.</Text>
             ) : (
               <FlatList
