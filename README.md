@@ -148,6 +148,46 @@ Tabs
 - **Permiso:** cámara, pedido con `useCameraPermissions` recién cuando el usuario toca "Escanear" y declarado con el plugin de `expo-camera` en `app.json` (sin micrófono, porque no se graba audio). Si se niega, se muestra un `PermissionNotice` y queda la alternativa de subir una foto del QR.
 - **Por qué:** quien encuentra un perro suele estar en la calle, apurado y con una mano ocupada. Escanear la chapita identifica a la mascota y trae sus datos en un segundo, sin tipear un código. La cámara solo se enciende a pedido y se apaga al leer para no gastar batería.
 
+## Gestos
+
+### 1. Visor de foto con zoom, rotación y arrastre para cerrar — `react-native-gesture-handler` + `react-native-reanimated` + `expo-haptics`
+
+- **Dónde:** el visor de foto a pantalla completa, que se abre al tocar la foto de la etiqueta de una vacuna (en el formulario y en "Ver etiqueta" del carnet) y la foto del detalle de un reporte. Implementado en `src/components/VisorFoto.tsx`.
+- **Qué hace:**
+  - arrastrar con un dedo mueve la foto;
+  - pellizcar hace zoom de 1x a 5x en el punto donde están los dedos. Si al soltar quedó afuera de ese rango, vuelve al límite con un resorte;
+  - girar con dos dedos la rota. Mover, hacer zoom y girar funcionan a la vez;
+  - un doble tap vuelve todo al estado inicial;
+  - sin zoom, arrastrar en vertical cierra el visor. Mientras se arrastra, el fondo se aclara, y si se suelta a más de 150 px se cierra con una vibración leve. Si no, la foto vuelve a su lugar.
+  - El botón de cerrar y tocar el fondo siguen funcionando, para quien no puede hacer el gesto.
+- **Cómo:**
+  - la foto es una `Animated.Image` dentro de un único `GestureDetector`;
+  - los gestos se combinan así: `useExclusiveGestures(dobleTap, useSimultaneousGestures(pan, pinch, rotacion))`. El doble tap tiene prioridad;
+  - posición, escala y rotación son shared values (`useSharedValue`) y se aplican con `useAnimatedStyle`, todo en el hilo de UI. Se anima solo `transform` y `opacity`;
+  - el pan guarda la posición en `onBegin` y le suma `translationX/Y`;
+  - el pinch multiplica la escala guardada y usa `focalX/Y` para correr la foto, de modo que el punto entre los dedos quede quieto;
+  - solo se vuelve al hilo de JS al soltar el arrastre para cerrar, con `scheduleOnRN`, para vibrar (`Haptics.impactAsync`) y cerrar el modal. Nunca se vuelve en `onUpdate`;
+  - el contenido del `Modal` tiene su propio `GestureHandlerRootView`, porque el modal se dibuja fuera de la raíz de la app y sin ella los gestos no responden en Android;
+  - al abrir el visor o cambiar de foto se resetea todo.
+- **Permiso:** ninguno. El motor de vibración no pide permiso.
+- **Por qué:** la foto de la etiqueta de una vacuna tiene letra chica (lote, marca, fecha) y hace falta acercarla para leerla. En un reporte, ampliar la foto ayuda a reconocer las señas del perro. Arrastrar para cerrar y el doble tap son los gestos que cualquiera ya conoce de la galería del celular.
+
+### API de gestos: diferencias con la clase
+
+La clase usó la API de builders de gesture-handler 2 y `runOnJS` de Reanimated 3. El proyecto tiene `react-native-gesture-handler` 3.3, `react-native-reanimated` 4.7 y `react-native-worklets` 0.13 (SDK 58). En esas versiones, la API de la clase todavía funciona pero está marcada como `@deprecated`, así que se usó la nueva:
+
+| Clase | Versión instalada | Por qué cambia |
+| --- | --- | --- |
+| `Gesture.Pan()`, `Gesture.Pinch()`, `Gesture.Rotation()`, `Gesture.Tap()` | `usePanGesture`, `usePinchGesture`, `useRotationGesture`, `useTapGesture` | En gesture-handler 3 los builders están deprecados y se van a eliminar; los gestos pasan a ser hooks. |
+| `Gesture.Simultaneous(...)` / `Gesture.Exclusive(...)` | `useSimultaneousGestures(...)` / `useExclusiveGestures(...)` | Lo mismo: la composición también es un hook. |
+| Métodos encadenados: `.onBegin(...).onUpdate(...).numberOfTaps(2)` | Un objeto de configuración: `{ onBegin, onUpdate, numberOfTaps: 2 }` | Los hooks reciben toda la configuración junta. |
+| `onStart` / `onEnd` | `onActivate` / `onDeactivate` (`onBegin`, `onUpdate` y `onFinalize` siguen igual) | Cambiaron de nombre en la API nueva. |
+| `runOnJS(fn)(args)` de `react-native-reanimated` | `scheduleOnRN(fn, args)` de `react-native-worklets` | En Reanimated 4 los hilos pasaron a `react-native-worklets` y `runOnJS` quedó deprecado. |
+| `'worklet'` en cada callback del gesto | No hace falta | El plugin de Babel de worklets convierte solo los callbacks de los hooks `use*Gesture`. Sigue haciendo falta en las funciones auxiliares que se llaman desde ellos. |
+| `sharedValue.value` | `sharedValue.get()` / `sharedValue.set()` | Reanimated 4 recomienda `get`/`set` para que el React Compiler y el lint no lo tomen como una mutación. |
+
+No cambian `GestureDetector`, `useSharedValue`, `useAnimatedStyle`, `withSpring` ni los datos del evento (`translationX/Y`, `scale`, `focalX/Y`, `rotation`).
+
 ## Validación de datos
 
 Todos los formularios validan en local antes de guardar, con las reglas centralizadas en `src/utils/validaciones.ts`. El error aparece en rojo debajo del campo y se borra apenas se corrige.
