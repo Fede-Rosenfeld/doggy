@@ -257,8 +257,8 @@ La app está separada en capas: las pantallas no saben de dónde vienen los dato
 Pantalla → AppContext (estado global) → services → fetch a la API (doggy-backend)
 ```
 
-- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO, pensados como los futuros modelos de Prisma.
-- Datos de ejemplo: los carga el seed de `doggy-backend`, con varios usuarios que entran con la contraseña `doggy1234` (por ejemplo, `sofia.romero@mail.com` o `lucia.gomez@mail.com`). Sofía Romero tiene a Luna, Roco y Milo, reportes en CABA y turnos de octubre de 2026; Toby es de Lucía, con el código de asignación `TOBY2026` para probar el flujo de invitado.
+- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO: es la forma del JSON que manda `doggy-backend`, que los guarda con Prisma.
+- Datos de ejemplo: los carga el seed de `doggy-backend`, con varios usuarios que entran con la contraseña `doggy1234` (por ejemplo, `sofia.romero@mail.com` o `lucia.gomez@mail.com`). Sofía Romero tiene a Luna, Roco y Milo, reportes en CABA y turnos calculados desde el día en que se cargó el seed; Toby es de Lucía, con el código de asignación `TOBY2026` para probar el flujo de invitado.
 - `src/services/`: una función `async` por operación, con su endpoint REST comentado (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.).
 - `src/context/AppContext.tsx`: maneja la sesión (restaurarla al abrir la app, login, registro y logout), carga todo en paralelo recién con una sesión abierta, lo vacía al cerrarla y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar, editar y borrar registro sanitario, agregar, editar y borrar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
 
@@ -332,9 +332,12 @@ doggy/
         └── config.ts        URL de la API (EXPO_PUBLIC_API_URL)
 ```
 
-## Próximos sprints
+## Sprint 2
 
-- **Sprint 2 — Backend:** la API va en un repositorio aparte, `doggy-backend` (Express + TypeScript + Prisma + SQLite), siguiendo la arquitectura en capas vista en la práctica (Expo → HTTP → Express → Prisma → SQLite). Este repo nunca contiene código del backend: la app solo conoce la API por HTTP. Cada función de `src/services/` reemplaza la simulación por ``pedirJson(`${API_URL}/api/...`)``, que revisa `response.ok` y devuelve el error del servidor; las pantallas y el contexto no cambian. Los endpoints, los modelos de `src/types/models.ts` y los códigos de estado son el contrato entre los dos repos (detallado en `CLAUDE.md`): si algo cambia, cambia en los dos. La URL se configura con `EXPO_PUBLIC_API_URL` (ver [Backend](#backend)).
-- **Sprint 2 — Gestos:** interacciones con `react-native-gesture-handler` + `react-native-reanimated`, siempre con una alternativa tocable.
+- **Backend:** la API va en un repositorio aparte, `doggy-backend` (Express + TypeScript + Prisma + SQLite), siguiendo la arquitectura en capas vista en la práctica (Expo → HTTP → Express → Prisma → SQLite). Este repo nunca contiene código del backend: la app solo conoce la API por HTTP. Cada función de `src/services/` llama a ``pedirJson(`${API_URL}/api/...`)``, que revisa `response.ok` y devuelve el error del servidor; las pantallas y el contexto no saben de HTTP. Los endpoints, los modelos de `src/types/models.ts` y los códigos de estado son el contrato entre los dos repos (detallado en `CLAUDE.md`): si algo cambia, cambia en los dos. La URL se configura con `EXPO_PUBLIC_API_URL` (ver [Backend](#backend)).
+- **Gestos:** interacciones con `react-native-gesture-handler` + `react-native-reanimated`, siempre con una alternativa tocable (ver [Gestos](#gestos)).
+
+## Próximos pasos
+
 - **Código único de vacuna (SENASA):** cada aplicación del carnet va a llevar el código único de la vacuna, validado contra una API de SENASA (o la fuente oficial que corresponda), para que el carnet sirva como constancia. Queda marcado con un `TODO` en `RegistroSanitario` (`src/types/models.ts`).
-- **Pendientes que dependen del backend:** recuperar contraseña, subida de fotos, recordatorios por notificaciones push y descarga del QR como imagen.
+- **Pendientes:** recuperar contraseña por email, recordatorios por notificaciones push y descarga del QR como imagen (hoy muestran "Disponible próximamente").
