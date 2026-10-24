@@ -74,6 +74,8 @@ export default function PerfilScreen() {
 
   // --- Estado ---
   const [editando, setEditando] = useState(false);
+  /** true mientras se sube y guarda la foto de perfil: la foto queda con el spinner y no se puede tocar. */
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [hoja, setHoja] = useState<HojaAsignacion>(null);
   // La mascota de la hoja se guarda aparte para que no quede vacía mientras se cierra.
   const [mascotaHoja, setMascotaHoja] = useState<Mascota | null>(null);
@@ -90,14 +92,17 @@ export default function PerfilScreen() {
 
   // --- Handlers ---
   /**
-   * Guarda una imagen como foto de perfil.
+   * Guarda una imagen como foto de perfil (el contexto la sube primero al servidor).
    * @param uri foto sacada o elegida
    */
   const guardarFoto = async (uri: string) => {
+    setSubiendoFoto(true);
     try {
       await actualizarUsuario({ foto: uri });
     } catch (e) {
       Alert.alert('No se pudo cambiar la foto', e instanceof Error ? e.message : 'Intentá de nuevo.');
+    } finally {
+      setSubiendoFoto(false);
     }
   };
 
@@ -222,7 +227,7 @@ export default function PerfilScreen() {
             foto={usuario.foto}
             nombre={usuario.nombre}
             onPress={handleFoto}
-            cargando={fototeca.eligiendo}
+            cargando={fototeca.eligiendo || subiendoFoto}
             size={FOTO}
           />
           <AvisoPermisoFoto
