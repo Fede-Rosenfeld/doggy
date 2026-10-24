@@ -2,7 +2,7 @@
 
 Proyecto de la materia Programación de Aplicaciones Móviles (UCA).
 
-- **Sprint 1 (hecho):** frontend en `mobile/` con Expo SDK 57, TypeScript estricto y Expo Router. Los datos vivían en memoria y los services simulaban la red.
+- **Sprint 1 (hecho):** frontend en `mobile/` con Expo (hoy en SDK 58), TypeScript estricto y Expo Router. Los datos vivían en memoria y los services simulaban la red.
 - **Sprint 2 (ahora):**
   - conectar la app al backend, que vive en **otro repositorio**: `doggy-backend`, clonado al lado de este (`../doggy-backend`). Usa Express + TypeScript + Prisma + SQLite;
   - sumar gestos con `react-native-gesture-handler` + `react-native-reanimated` (ya instalados en `mobile/`, no reinstalar).
@@ -124,6 +124,7 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 - Hooks de la cursada: `useState`, `useEffect`, `useRef`, `useMemo`, `useCallback` y `useContext`. El estado global va con Context API, sin Redux ni Zustand.
 - Navegación con Expo Router, usando las opciones vistas en clase (`headerShown`, `title`, `tabBarActiveTintColor`, `tabBarIcon`, etc.).
 - TypeScript estricto, sin `any`.
+- Desde SDK 58 (React Native 0.88) los tipos estrictos de React Native vienen por defecto: nada de imports de `react-native/Libraries/*`, y los refs de `TextInput` se tipan con `TextInputInstance` (`useRef<TextInputInstance>(null)`), no con `TextInput`.
 
 ## Código y estilo
 

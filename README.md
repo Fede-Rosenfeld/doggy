@@ -14,7 +14,7 @@ Sprint 1: frontend en React Native con datos estáticos.
 
 ## Stack
 
-- React Native + Expo (SDK 57) con TypeScript estricto
+- React Native 0.88 + Expo (SDK 58) con TypeScript estricto
 - Expo Router (Stack y Bottom Tabs sobre React Navigation)
 - Context API para el estado global
 - `StyleSheet` + Flexbox, sin librerías de UI
