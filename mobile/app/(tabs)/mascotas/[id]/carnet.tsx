@@ -145,7 +145,7 @@ export default function CarnetSanitarioScreen() {
         renderItem={({ item }) => <RegistroCard registro={item} onEditar={abrirEdicion} />}
         ListHeaderComponent={encabezado}
         ListEmptyComponent={
-          proximo ? null : (
+          proximo ? undefined : (
             <EstadoVacio
               icon="vaccines"
               titulo={textos.vacio}

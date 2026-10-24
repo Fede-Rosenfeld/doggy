@@ -20,7 +20,11 @@ type IconName = ComponentProps<typeof MaterialIcons>['name'];
 function tabIcon(name: IconName) {
   // Función con nombre: React la muestra así en las herramientas de desarrollo.
   return function IconoTab({ color, size }: { color: ColorValue; size: number }) {
-    return <MaterialIcons name={name} color={color} size={size} />;
+    // En RN 0.88 ColorValue también admite null y números, que el ícono no acepta.
+    // Los colores del theme son strings, así que se pasa solo ese caso.
+    return (
+      <MaterialIcons name={name} color={typeof color === 'string' ? color : undefined} size={size} />
+    );
   };
 }
 
