@@ -59,7 +59,7 @@ Cada función de `services/` tiene comentado su endpoint, con la ruta y el cuerp
 
 ### Fotos
 
-- **`POST /api/fotos`** (con token): `multipart/form-data` con el archivo en el campo `foto` → 201 `{ foto: "/uploads/<nombre>.jpg" }`. 400 si no vino o no es JPG, PNG ni WEBP (el servidor mira el contenido, no el nombre); 413 si pesa más de 5 MB. Lo hace `subirFoto(uri)` en `mobile/src/services/fotos.ts`: arma un FormData con `{ uri, name, type }` (en web, un Blob sacado de la URI `blob:`) y no pone `Content-Type` a mano (`http.ts` lo omite si el body es un FormData). Espera hasta 30 s en vez de 10.
+- **`POST /api/fotos`** (con token): `multipart/form-data` con el archivo en el campo `foto` → 201 `{ foto: "/uploads/<nombre>.jpg" }`. 400 si no vino o no es JPG, PNG ni WEBP (el servidor mira el contenido, no el nombre); 413 si pesa más de 5 MB. Lo hace `subirFoto(uri)` en `mobile/src/services/fotos.ts`: arma un FormData con un `File` de `expo-file-system` (en web, un Blob sacado de la URI `blob:`) y no pone `Content-Type` a mano (`http.ts` lo omite si el body es un FormData y `expo/fetch` lo arma con el boundary). Ver "Subir archivos en SDK 58" en Stack. Espera hasta 30 s en vez de 10.
 - **`GET /uploads/<nombre>`** es público (sin token), así `Image` carga la foto sin headers.
 - **En los modelos se guarda la ruta relativa** (`/uploads/abc.jpg`), no la URL completa, porque la IP de la PC cambia. `fuenteFoto` (`mobile/src/data/fotos.ts`) la convierte en `{ uri: API_URL + foto }`. Las claves de las fotos del seed (`luna`, `sofia`, …) siguen resolviéndose a las imágenes empaquetadas.
 - **Los campos de foto** (`foto` de mascota, usuario y reporte; `fotoEtiqueta` de registro) solo aceptan `null`, una clave del seed o una ruta `/uploads/` que exista. Una URI del celular (`file://`, `content://`, `blob:`) da 400: es un archivo temporal que se pierde al cerrar la app y nadie más ve.
@@ -137,6 +137,7 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 - Navegación con Expo Router, usando las opciones vistas en clase (`headerShown`, `title`, `tabBarActiveTintColor`, `tabBarIcon`, etc.).
 - TypeScript estricto, sin `any`.
 - Desde SDK 58 (React Native 0.88) los tipos estrictos de React Native vienen por defecto: nada de imports de `react-native/Libraries/*`, y los refs de `TextInput` se tipan con `TextInputInstance` (`useRef<TextInputInstance>(null)`), no con `TextInput`.
+- **Subir archivos en SDK 58.** El `fetch` global es el de `expo/fetch`, que arma el multipart él mismo y solo acepta en un FormData strings, `Blob` u objetos con `bytes()`. La parte clásica de React Native `{ uri, name, type }` **no funciona**: falla con `Unsupported FormDataPart implementation` (en el warn sale como "No se pudo llamar a …"). En iOS y Android se agrega un `File` de `expo-file-system` (`formData.append('foto', new File(uri))`), que lee `file://` y `content://` y trae su nombre y su tipo; en web, donde `expo-file-system` no funciona, se agrega el Blob de `await (await fetch(uri)).blob()`. Todo archivo que se suba pasa por `services/fotos.ts`; si hace falta subir otra cosa, reusá ese patrón.
 
 ## Código y estilo
 
