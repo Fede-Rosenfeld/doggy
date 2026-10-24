@@ -1,12 +1,16 @@
 # Doggy
 
-App móvil para el cuidado y la seguridad de tu mascota. Permite gestionar las
+App móvil para el cuidado y la seguridad de tu perro. Permite gestionar las
 mascotas de la familia, llevar su carnet sanitario, organizar turnos y, si una
 mascota se pierde, reportarla en un mapa colaborativo e identificarla con un
 código QR en la chapita del collar.
 
-Proyecto de la materia Programación de Aplicaciones Móviles (UCA).
-Sprint 1: frontend en React Native con datos estáticos.
+Proyecto de la materia Programación de Aplicaciones Móviles (UCA), en dos etapas:
+
+- **Sprint 1 — frontend.** La app completa en React Native con Expo: pantallas, navegación, estado global con Context API, validaciones y tres componentes nativos (fototeca y cámara, GPS con mapa y lector de QR). Los datos vivían en memoria.
+- **Sprint 2 — backend, login, fotos y gestos.** La app pasa a guardar todo en una API propia, **[doggy-backend](https://github.com/ignaciogonzalezinigo1/doggy-backend)** (Express + Prisma + SQLite), que vive en otro repositorio. Se suman cuentas con login y sesión persistente, fotos subidas al servidor (las ven todos los usuarios y sobreviven a cerrar la app) y cuatro gestos con gesture-handler y Reanimated.
+
+Este repo es solo el front: nunca contiene código del backend. La app conoce la API únicamente por HTTP.
 
 ## Integrantes
 
@@ -14,7 +18,7 @@ Sprint 1: frontend en React Native con datos estáticos.
 
 ## Stack
 
-- React Native 0.88 + Expo (SDK 58) con TypeScript estricto
+- React Native 0.88 + Expo (SDK 58) con TypeScript estricto, corriendo en **Expo Go** (sin development build)
 - Expo Router (Stack y Bottom Tabs sobre React Navigation)
 - Context API para el estado global
 - `StyleSheet` + Flexbox, sin librerías de UI
@@ -23,6 +27,8 @@ Sprint 1: frontend en React Native con datos estáticos.
 - `react-native-svg` + `react-native-qrcode-svg` para generar el QR de identificación
 - `expo-location` + `react-native-maps` para el GPS y el mapa
 - `expo-camera` + `expo-haptics` para el lector de QR, la linterna y la vibración
+- `expo-image-picker` para la galería y la cámara
+- **Sprint 2:** `fetch` contra `doggy-backend`, `expo-secure-store` para guardar el token de sesión, `expo-file-system` para subir las fotos, `react-native-gesture-handler` 3.3 + `react-native-reanimated` 4.7 + `react-native-worklets` 0.13 para los gestos
 
 ## Branding
 
@@ -36,37 +42,147 @@ Sprint 1: frontend en React Native con datos estáticos.
 - Títulos: **Quicksand** 600/700
 - Texto y labels: **Plus Jakarta Sans** 400/600/700
 
-## Cómo correrlo
 
-Requisitos: Node LTS y la app Expo Go en el celular, conectado a la misma red
-Wi-Fi que la PC.
+## Cómo correrlo de punta a punta
+
+Requisitos: Node LTS en la PC, `git`, y un celular con **Expo Go para SDK 58** conectado a la **misma red Wi-Fi** que la PC.
+
+### 1. Clonar los dos repos, uno al lado del otro
 
 ```bash
-cd mobile
-npm install
-npx expo start
+mkdir doggy-workspace && cd doggy-workspace
+git clone https://github.com/ignaciogonzalezinigo1/doggy.git
+git clone https://github.com/ignaciogonzalezinigo1/doggy-backend.git
 ```
 
-Escaneá el QR que aparece en la terminal con la cámara (iOS) o con Expo Go (Android).
-
-### Backend
-
-El backend está en otro repositorio, [`doggy-backend`](https://github.com/ignaciogonzalezinigo1/doggy-backend), y se levanta aparte (las instrucciones están en su README). Conviene clonarlo al lado de este:
-
 ```
-carpeta-de-trabajo/
+doggy-workspace/
 ├── doggy/            este repo (la app)
 └── doggy-backend/    la API (Express + Prisma + SQLite)
 ```
 
-La app le habla a la API por HTTP, en la URL de `EXPO_PUBLIC_API_URL`. Para probar desde el celular, creá `mobile/.env` con la IP local de la PC donde corre el backend (no `localhost`, porque en el celular apunta al propio celular):
+### 2. Levantar el backend (primera terminal)
+
+```bash
+cd doggy-backend
+cp .env.example .env   # antes de npm install: el postinstall lo necesita
+npm install            # también genera el cliente de Prisma
+npm run db:reset       # crea dev.db con el schema y carga los datos de ejemplo
+npm run dev            # API en http://localhost:3000
+```
+
+Para chequear que anda, abrí `http://localhost:3000/api/health` en el navegador: tiene que responder `{ "ok": true }`. Los scripts, los endpoints y las pruebas (`npm test`) están en el [README de doggy-backend](https://github.com/ignaciogonzalezinigo1/doggy-backend#readme).
+
+### 3. Levantar el front (segunda terminal)
+
+```bash
+cd doggy/mobile
+npm install
+cp .env.example .env
+```
+
+Editá `mobile/.env` con la **IP local de la PC** donde corre el backend. No sirve `localhost`: en el celular, `localhost` es el propio celular.
 
 ```bash
 # mobile/.env
 EXPO_PUBLIC_API_URL=http://192.168.0.10:3000
 ```
 
-Después de cambiar el `.env`, reiniciá Expo con `npx expo start -c`.
+Para saber la IP: en macOS, `ipconfig getifaddr en0`; en Windows, `ipconfig` (la "Dirección IPv4" del adaptador Wi-Fi). También sirve la que muestra Expo al arrancar (`exp://192.168.0.10:8081`): es la misma PC, cambiando el puerto por 3000.
+
+```bash
+npx expo start -c
+```
+
+El `-c` limpia la caché de Metro. Hace falta cada vez que cambiás el `.env`, porque las variables `EXPO_PUBLIC_*` quedan escritas en el bundle.
+
+### 4. Abrir la app en Expo Go
+
+Escaneá el QR que aparece en la terminal con la cámara (iOS) o desde Expo Go (Android). El proyecto usa **SDK 58**: Expo Go tiene que soportar esa versión (ver [Errores comunes](#errores-comunes)).
+
+Antes de culpar a la app, conviene abrir `http://<IP de la PC>:3000/api/health` en el navegador **del celular**. Si ahí no carga, el problema es de red, no del código.
+
+### 5. Entrar con un usuario de prueba
+
+El seed de `doggy-backend` carga los datos de la demo. **Todos los usuarios tienen la contraseña `doggy1234`.**
+
+| Usuario | Email | Para probar |
+| --- | --- | --- |
+| Sofía Romero | `sofia.romero@mail.com` | La usuaria principal: tutora de Luna, Roco y Milo, con carnet, turnos y reportes en CABA |
+| Lucía Gómez | `lucia.gomez@mail.com` | Tutora de Toby. Sofía puede sumarlo como invitada con el código **`TOBY2026`** (Perfil → Tengo un código de asignación) |
+| Carlos Romero | `carlos.romero@mail.com` | Co-tutor (dueño) de Luna: sirve para ver la misma mascota desde otra cuenta |
+| Marcos Díaz | `marcos.diaz@mail.com` | Paseador de Roco (invitado): no puede generar códigos de asignación |
+
+La lista completa está en el README de `doggy-backend`. También se puede crear una cuenta nueva desde "Registrarme". Para volver a la demo limpia: `npm run db:reset` en `doggy-backend`.
+
+## Arquitectura
+
+La app está separada en capas y cada una sabe lo mínimo de la siguiente: las pantallas no saben de HTTP, la app no toca la base, y Prisma no decide permisos.
+
+```
+ CELULAR (repo doggy)                                 PC (repo doggy-backend)
+┌──────────────────────────────┐                    ┌───────────────────────────────────┐
+│ Pantallas (app/)             │                    │ Express (src/index.ts, src/rutas/) │
+│   muestran y validan en local│                    │   cors, express.json,              │
+│        │                     │                    │   requiereUsuario (token → 401)    │
+│        ▼                     │                    │   valida el body (400), permisos   │
+│ AppContext (src/context/)    │                    │   (403), elige el status           │
+│   estado global y acciones   │                    │        │                           │
+│        │                     │    HTTP + JSON     │        ▼                           │
+│        ▼                     │  Authorization:    │ Prisma (src/lib/prisma.ts)         │
+│ services (src/services/)     │  Bearer <token>    │   modelo en prisma/schema.prisma,  │
+│   pedirJson / subirFoto ─────┼───────────────────►│   consultas tipadas                │
+│                       ◄──────┼────────────────────┤        │                           │
+│                              │  status + JSON     │        ▼                           │
+│                              │  o { error }       │ SQLite (dev.db)                    │
+└──────────────────────────────┘                    └───────────────────────────────────┘
+```
+
+| Capa | Dónde | Qué hace |
+| --- | --- | --- |
+| Pantallas | `mobile/app/`, `mobile/src/components/` | Muestran el estado, validan en local (`src/utils/validaciones.ts`) y llaman a las acciones del contexto. Muestran el `{ error }` del servidor tal cual. |
+| Estado global | `mobile/src/context/AppContext.tsx` | Maneja la sesión (restaurarla al abrir la app, login, registro y logout), carga todo en paralelo con una sesión abierta y expone las acciones. Antes de guardar una foto local la sube (`conFotoSubida`). Actualiza el estado con lo que respondió el servidor. |
+| Services | `mobile/src/services/` | Una función `async` por endpoint, con la ruta comentada. `pedirJson` / `pedirSinRespuesta` (`http.ts`) arman el pedido, suman el token, cortan a los 10 s, revisan `response.ok` y lanzan un `ErrorApi` con el status y el mensaje del servidor. |
+| HTTP | `EXPO_PUBLIC_API_URL` (`mobile/src/config.ts`) | JSON en los dos sentidos (multipart para las fotos). El contrato está en el `CLAUDE.md` de cada repo. |
+| Express | `doggy-backend/src/index.ts`, `src/rutas/` | Recibe, chequea la sesión, valida, chequea permisos, elige el status y arma la respuesta. |
+| Prisma | `doggy-backend/prisma/schema.prisma`, `src/lib/prisma.ts` | Define el modelo y hace las consultas. |
+| SQLite | `doggy-backend/dev.db` | Guarda los datos. |
+
+Los modelos de `mobile/src/types/models.ts` (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador`, `Invitacion`) son la forma exacta del JSON que viaja: ids numéricos, fechas como string ISO y relaciones por id.
+
+### El viaje de un dato: "Publicar como perdida"
+
+Sofía abre el perfil de Luna, toca "Reportar como perdida", marca en el mini mapa dónde la vio por última vez, elige un radio de 500 m y toca **"Publicar como perdida"**. Esto es lo que pasa:
+
+**Ida (celular → base)**
+
+1. **Pantalla — `mobile/app/mi-mascota-perdida.tsx`, `handlePublicar`.** Valida en local la información adicional (`validarTexto`) y arma un `NuevoReporte` con los datos del perfil de Luna (nombre, raza, señas y foto), el punto del mapa (`lat`, `lng`), la zona que dio `reverseGeocodeAsync`, el radio y las etiquetas, con `estado: 'perdido'` y la fecha de ahora. Pone `enviando` en `true` (el botón muestra el spinner y no se puede tocar dos veces) y llama a `crearReporte` del contexto.
+2. **Estado global — `mobile/src/context/AppContext.tsx`, `crearReporte`.** Pasa los datos por `conFotoSubida(datos, 'foto')` (`src/services/fotos.ts`). La foto de Luna ya es una ruta del servidor o una clave del seed, así que no sube nada; si fuera una URI local del celular, primero haría `POST /api/fotos` y reemplazaría la URI por la ruta `/uploads/...` que devuelve el servidor. Después llama al service.
+3. **Service — `mobile/src/services/reportes.ts`, `crearReporte`.** Llama a `pedirJson('/api/reportes', conCuerpo('POST', datos))`.
+4. **HTTP — `mobile/src/services/http.ts`, `pedir`.** `conCuerpo` hace el `JSON.stringify`; `armarHeaders` suma `Content-Type: application/json` y `Authorization: Bearer <token>` (el token está en memoria, leído de `expo-secure-store` al abrir la app). El `fetch` va a `http://192.168.0.10:3000/api/reportes` con un tope de 10 s.
+5. **Express — `doggy-backend/src/index.ts`.** `cors()` deja pasar el pedido y `express.json()` convierte el body en `req.body`. Como la ruta está bajo `/api`, pasa por **`requiereUsuario`** (`src/middlewares/requiereUsuario.ts`): saca el token del header, calcula su SHA-256 y busca la fila en `Sesion` (`usuarioDeToken`, `src/lib/sesiones.ts`). Si no existe o venció, 401. Si está bien, pone `req.usuarioId` y sigue al `reportesRouter`.
+6. **Ruta — `doggy-backend/src/rutas/reportes.ts`, `POST /`.**
+   - `leerReporteNuevo` (`src/cuerpos/reporte.ts`) toma del body solo los campos permitidos y los valida con las mismas reglas que la app: estado válido, un perdido tiene que traer `mascotaId`, radio entre los de `RADIOS_BUSQUEDA`, etiquetas, coordenadas y fecha. Si algo falla, **400**.
+   - La mascota tiene que existir (**404**) y, como es un reporte de pérdida, Sofía tiene que estar asignada a ella (`rolEn`, `src/lib/asignaciones.ts`; si no, **403**).
+   - Luna no puede tener otro reporte de pérdida activo (**409** "Esta mascota ya tiene un reporte de pérdida activo.").
+7. **Prisma → SQLite.** `prisma.reportePerdida.create` con `autorId: req.usuarioId` (el autor sale del token, nunca del body) y una escritura anidada que crea las filas de `Etiqueta`. Prisma inserta el reporte y sus etiquetas en `dev.db` en una sola transacción.
+
+**Vuelta (base → marker en el mapa)**
+
+8. **Respuesta — `doggy-backend/src/respuestas.ts`, `aReporte`.** Convierte la fila al JSON de `ReportePerdida`: las etiquetas de la tabla aparte pasan a `etiquetas: string[]`, las fechas a ISO y los opcionales vacíos se omiten. La ruta responde **201** con el reporte creado, ya con su `id`.
+9. **HTTP — `http.ts`.** `response.ok` es `true`, así que `pedirJson` lee el JSON y lo devuelve tipado como `ReportePerdida`. Si hubiera sido un error, lanzaría un `ErrorApi` con el `{ error }` del servidor.
+10. **Estado global — `crearReporte`.** Suma el reporte que devolvió el servidor al estado: `setReportes((prev) => [...prev, nuevo])`. No vuelve a pedir la lista entera: el 201 ya trae lo creado.
+11. **Pantalla — `handlePublicar`.** Vibra con `Haptics.notificationAsync(Success)`, cierra el modal y navega a `/perdidos` con `reporteId` en los params. Si algo falló, en cambio, muestra un `Alert` con el mensaje del servidor y el modal queda abierto con los datos cargados.
+12. **Mapa — `mobile/app/(tabs)/perdidos.tsx` y `src/components/perdidos/MapaReportes.tsx`.** Perdidos lee `reporteId` con `useLocalSearchParams`, busca el reporte en `reportes` del contexto, lo selecciona y centra la cámara con `mapaRef.current?.centrar(...)`. `MapaReportes` dibuja un `ReporteMarker` mostaza por cada reporte y, para el seleccionado, el `Circle` de 500 m alrededor del pin. El reporte también aparece primero en el carrusel de cards.
+
+Como el reporte quedó en la base, cualquier otro usuario lo ve en su mapa la próxima vez que se cargan los reportes (`GET /api/reportes` devuelve los activos de todos).
+
+### Sesión
+
+- El login y el registro devuelven `{ usuario, token }`. El token se guarda con `expo-secure-store` (`src/services/sesion.ts`), así la sesión sobrevive al cerrar la app. Mientras se lee al abrirla sigue la splash, para no mostrar el login un instante.
+- `http.ts` manda el token en cada pedido. Si cualquier pedido responde 401 (sesión vencida o cerrada en otro lado), se borra el token, se vacía el estado y se vuelve al login sin historial, con un aviso. El login y el logout son la excepción: su 401 significa "credenciales incorrectas" y "ya estaba cerrada".
+- "Cerrar sesión" llama a `POST /api/auth/logout`, que borra la sesión en el servidor: ese token deja de servir al instante.
+
 
 ## Pantallas y flujo de navegación
 
@@ -98,8 +214,8 @@ Tabs
 - **Stack raíz** (`app/_layout.tsx`): grupo `(auth)`, grupo `(tabs)` y los modales `mi-mascota-perdida`, `reportar` y `asignar` (`presentation: 'modal'`). `asignar` se abre al cargar un código de asignación desde Perfil.
 - **Bottom Tabs** (`app/(tabs)/_layout.tsx`): Mascotas, Perdidos, Agenda y Perfil, con una barra propia que marca la tab activa con una píldora.
 - **Stack interno de Mascotas** (`app/(tabs)/mascotas/_layout.tsx`): listado, alta, perfil (`[id]`), edición (`[id]/editar`) y carnet (`[id]/carnet`), con la barra de tabs visible.
-- **Sesión:** el token del login o el registro se guarda con `expo-secure-store` (`src/services/sesion.ts`), así la sesión sobrevive al cerrar la app. Mientras se lee al abrirla sigue la splash, para no mostrar el login un instante. Si cualquier pedido responde 401 (sesión vencida o cerrada), se borra el token, se vacía el estado y se vuelve al login sin historial, con un aviso.
-- Las acciones que dependen del backend (descargar QR, recuperar contraseña) muestran un aviso de "Disponible próximamente"; no hay botones sin respuesta.
+- **Sesión:** ver [Sesión](#sesión) en Arquitectura.
+- Lo que todavía no existe (descargar QR, recuperar contraseña) muestra un aviso de "Disponible próximamente"; no hay botones sin respuesta (ver [Pendientes a futuro](#pendientes-a-futuro)).
 
 ### Detalle por pantalla
 
@@ -144,11 +260,25 @@ Tabs
 ### 3. Cámara (lector de QR y linterna) — `expo-camera` + `expo-haptics`
 
 - **Dónde:** modal Encontré una mascota. Implementado en `src/components/reporte/EscanerQr.tsx`.
-- **Qué hace:** monta un `CameraView` con `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}` y `onBarcodeScanned`. Cuando lee un código con formato `DOGGY-XXXX-NOMBRE`, busca la mascota en el estado global y autocompleta el formulario. Tras la primera lectura se bloquean las siguientes (el lector dispara varias veces por segundo mientras el QR está en cuadro) y la cámara se desmonta. Permite prender el flash como linterna (`enableTorch`) para leer chapitas de noche, cambiar a la cámara frontal (`facing`) y leer un QR desde una imagen de la galería con `scanFromURLAsync`. Cada lectura se confirma con `Haptics.notificationAsync` (éxito o error).
+- **Qué hace:** monta un `CameraView` con `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}` y `onBarcodeScanned`. Cuando lee un código con formato `DOGGY-XXXX-NOMBRE`, busca la mascota en el servidor (`GET /api/mascotas/codigo/:codigo`, que devuelve solo sus datos públicos, aunque sea de otra persona) y autocompleta el formulario. Mientras espera la respuesta, el lector queda bloqueado y muestra "Buscando…"; un 404 se avisa como "no reconocido" y una falla de red, como falta de conexión. Tras la primera lectura se bloquean las siguientes (el lector dispara varias veces por segundo mientras el QR está en cuadro) y la cámara se desmonta. Permite prender el flash como linterna (`enableTorch`) para leer chapitas de noche, cambiar a la cámara frontal (`facing`) y leer un QR desde una imagen de la galería con `scanFromURLAsync`. Cada lectura se confirma con `Haptics.notificationAsync` (éxito o error).
 - **Permiso:** cámara, pedido con `useCameraPermissions` recién cuando el usuario toca "Escanear" y declarado con el plugin de `expo-camera` en `app.json` (sin micrófono, porque no se graba audio). Si se niega, se muestra un `PermissionNotice` y queda la alternativa de subir una foto del QR.
 - **Por qué:** quien encuentra un perro suele estar en la calle, apurado y con una mano ocupada. Escanear la chapita identifica a la mascota y trae sus datos en un segundo, sin tipear un código. La cámara solo se enciende a pedido y se apaga al leer para no gastar batería.
 
 ## Gestos
+
+Sprint 2 suma cuatro gestos con `react-native-gesture-handler` 3 y `react-native-reanimated` 4. Todos siguen las mismas reglas:
+
+- la animación corre en el **hilo de UI** con shared values (`useSharedValue` + `useAnimatedStyle`), y se anima solo `transform` y `opacity`;
+- se vuelve al hilo de JS con `scheduleOnRN` solo cuando el gesto se activa o termina (para navegar, abrir un menú, borrar o vibrar), nunca en `onUpdate`;
+- la vibración (`expo-haptics`) confirma el momento clave, una sola vez;
+- **todo gesto tiene una alternativa tocable** que hace lo mismo: el gesto es un atajo, no la única forma.
+
+| Gesto | Dónde | Alternativa tocable |
+| --- | --- | --- |
+| Pan + pinch + rotación + doble tap + arrastrar para cerrar | Visor de fotos (etiqueta de vacuna, foto de un reporte) | Botón de cerrar y tocar el fondo |
+| Swipe a la izquierda | Cards de turnos y del carnet | Botón "Eliminar" del formulario de edición |
+| Long press (600 ms) | Cards de "Mis Mascotas" | Las mismas acciones en el perfil de la mascota |
+| Fling izquierda / derecha | Calendario de la Agenda | Flechas del encabezado |
 
 ### 1. Visor de foto con zoom, rotación y arrastre para cerrar — `react-native-gesture-handler` + `react-native-reanimated` + `expo-haptics`
 
@@ -249,19 +379,6 @@ Todos los formularios validan en local antes de guardar, con las reglas centrali
 - **Rangos de fechas:** una aplicación del carnet no puede ser futura ni de hace más de 30 años; el refuerzo tiene que ser posterior a la aplicación y no más de 5 años después; un turno tiene que ser a futuro y a no más de 2 años.
 - **Limpieza:** antes de guardar se sacan los espacios de los bordes y los repetidos, y en los textos de varias líneas se deja como mucho una línea en blanco seguida (`limpiarTexto`).
 
-## Datos y arquitectura
-
-La app está separada en capas: las pantallas no saben de dónde vienen los datos.
-
-```
-Pantalla → AppContext (estado global) → services → fetch a la API (doggy-backend)
-```
-
-- `src/types/models.ts`: modelos (`Usuario`, `Mascota`, `RegistroSanitario`, `Turno`, `ReportePerdida`, `Cuidador` con su `RolMascota` dueño/invitado, `Invitacion`) con ids numéricos y fechas ISO: es la forma del JSON que manda `doggy-backend`, que los guarda con Prisma.
-- Datos de ejemplo: los carga el seed de `doggy-backend`, con varios usuarios que entran con la contraseña `doggy1234` (por ejemplo, `sofia.romero@mail.com` o `lucia.gomez@mail.com`). Sofía Romero tiene a Luna, Roco y Milo, reportes en CABA y turnos calculados desde el día en que se cargó el seed; Toby es de Lucía, con el código de asignación `TOBY2026` para probar el flujo de invitado.
-- `src/services/`: una función `async` por operación, con su endpoint REST comentado (`GET /api/mascotas`, `POST /api/reportes`, `PATCH /api/usuarios/me`, etc.).
-- `src/context/AppContext.tsx`: maneja la sesión (restaurarla al abrir la app, login, registro y logout), carga todo en paralelo recién con una sesión abierta, lo vacía al cerrarla y expone las acciones (agregar y editar mascota, crear, editar y cerrar reporte, agregar, editar y borrar registro sanitario, agregar, editar y borrar turno, actualizar usuario, generar, ver y aceptar códigos de asignación, desasignarse, iniciar y cerrar sesión).
-
 ## Componentes reutilizables
 
 - `ScreenContainer`: safe area, fondo y scroll con ajuste al teclado.
@@ -310,34 +427,53 @@ Pantalla → AppContext (estado global) → services → fetch a la API (doggy-b
 
 ```
 doggy/
+├── README.md
+├── CLAUDE.md                reglas del proyecto y contrato con doggy-backend
+├── docs/
+│   └── defensa.md           machete para la defensa oral del Sprint 2
 └── mobile/                  app Expo
     ├── app.json
-    ├── assets/images/       logo, ícono y splash
+    ├── .env.example         EXPO_PUBLIC_API_URL (copiar como .env)
+    ├── assets/images/       logo, ícono, splash y fotos del seed
     ├── app/                 rutas (Expo Router)
-    │   ├── _layout.tsx      Stack raíz, fuentes y splash
+    │   ├── _layout.tsx      Stack raíz, fuentes, splash y raíz de gestos
     │   ├── index.tsx        entra a las tabs o al login según haya sesión
     │   ├── (auth)/          login y registro
     │   ├── (tabs)/          Mascotas, Perdidos, Agenda y Perfil
-    │   │   └── mascotas/    stack interno: listado, alta, perfil y carnet
-    │   └── reportar.tsx     modal de reporte
+    │   │   └── mascotas/    stack interno: listado, alta, perfil, edición y carnet
+    │   ├── mi-mascota-perdida.tsx   modal "Se perdió mi mascota" / editar reporte
+    │   ├── reportar.tsx     modal "Encontré una mascota"
+    │   └── asignar.tsx      modal para aceptar un código de asignación
     └── src/
         ├── theme/           colores, tipografías, espaciado y sombras
         ├── components/      componentes reutilizables
-        ├── context/         estado global
-        ├── hooks/           hooks propios
-        ├── services/        acceso a la API
-        ├── data/            fotos incluidas en la app
-        ├── types/           modelos
+        ├── context/         estado global (AppContext)
+        ├── hooks/           hooks propios (fototeca, ubicación, menús, borrado)
+        ├── services/        acceso a la API (http, sesión, fotos y un archivo por recurso)
+        ├── data/            fotos incluidas en la app y fuenteFoto
+        ├── types/           modelos (la forma del JSON del contrato)
         ├── utils/           validaciones y helpers
         └── config.ts        URL de la API (EXPO_PUBLIC_API_URL)
 ```
 
-## Sprint 2
+## Errores comunes
 
-- **Backend:** la API va en un repositorio aparte, `doggy-backend` (Express + TypeScript + Prisma + SQLite), siguiendo la arquitectura en capas vista en la práctica (Expo → HTTP → Express → Prisma → SQLite). Este repo nunca contiene código del backend: la app solo conoce la API por HTTP. Cada función de `src/services/` llama a ``pedirJson(`${API_URL}/api/...`)``, que revisa `response.ok` y devuelve el error del servidor; las pantallas y el contexto no saben de HTTP. Los endpoints, los modelos de `src/types/models.ts` y los códigos de estado son el contrato entre los dos repos (detallado en `CLAUDE.md`): si algo cambia, cambia en los dos. La URL se configura con `EXPO_PUBLIC_API_URL` (ver [Backend](#backend)).
-- **Gestos:** interacciones con `react-native-gesture-handler` + `react-native-reanimated`, siempre con una alternativa tocable (ver [Gestos](#gestos)).
+| Síntoma | Causa probable | Cómo se resuelve |
+| --- | --- | --- |
+| La app muestra "No pudimos conectarnos con el servidor" (o tarda 10 s y falla) | `EXPO_PUBLIC_API_URL` tiene una **IP equivocada**, `localhost`, o la IP de la PC cambió (pasa al cambiar de red o al reiniciar el router) | Buscá la IP actual (`ipconfig getifaddr en0` en macOS, `ipconfig` en Windows), corregí `mobile/.env` y reiniciá con `npx expo start -c`. Sin el `-c`, Metro sigue usando la IP vieja. |
+| El celular no llega a la PC aunque la IP esté bien (`/api/health` no carga en el navegador del celular) | **Red de invitados** o Wi-Fi de facultad/bar con aislamiento de clientes: los dispositivos no se ven entre sí | Usá una red de casa, o compartí internet desde el celular (hotspot) y conectá la PC a esa red. La IP de la PC cambia: actualizá el `.env`. |
+| Lo mismo, en una red de casa | El **firewall** de la PC bloquea las conexiones entrantes al puerto 3000 | macOS: aceptá "permitir conexiones entrantes" para `node` (o habilitalo en Ajustes → Red → Firewall). Windows: permití `node` en redes **privadas** y marcá la red Wi-Fi como privada. |
+| Expo Go dice que el proyecto es incompatible con su versión | **Expo Go para otro SDK**: el proyecto usa SDK 58 | Actualizá Expo Go desde la tienda a una versión que soporte SDK 58. En Android también se puede instalar la versión exacta desde [expo.dev/go](https://expo.dev/go). No hace falta cambiar nada del proyecto. |
+| La API no arranca, o la app ve datos o reglas viejas | El **puerto 3000 está ocupado**, casi siempre por otro `npm run dev` que quedó abierto en otra terminal | Cerrá el otro proceso (`lsof -i :3000` en macOS, `netstat -ano \| findstr :3000` en Windows) o usá otro puerto: `PORT=3001` en el `.env` del backend y el mismo puerto en `EXPO_PUBLIC_API_URL`. |
+| `Error: Falta DATABASE_URL en el .env (copiá .env.example).` al hacer `npm run dev`, o `PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL` en `npm install` o en un script de Prisma | **Falta el `.env` del backend** | En `doggy-backend`: `cp .env.example .env` y después `npx prisma generate` (o `npm install` de nuevo). |
+| `Cannot find module '../generated/prisma/client'` (o parecido) al levantar la API | **Prisma Client sin generar**: el cliente vive en `src/generated/`, que no se versiona, y en Prisma 7 `db push` no lo genera solo | En `doggy-backend`: `npx prisma generate`. Si además cambió el schema, `npm run db:reset` (regenera el cliente y recarga los datos). |
+| La app vuelve al login con "Tu sesión venció" | El token ya no existe en el servidor: se reseteó la base (`db:reset` borra las sesiones) o pasaron 30 días | Volvé a entrar. Es el comportamiento esperado. |
 
-## Próximos pasos
+## Pendientes a futuro
 
-- **Código único de vacuna (SENASA):** cada aplicación del carnet va a llevar el código único de la vacuna, validado contra una API de SENASA (o la fuente oficial que corresponda), para que el carnet sirva como constancia. Queda marcado con un `TODO` en `RegistroSanitario` (`src/types/models.ts`).
-- **Pendientes:** recuperar contraseña por email, recordatorios por notificaciones push y descarga del QR como imagen (hoy muestran "Disponible próximamente").
+Hoy estas acciones muestran un aviso de "Disponible próximamente" (ningún botón queda muerto):
+
+- **Recuperar contraseña:** mandar por email un link o código de un solo uso para elegir una contraseña nueva. Necesita un servicio de mails en el backend y una tabla de códigos que venzan, parecida a la de invitaciones.
+- **Notificaciones push:** recordatorios de turnos y de refuerzos de vacunas, y un aviso a los vecinos cuando se publica un perro perdido cerca. Con `expo-notifications`; las push remotas necesitan un development build, no alcanza Expo Go.
+- **Descargar el QR como imagen:** guardar el QR de la mascota en la galería para mandarlo a grabar en la chapita (hoy se puede compartir, pero no descargar).
+- **Código único de vacuna (SENASA):** cada aplicación del carnet llevaría el código único de la vacuna, validado contra una API de SENASA (o la fuente oficial que corresponda), para que el carnet sirva como constancia. Queda marcado con un `TODO` en `RegistroSanitario` (`src/types/models.ts`).
