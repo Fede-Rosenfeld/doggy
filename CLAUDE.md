@@ -90,9 +90,9 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 | 401 | sin `Authorization: Bearer`, token inválido, vencido o cerrado con logout; login con email o contraseña incorrectos |
 | 403 | con sesión, pero sin permiso sobre ese recurso |
 | 404 | no existe |
-| 409 | conflicto con el estado actual: email ya registrado, ya asignado a la mascota, único dueño que quiere desasignarse |
+| 409 | conflicto con el estado actual: email ya registrado, ya asignado a la mascota, único dueño que quiere desasignarse, reporte ya cerrado, mascota ya reportada |
 | 410 | código de asignación vencido o ya usado |
-| 413 | la foto subida pesa más de 5 MB |
+| 413 | la foto subida pesa más de 5 MB, o el body JSON más de 100 KB |
 | 500 | error imprevisto |
 
 - Todo error llega como `{ error: "mensaje en español" }`. La app muestra ese mensaje tal cual, sin armar textos propios por status, salvo en casos puntuales (por ejemplo, un 401 lleva al login).
