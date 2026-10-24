@@ -8,7 +8,16 @@
  * si la foto es local la sube y la reemplaza por la ruta que devuelve el
  * servidor ("/uploads/abc.jpg"). Una foto que no cambió ya es una ruta del
  * servidor (o una clave del seed), así que no se vuelve a subir.
+ *
+ * Cómo viaja el archivo (SDK 58): el `fetch` global es el de `expo/fetch`,
+ * que arma el multipart a mano y solo acepta strings, `Blob` u objetos con
+ * `bytes()`. La parte `{ uri, name, type }` de React Native tira
+ * "Unsupported FormDataPart implementation". Por eso en iOS y Android se
+ * agrega un `File` de expo-file-system (que implementa `Blob` y `bytes()`) y
+ * en web un Blob sacado de la URI blob:.
  */
+import { File } from 'expo-file-system';
+
 import { pedirJson } from './http';
 
 /** Campo del multipart donde el servidor espera el archivo. */
@@ -23,16 +32,14 @@ const ESQUEMAS_LOCALES = ['file:', 'content:', 'blob:', 'data:', 'ph:', 'assets-
 /** Esquemas que en web hay que leer como Blob antes de mandarlos. */
 const ESQUEMAS_BLOB = ['blob:', 'data:'];
 
-/** Tipo MIME de cada extensión que acepta el servidor. */
-const TIPOS_POR_EXTENSION: Record<string, string> = {
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
-};
+/** Extensiones de imagen que acepta el servidor. */
+const EXTENSIONES_ACEPTADAS = ['jpg', 'jpeg', 'png', 'webp'];
 
-/** Extensión que se usa cuando la URI no trae una (pasa con content:// y blob:). */
+/** Extensión que se usa cuando la URI no trae una (pasa con blob:). */
 const EXTENSION_POR_DEFECTO = 'jpg';
+
+/** Mensaje si el archivo temporal de la foto ya no está (por ejemplo, el sistema limpió la caché). */
+const MENSAJE_FOTO_PERDIDA = 'No encontramos la foto en el celular. Elegila de nuevo.';
 
 /**
  * Indica si una foto es un archivo del dispositivo que todavía no se subió.
@@ -44,35 +51,35 @@ export function esFotoLocal(foto: string | null | undefined): foto is string {
 }
 
 /**
- * Deduce el nombre y el tipo del archivo a partir de la URI. El servidor
- * igual revisa el contenido: esto es solo lo que pide el multipart.
+ * Nombre de archivo para el multipart de web, donde la URI blob: no trae
+ * extensión. El servidor igual revisa el contenido: el nombre es solo informativo.
  * @param uri URI local de la foto
- * @returns nombre y tipo MIME
+ * @returns por ejemplo "foto.jpg"
  */
-function nombreYTipo(uri: string): { name: string; type: string } {
+function nombreArchivo(uri: string): string {
   const extension = uri.split(/[?#]/)[0]?.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() ?? '';
-  const conocida = extension in TIPOS_POR_EXTENSION ? extension : EXTENSION_POR_DEFECTO;
-  return { name: `foto.${conocida}`, type: TIPOS_POR_EXTENSION[conocida] ?? 'image/jpeg' };
+  return `foto.${EXTENSIONES_ACEPTADAS.includes(extension) ? extension : EXTENSION_POR_DEFECTO}`;
 }
 
 /**
- * Arma el FormData con la foto. En iOS y Android, React Native acepta
- * `{ uri, name, type }` y lee el archivo él mismo; en web hay que pasarle un
- * Blob de verdad, que se saca de la URI blob: con fetch.
+ * Arma el FormData con la foto.
+ * - Web (blob:, data:): se lee la URI como Blob con fetch.
+ * - iOS y Android (file://, content://): un `File` de expo-file-system, que
+ *   `expo/fetch` lee con `bytes()`. Trae su nombre y su tipo de la URI.
  * @param uri URI local de la foto
  * @returns el cuerpo del pedido
+ * @throws si el archivo temporal ya no existe
  */
 async function armarFormData(uri: string): Promise<FormData> {
-  const { name, type } = nombreYTipo(uri);
   const datos = new FormData();
   if (ESQUEMAS_BLOB.some((esquema) => uri.startsWith(esquema))) {
     const blob = await (await fetch(uri)).blob();
-    datos.append(CAMPO_FOTO, blob, name);
-  } else {
-    // Los tipos de FormData son los de la web (string o Blob); el objeto
-    // { uri, name, type } es la forma propia de React Native para un archivo.
-    datos.append(CAMPO_FOTO, { uri, name, type } as unknown as Blob);
+    datos.append(CAMPO_FOTO, blob, nombreArchivo(uri));
+    return datos;
   }
+  const archivo = new File(uri);
+  if (!archivo.exists) throw new Error(MENSAJE_FOTO_PERDIDA);
+  datos.append(CAMPO_FOTO, archivo);
   return datos;
 }
 
