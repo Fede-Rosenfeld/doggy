@@ -40,10 +40,10 @@ import { useApp } from '@/context/AppContext';
 import { useFototeca } from '@/hooks/useFototeca';
 import { Coordenadas, DireccionLegible, useUbicacion } from '@/hooks/useUbicacion';
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
-import type { Mascota } from '@/types/models';
+import { ErrorApi } from '@/services/http';
+import type { MascotaPublica } from '@/types/models';
 import { CODIGO_MASCOTA_REGEX } from '@/utils/codigos';
 import { CENTRO_CABA } from '@/utils/mapa';
-import { buscarMascotaPorCodigo } from '@/utils/selectores';
 import {
   LIMITES,
   limpiarTexto,
@@ -66,7 +66,7 @@ const SIN_NOMBRE = 'Sin identificar';
  * @returns el formulario de reporte
  */
 export default function ReportarScreen() {
-  const { mascotas, crearReporte } = useApp();
+  const { buscarMascotaPorCodigo, crearReporte } = useApp();
   const gps = useUbicacion({ automatico: true });
   const fototeca = useFototeca();
   const insets = useSafeAreaInsets();
@@ -89,9 +89,10 @@ export default function ReportarScreen() {
   // --- Precarga ---
   /**
    * Completa el formulario con los datos de la mascota identificada por el QR.
-   * @param mascota mascota registrada en la app
+   * Su id viaja como `mascotaId` del reporte, aunque sea de otra familia.
+   * @param mascota datos públicos de la mascota que devolvió el servidor
    */
-  const precargar = useCallback((mascota: Mascota) => {
+  const precargar = useCallback((mascota: MascotaPublica) => {
     setMascotaId(mascota.id);
     setNombre(mascota.nombre);
     setRaza(mascota.raza);
@@ -120,22 +121,33 @@ export default function ReportarScreen() {
 
   // --- Handlers ---
   /**
-   * Procesa el texto leído del QR: valida el formato y busca la mascota.
+   * Procesa el texto leído del QR: valida el formato y busca la mascota en el
+   * servidor (no en `mascotas`, que son solo las del usuario).
    * @param codigo texto del QR
-   * @returns si se pudo identificar a la mascota
+   * @returns si se pudo identificar a la mascota y, si no, por qué
    */
-  const handleLectura = (codigo: string): ResultadoLectura => {
+  const handleLectura = async (codigo: string): Promise<ResultadoLectura> => {
     const normalizado = codigo.trim().toUpperCase();
     if (!CODIGO_MASCOTA_REGEX.test(normalizado)) {
-      return { ok: false, mensaje: 'Ese QR no es de una chapita Doggy.' };
+      return { ok: false, motivo: 'no-reconocido', mensaje: 'Ese QR no es de una chapita Doggy.' };
     }
-    const mascota = buscarMascotaPorCodigo(mascotas, normalizado);
-    if (!mascota) {
-      return { ok: false, mensaje: `No encontramos ninguna mascota registrada con el código ${normalizado}.` };
+    try {
+      const mascota = await buscarMascotaPorCodigo(normalizado);
+      if (!mascota) {
+        return {
+          ok: false,
+          motivo: 'no-reconocido',
+          mensaje: `No encontramos ninguna mascota registrada con el código ${normalizado}.`,
+        };
+      }
+      precargar(mascota);
+      setAviso(`Identificamos a ${mascota.nombre}. Revisá los datos y confirmá el reporte.`);
+      return { ok: true };
+    } catch (e) {
+      // Si el servidor respondió, es un error suyo; si no, no hubo conexión.
+      const mensaje = e instanceof Error ? e.message : 'Intentá de nuevo.';
+      return { ok: false, motivo: e instanceof ErrorApi ? 'error' : 'sin-conexion', mensaje };
     }
-    precargar(mascota);
-    setAviso(`Identificamos a ${mascota.nombre}. Revisá los datos y confirmá el reporte.`);
-    return { ok: true };
   };
 
   /**

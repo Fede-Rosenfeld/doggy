@@ -135,17 +135,6 @@ export function filtrarReportes(
 }
 
 /**
- * Busca la mascota que corresponde a un código leído de un QR.
- * @param mascotas mascotas cargadas
- * @param codigo texto leído (se normaliza a mayúsculas y sin espacios)
- * @returns la mascota o undefined
- */
-export function buscarMascotaPorCodigo(mascotas: Mascota[], codigo: string): Mascota | undefined {
-  const normalizado = codigo.trim().toUpperCase();
-  return mascotas.find((m) => m.codigo === normalizado);
-}
-
-/**
  * Reporte de "perdido" activo de una mascota, si tiene (el más reciente).
  * @param reportes todos los reportes
  * @param mascotaId id de la mascota

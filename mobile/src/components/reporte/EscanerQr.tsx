@@ -8,7 +8,9 @@
  * PERMISO: cámara (NSCameraUsageDescription / CAMERA), con el texto del plugin
  * de expo-camera en app.json. La vibración no pide permiso.
  * POR QUÉ: quien encuentra un perro en la calle escanea el QR de su chapita y
- * la app completa sola el nombre, las señas y la foto, sin tipear nada.
+ * la app completa sola el nombre, las señas y la foto, sin tipear nada. El
+ * código se busca en el servidor (lo hace `onLectura`), así que la lectura
+ * es asíncrona: mientras dura, el lector queda bloqueado y se ve "Buscando…".
  *
  * La cámara solo se monta cuando el usuario toca "Escanear" y se desmonta al
  * leer un código o al cerrar la pantalla, para no gastar batería. Después de
@@ -26,12 +28,25 @@ import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import { Badge } from '../Badge';
 import { PermissionNotice } from '../PermissionNotice';
 
-/** Resultado de procesar un código leído. */
-export type ResultadoLectura = { ok: true } | { ok: false; mensaje: string };
+/**
+ * Resultado de procesar un código leído. Si falla, `motivo` decide el título
+ * del aviso y la vibración: `no-reconocido` (no es de Doggy o no existe),
+ * `sin-conexion` (no se pudo llegar al servidor) o `error` (el servidor falló).
+ */
+export type ResultadoLectura =
+  | { ok: true }
+  | { ok: false; motivo: 'no-reconocido' | 'sin-conexion' | 'error'; mensaje: string };
 
 type Props = {
-  /** Recibe el texto del QR y dice si corresponde a una mascota. */
-  onLectura: (codigo: string) => ResultadoLectura;
+  /** Recibe el texto del QR, busca la mascota y dice si la encontró. */
+  onLectura: (codigo: string) => Promise<ResultadoLectura>;
+};
+
+/** Título del aviso según por qué falló la lectura. */
+const TITULO_FALLA: Record<Extract<ResultadoLectura, { ok: false }>['motivo'], string> = {
+  'no-reconocido': 'Código no reconocido',
+  'sin-conexion': 'Sin conexión',
+  error: 'No pudimos buscar la mascota',
 };
 
 /** Alto del visor de la cámara. */
@@ -57,6 +72,7 @@ export function EscanerQr({ onLectura }: Props) {
   const [bloqueado, setBloqueado] = useState(false);
   const [denegado, setDenegado] = useState(false);
   const [leyendoImagen, setLeyendoImagen] = useState(false);
+  const [buscando, setBuscando] = useState(false);
   // El ref corta en el acto; el estado además saca el callback del CameraView.
   const bloqueoRef = useRef(false);
 
@@ -68,12 +84,15 @@ export function EscanerQr({ onLectura }: Props) {
   };
 
   /**
-   * Procesa un código: si corresponde a una mascota vibra con éxito y apaga
-   * la cámara; si no, avisa y deja reintentar.
+   * Procesa un código: lo busca y, si corresponde a una mascota, vibra con
+   * éxito y apaga la cámara. Si no la reconoce vibra con error; si no hubo
+   * conexión, con una advertencia. En los dos casos avisa y deja reintentar.
    * @param codigo texto leído del QR
    */
-  const procesar = (codigo: string) => {
-    const resultado = onLectura(codigo);
+  const procesar = async (codigo: string) => {
+    setBuscando(true);
+    const resultado = await onLectura(codigo);
+    setBuscando(false);
     if (resultado.ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setActivo(false);
@@ -81,8 +100,12 @@ export function EscanerQr({ onLectura }: Props) {
       desbloquear();
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    Alert.alert('Código no reconocido', resultado.mensaje, [
+    Haptics.notificationAsync(
+      resultado.motivo === 'no-reconocido'
+        ? Haptics.NotificationFeedbackType.Error
+        : Haptics.NotificationFeedbackType.Warning,
+    );
+    Alert.alert(TITULO_FALLA[resultado.motivo], resultado.mensaje, [
       { text: 'Reintentar', onPress: desbloquear },
     ]);
   };
@@ -131,8 +154,10 @@ export function EscanerQr({ onLectura }: Props) {
         Alert.alert('Sin QR', 'No encontramos un código QR en esa imagen. Probá con una más nítida.');
         return;
       }
-      desbloquear();
-      procesar(resultados[0].data);
+      // Se bloquea el lector de la cámara mientras se busca el código de la imagen.
+      bloqueoRef.current = true;
+      setBloqueado(true);
+      await procesar(resultados[0].data);
     } catch {
       Alert.alert(
         'No disponible',
@@ -166,8 +191,12 @@ export function EscanerQr({ onLectura }: Props) {
             />
             <View style={styles.filaSuperior}>
               <View style={styles.pildoraOscura}>
-                <MaterialIcons name="center-focus-strong" size={14} color={colors.mustard} />
-                <Text style={styles.pildoraOscuraTexto}>Escaneando...</Text>
+                {buscando ? (
+                  <ActivityIndicator size="small" color={colors.mustard} />
+                ) : (
+                  <MaterialIcons name="center-focus-strong" size={14} color={colors.mustard} />
+                )}
+                <Text style={styles.pildoraOscuraTexto}>{buscando ? 'Buscando…' : 'Escaneando...'}</Text>
               </View>
               <View style={styles.controles}>
                 <BotonRedondo
