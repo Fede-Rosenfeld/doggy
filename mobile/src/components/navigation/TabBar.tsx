@@ -13,10 +13,10 @@ import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 
 /**
  * Dibuja la barra de tabs.
- * @param props estado del navigator, descriptores de cada ruta, navigation e insets
+ * @param props estado del navigator, descriptores de cada ruta, emisor de eventos, navigateToTab e insets
  * @returns la barra con un botón por tab
  */
-export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
+export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: BottomTabBarProps) {
   return (
     <View style={[styles.bar, { paddingBottom: insets.bottom + spacing.sm }]}>
       {state.routes.map((route, index) => {
@@ -29,13 +29,13 @@ export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarP
 
         /** Navega a la tab salvo que ya esté activa o algún listener lo cancele. */
         const handlePress = () => {
-          const event = navigation.emit({
+          const event = emitter.emit({
             type: 'tabPress',
             target: route.key,
             canPreventDefault: true,
           });
           if (!focused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
+            navigateToTab(route.key);
           }
         };
 
