@@ -1,14 +1,22 @@
 /**
  * Card de un turno de la Agenda: hora, categoría, mascota, motivo y lugar,
  * con un borde izquierdo del color de la categoría. El lápiz abre la edición.
+ *
+ * Gestos: deslizar la card a la izquierda muestra "Eliminar", que pide
+ * confirmación y borra el turno (ver `DeslizarParaBorrar`, donde están el
+ * umbral y la háptica). La alternativa tocable es el botón "Eliminar" del
+ * formulario de edición.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
+import { useApp } from '@/context/AppContext';
+import { useConfirmarBorrado } from '@/hooks/useConfirmarBorrado';
+import { colors, radius, sizes, spacing, typography } from '@/theme';
 import type { Turno } from '@/types/models';
 import { categoriaTurno } from '@/utils/etiquetas';
 import { formatearHora } from '@/utils/fechas';
+import { DeslizarParaBorrar } from '../DeslizarParaBorrar';
 
 type Props = {
   turno: Turno;
@@ -19,7 +27,7 @@ type Props = {
 };
 
 /**
- * Card de turno.
+ * Card de turno, deslizable para borrar.
  * @param props.turno turno a mostrar
  * @param props.mascota nombre de la mascota
  * @param props.onEditar se llama al tocar el lápiz
@@ -27,31 +35,52 @@ type Props = {
  */
 export function TurnoCard({ turno, mascota, onEditar }: Props) {
   const categoria = categoriaTurno(turno.categoria);
+  const { borrarTurno } = useApp();
+  const { pedirBorrado } = useConfirmarBorrado();
 
+  // --- Handlers ---
+  /**
+   * Confirma y borra el turno; si se cancela o falla, la card vuelve a su lugar.
+   * @param cerrar cierra el swipe
+   */
+  const handleEliminar = (cerrar: () => void) => {
+    pedirBorrado({
+      titulo: '¿Eliminar este turno?',
+      mensaje: `${turno.motivo} de ${mascota}, ${formatearHora(turno.fecha)} h. No se puede deshacer.`,
+      borrar: () => borrarTurno(turno.id),
+      onDescartado: cerrar,
+    });
+  };
+
+  // --- Render ---
   return (
-    <View style={[styles.card, { borderLeftColor: categoria.color }]}>
-      <View style={styles.info}>
-        <View style={styles.fila}>
-          <Text style={styles.hora}>{formatearHora(turno.fecha)}</Text>
-          <View style={[styles.chip, { backgroundColor: categoria.chipFondo }]}>
-            <Text style={[styles.chipTexto, { color: categoria.chipTexto }]}>{categoria.chip}</Text>
+    <DeslizarParaBorrar etiqueta={`Eliminar turno de ${mascota}`} onEliminar={handleEliminar}>
+      <View style={[styles.card, { borderLeftColor: categoria.color }]}>
+        <View style={styles.info}>
+          <View style={styles.fila}>
+            <Text style={styles.hora}>{formatearHora(turno.fecha)}</Text>
+            <View style={[styles.chip, { backgroundColor: categoria.chipFondo }]}>
+              <Text style={[styles.chipTexto, { color: categoria.chipTexto }]}>
+                {categoria.chip}
+              </Text>
+            </View>
+            <Text style={styles.mascota} numberOfLines={1}>
+              • {mascota}
+            </Text>
           </View>
-          <Text style={styles.mascota} numberOfLines={1}>
-            • {mascota}
-          </Text>
+          <Text style={styles.motivo}>{turno.motivo}</Text>
+          <Text style={styles.lugar}>{turno.lugar}</Text>
         </View>
-        <Text style={styles.motivo}>{turno.motivo}</Text>
-        <Text style={styles.lugar}>{turno.lugar}</Text>
+        <Pressable
+          onPress={() => onEditar(turno)}
+          accessibilityRole="button"
+          accessibilityLabel={`Editar turno de ${mascota}`}
+          style={({ pressed }) => [styles.editar, pressed && styles.editarPressed]}
+        >
+          <MaterialIcons name="edit" size={sizes.iconSm} color={colors.onSurfaceVariant} />
+        </Pressable>
       </View>
-      <Pressable
-        onPress={() => onEditar(turno)}
-        accessibilityRole="button"
-        accessibilityLabel={`Editar turno de ${mascota}`}
-        style={({ pressed }) => [styles.editar, pressed && styles.editarPressed]}
-      >
-        <MaterialIcons name="edit" size={sizes.iconSm} color={colors.onSurfaceVariant} />
-      </Pressable>
-    </View>
+    </DeslizarParaBorrar>
   );
 }
 
@@ -65,7 +94,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderLeftWidth: 4,
     backgroundColor: colors.surfaceContainerLowest,
-    ...shadows.level1,
   },
   info: {
     flex: 1,

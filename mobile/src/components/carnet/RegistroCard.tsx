@@ -8,16 +8,24 @@
  * aplicación, profesional y refuerzo (con "—" si no tiene). Las vacunas
  * suman una cuarta fila, "Etiqueta", con el link a la foto de la etiqueta
  * (o "—" si no se cargó), así todas las cards de la pestaña Vacunas quedan iguales.
+ *
+ * Gestos: deslizar la card a la izquierda muestra "Eliminar", que pide
+ * confirmación y borra el registro (ver `DeslizarParaBorrar`, donde están el
+ * umbral y la háptica). La alternativa tocable es el botón "Eliminar" del
+ * formulario de edición.
  */
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
+import { useApp } from '@/context/AppContext';
+import { useConfirmarBorrado } from '@/hooks/useConfirmarBorrado';
+import { colors, radius, sizes, spacing, typography } from '@/theme';
 import type { RegistroSanitario } from '@/types/models';
 import { TIPOS_REGISTRO } from '@/utils/etiquetas';
 import { formatearFecha } from '@/utils/fechas';
 import { Badge } from '../Badge';
+import { DeslizarParaBorrar } from '../DeslizarParaBorrar';
 import { IconButton } from '../IconButton';
 import { VerEtiqueta } from './VerEtiqueta';
 
@@ -42,64 +50,87 @@ function esVeterinario(profesional: string): boolean {
 }
 
 /**
- * Card del historial.
+ * Card del historial, deslizable para borrar.
  * @param props.registro registro a mostrar
  * @param props.onEditar se llama al tocar el lápiz
  * @returns la card
  */
 export function RegistroCard({ registro, onEditar }: Props) {
   const tipo = TIPOS_REGISTRO.find((t) => t.valor === registro.tipo) ?? TIPOS_REGISTRO[0];
+  const { borrarRegistro } = useApp();
+  const { pedirBorrado } = useConfirmarBorrado();
 
+  // --- Handlers ---
+  /**
+   * Confirma y borra el registro; si se cancela o falla, la card vuelve a su lugar.
+   * @param cerrar cierra el swipe
+   */
+  const handleEliminar = (cerrar: () => void) => {
+    pedirBorrado({
+      titulo: `¿Eliminar ${registro.nombre}?`,
+      mensaje: `Se borra la aplicación del ${formatearFecha(registro.fecha)} del carnet. No se puede deshacer.`,
+      borrar: () => borrarRegistro(registro.id),
+      onDescartado: cerrar,
+    });
+  };
+
+  // --- Render ---
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.icono}>
-          <MaterialIcons name={tipo.icono} size={sizes.iconMd} color={colors.primary} />
-        </View>
-        <View style={styles.titulo}>
-          <Text style={styles.nombre} numberOfLines={2}>
-            {registro.nombre}
-          </Text>
-          <Badge label="Aplicada" tone="teal" dot />
-        </View>
-        <IconButton
-          icon="edit"
-          label={`Editar ${registro.nombre}`}
-          onPress={() => onEditar(registro)}
-        />
-      </View>
-
-      <View style={styles.detalle}>
-        <Fila
-          icono={<MaterialIcons name="event" size={ICONO} color={colors.onSurfaceVariant} />}
-          etiqueta="Aplicación"
-          valor={formatearFecha(registro.fecha)}
-        />
-        <Fila
-          icono={
-            esVeterinario(registro.profesional) ? (
-              <MaterialCommunityIcons name="stethoscope" size={ICONO} color={colors.onSurfaceVariant} />
-            ) : (
-              <MaterialIcons name="local-hospital" size={ICONO} color={colors.onSurfaceVariant} />
-            )
-          }
-          etiqueta="Profesional"
-          valor={registro.profesional}
-        />
-        <Fila
-          icono={<MaterialIcons name="update" size={ICONO} color={colors.onSurfaceVariant} />}
-          etiqueta="Refuerzo"
-          valor={registro.proximaDosis ? formatearFecha(registro.proximaDosis) : '—'}
-        />
-        {registro.tipo === 'vacuna' && (
-          <Fila
-            icono={<MaterialIcons name="sell" size={ICONO} color={colors.onSurfaceVariant} />}
-            etiqueta="Etiqueta"
-            valor={registro.fotoEtiqueta ? <VerEtiqueta registro={registro} /> : '—'}
+    <DeslizarParaBorrar etiqueta={`Eliminar ${registro.nombre}`} onEliminar={handleEliminar}>
+      <View style={styles.card}>
+        <View style={styles.header}>
+          <View style={styles.icono}>
+            <MaterialIcons name={tipo.icono} size={sizes.iconMd} color={colors.primary} />
+          </View>
+          <View style={styles.titulo}>
+            <Text style={styles.nombre} numberOfLines={2}>
+              {registro.nombre}
+            </Text>
+            <Badge label="Aplicada" tone="teal" dot />
+          </View>
+          <IconButton
+            icon="edit"
+            label={`Editar ${registro.nombre}`}
+            onPress={() => onEditar(registro)}
           />
-        )}
+        </View>
+
+        <View style={styles.detalle}>
+          <Fila
+            icono={<MaterialIcons name="event" size={ICONO} color={colors.onSurfaceVariant} />}
+            etiqueta="Aplicación"
+            valor={formatearFecha(registro.fecha)}
+          />
+          <Fila
+            icono={
+              esVeterinario(registro.profesional) ? (
+                <MaterialCommunityIcons
+                  name="stethoscope"
+                  size={ICONO}
+                  color={colors.onSurfaceVariant}
+                />
+              ) : (
+                <MaterialIcons name="local-hospital" size={ICONO} color={colors.onSurfaceVariant} />
+              )
+            }
+            etiqueta="Profesional"
+            valor={registro.profesional}
+          />
+          <Fila
+            icono={<MaterialIcons name="update" size={ICONO} color={colors.onSurfaceVariant} />}
+            etiqueta="Refuerzo"
+            valor={registro.proximaDosis ? formatearFecha(registro.proximaDosis) : '—'}
+          />
+          {registro.tipo === 'vacuna' && (
+            <Fila
+              icono={<MaterialIcons name="sell" size={ICONO} color={colors.onSurfaceVariant} />}
+              etiqueta="Etiqueta"
+              valor={registro.fotoEtiqueta ? <VerEtiqueta registro={registro} /> : '—'}
+            />
+          )}
+        </View>
       </View>
-    </View>
+    </DeslizarParaBorrar>
   );
 }
 
@@ -138,7 +169,6 @@ const styles = StyleSheet.create({
     padding: spacing.containerMargin,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceContainerLowest,
-    ...shadows.level1,
   },
   header: {
     flexDirection: 'row',
