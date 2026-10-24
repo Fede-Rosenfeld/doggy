@@ -127,7 +127,8 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 ## Gestos (gesture-handler + reanimated)
 
 - Se anima con `useSharedValue` y `useAnimatedStyle`, en el hilo de UI.
-- `runOnJS` solo en `onEnd` (o en un callback final), **nunca** en `onUpdate`.
+- Se usa la API de hooks de gesture-handler 3 (`usePanGesture`, `useLongPressGesture`, `useExclusiveGestures`, etc.), no los builders `Gesture.*`. Ver la tabla "API de gestos" del README.
+- Se vuelve al hilo de JS con `scheduleOnRN` (de `react-native-worklets`, reemplaza a `runOnJS`) solo cuando el gesto se activa o termina (`onActivate`, `onDeactivate`), **nunca** en `onUpdate`. Para la háptica de un umbral, `useAnimatedReaction` que llama a `scheduleOnRN` solo en el cruce.
 - Todo gesto tiene una alternativa tocable (botón o ícono) que hace lo mismo, por accesibilidad. El gesto es un atajo, no la única forma.
 - Feedback con `expo-haptics` al cruzar un umbral (por ejemplo, cuando un swipe pasa el punto en que se va a confirmar), una sola vez por cruce.
 - Animar solo `transform` y `opacity`.

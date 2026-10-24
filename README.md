@@ -172,6 +172,54 @@ Tabs
 - **Permiso:** ninguno. El motor de vibración no pide permiso.
 - **Por qué:** la foto de la etiqueta de una vacuna tiene letra chica (lote, marca, fecha) y hace falta acercarla para leerla. En un reporte, ampliar la foto ayuda a reconocer las señas del perro. Arrastrar para cerrar y el doble tap son los gestos que cualquiera ya conoce de la galería del celular.
 
+### 2. Deslizar para borrar turnos y registros — `ReanimatedSwipeable` + `expo-haptics`
+
+- **Dónde:** las cards de turnos de la Agenda y las del historial del carnet sanitario. Implementado en `src/components/DeslizarParaBorrar.tsx`, que envuelve a `TurnoCard` y `RegistroCard`.
+- **Qué hace:**
+  - deslizar la card a la izquierda deja a la vista un botón rojo "Eliminar". Deslizar no borra nada;
+  - al tocar "Eliminar" aparece una confirmación nativa (`Alert`). Si se acepta, se borra en el servidor (`borrarTurno` / `borrarRegistro` del `AppContext`) y el celular vibra con la vibración de éxito;
+  - si se cancela o el servidor responde un error, se muestra el mensaje y la card vuelve a su lugar;
+  - al cruzar el umbral en el que la card va a quedar abierta, vibra una vez.
+  - Alternativa tocable: el botón "Eliminar" de los formularios de edición de turno y de registro (se abren con el lápiz de cada card).
+- **Cómo:**
+  - `ReanimatedSwipeable` sigue siendo el componente recomendado en gesture-handler 3.3 y ya está hecho con la API nueva (`usePanGesture` y `scheduleOnRN` por dentro). Se importa de `react-native-gesture-handler/ReanimatedSwipeable`;
+  - para que no se dispare sin querer: `friction` 2 (la card se mueve la mitad que el dedo), queda abierta solo si se soltó pasado el 60 % del botón (`rightThreshold`) y no arranca hasta moverse 20 px en horizontal (`dragOffsetFromRight`). Por eso un scroll vertical de la lista nunca lo activa;
+  - el botón aparece con `opacity` y `scale` según el progreso del swipe, en el hilo de UI. La vibración del umbral se dispara con `useAnimatedReaction`, que solo vuelve al hilo de JS en el cruce, no en cada cuadro;
+  - la confirmación, el borrado y la vibración están en `useConfirmarBorrado`, que usan tanto el swipe como los formularios.
+- **Permiso:** ninguno.
+- **Por qué:** borrar un turno cancelado o un registro cargado por error es frecuente, y deslizar es el gesto que cualquiera conoce de los mails y los mensajes. La confirmación evita borrar algo sin querer, porque no se puede deshacer.
+
+### 3. Mantener presionada una mascota para ver acciones rápidas — `useLongPressGesture` + `expo-haptics`
+
+- **Dónde:** las cards de "Mis Mascotas". Implementado en `src/components/PetCard.tsx` y `src/hooks/useMenuMascota.ts`.
+- **Qué hace:**
+  - mantener presionada la card 600 ms abre un menú con **Editar**, **Reportar como perdida** (o **Ya apareció** si tiene un reporte activo) y **Compartir QR**;
+  - mientras el dedo está apoyado la card se achica un poco, y al activarse vibra con un impacto medio. Al soltar, vuelve a su tamaño;
+  - un toque normal sigue abriendo el perfil.
+  - Alternativa tocable: las tres acciones están en el perfil de la mascota. Con lector de pantalla, la card ofrece la acción "Más opciones".
+- **Cómo:**
+  - `useExclusiveGestures(mantener, tocar)`: el long press tiene prioridad y el tap espera a que falle, que pasa apenas se levanta el dedo, así que no se nota demora;
+  - la escala es un shared value animado con `withSpring` (en `onBegin` baja y en `onFinalize` vuelve);
+  - solo se vuelve al hilo de JS (`scheduleOnRN`) cuando un gesto se activa, para navegar o abrir el menú;
+  - el menú es `ActionSheetIOS` en iOS y un `Alert` con botones en Android, como en `useFototeca`. El de Android admite como mucho tres botones: no lleva "Cancelar" y se cierra tocando afuera;
+  - "Ya apareció" reusa `useCerrarReporte` y "Compartir QR" reusa `compartirQr` (`src/utils/compartir.ts`), los mismos que el perfil.
+- **Permiso:** ninguno.
+- **Por qué:** cuando una mascota se pierde, cada segundo cuenta: desde el listado se puede reportar o compartir su QR sin entrar al perfil.
+
+### 4. Deslizar para cambiar de mes en el calendario — `useFlingGesture` + `expo-haptics`
+
+- **Dónde:** el calendario de la Agenda. Implementado en `src/components/agenda/Calendario.tsx`.
+- **Qué hace:**
+  - deslizar rápido a la izquierda pasa al mes siguiente, y a la derecha vuelve al anterior, con una vibración de selección;
+  - tocar un día sigue seleccionándolo.
+  - Alternativa tocable: las flechas del encabezado del calendario.
+- **Cómo:**
+  - dos `useFlingGesture`, uno con `Directions.LEFT` y otro con `Directions.RIGHT`, combinados en carrera con `useCompetingGestures`: el primero que se activa gana;
+  - el fling solo se activa con un movimiento rápido en esa dirección, así que no le gana a un toque. Cuando se activa, gesture-handler cancela el toque que había empezado sobre el día;
+  - solo se vuelve al hilo de JS (`scheduleOnRN`) al activarse, para vibrar (`Haptics.selectionAsync`) y cambiar de mes.
+- **Permiso:** ninguno.
+- **Por qué:** pasar de mes deslizando es más rápido que apuntar a una flecha chica, y es como funciona el calendario del celular.
+
 ### API de gestos: diferencias con la clase
 
 La clase usó la API de builders de gesture-handler 2 y `runOnJS` de Reanimated 3. El proyecto tiene `react-native-gesture-handler` 3.3, `react-native-reanimated` 4.7 y `react-native-worklets` 0.13 (SDK 58). En esas versiones, la API de la clase todavía funciona pero está marcada como `@deprecated`, así que se usó la nueva:
@@ -180,6 +228,9 @@ La clase usó la API de builders de gesture-handler 2 y `runOnJS` de Reanimated 
 | --- | --- | --- |
 | `Gesture.Pan()`, `Gesture.Pinch()`, `Gesture.Rotation()`, `Gesture.Tap()` | `usePanGesture`, `usePinchGesture`, `useRotationGesture`, `useTapGesture` | En gesture-handler 3 los builders están deprecados y se van a eliminar; los gestos pasan a ser hooks. |
 | `Gesture.Simultaneous(...)` / `Gesture.Exclusive(...)` | `useSimultaneousGestures(...)` / `useExclusiveGestures(...)` | Lo mismo: la composición también es un hook. |
+| `Gesture.LongPress().minDuration(600)`, `Gesture.Fling().direction(...)` | `useLongPressGesture({ minDuration: 600 })`, `useFlingGesture({ direction })` | Igual que los demás gestos. |
+| `Gesture.Race(...)` | `useCompetingGestures(...)` | Cambió el nombre además de pasar a hook. |
+| `Swipeable` de `react-native-gesture-handler/Swipeable` | `ReanimatedSwipeable` de `react-native-gesture-handler/ReanimatedSwipeable` | El `Swipeable` viejo ya no está en la versión 3. El nuevo se anima con Reanimated y combina gestos con `simultaneousWith`, `requireToFail` y `block`. |
 | Métodos encadenados: `.onBegin(...).onUpdate(...).numberOfTaps(2)` | Un objeto de configuración: `{ onBegin, onUpdate, numberOfTaps: 2 }` | Los hooks reciben toda la configuración junta. |
 | `onStart` / `onEnd` | `onActivate` / `onDeactivate` (`onBegin`, `onUpdate` y `onFinalize` siguen igual) | Cambiaron de nombre en la API nueva. |
 | `runOnJS(fn)(args)` de `react-native-reanimated` | `scheduleOnRN(fn, args)` de `react-native-worklets` | En Reanimated 4 los hilos pasaron a `react-native-worklets` y `runOnJS` quedó deprecado. |
