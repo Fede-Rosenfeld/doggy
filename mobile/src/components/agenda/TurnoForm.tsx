@@ -4,6 +4,8 @@
  *
  * Sirve para agendar y para editar: si recibe `turno`, arranca con sus datos
  * y al guardar lo reemplaza; si no, crea uno nuevo en el día elegido.
+ * En la edición suma el botón "Eliminar", la alternativa tocable al swipe
+ * de la `TurnoCard`.
  * Motivo y lugar tienen largo máximo y caracteres permitidos, y la fecha no
  * puede estar a más de 2 años (ver `validaciones.ts`).
  */
@@ -11,6 +13,7 @@ import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
+import { useConfirmarBorrado } from '@/hooks/useConfirmarBorrado';
 import { colors, spacing, typography } from '@/theme';
 import type { CategoriaTurno, NuevoTurno, Turno } from '@/types/models';
 import { CATEGORIAS_TURNO } from '@/utils/etiquetas';
@@ -41,6 +44,8 @@ type Props = {
   turno?: Turno;
   /** Se llama con el turno ya guardado. */
   onGuardado: (turno: Turno) => void;
+  /** Se llama cuando el turno que se editaba se eliminó. */
+  onBorrado: () => void;
 };
 
 type Campo = 'mascota' | 'fecha' | 'hora' | 'motivo' | 'lugar';
@@ -62,11 +67,12 @@ function combinarFechaHora(fecha: string, hora: string): Date | null {
 
 /**
  * Formulario de alta o edición de turno.
- * @param props día inicial, turno a editar (opcional) y callback con el turno guardado
+ * @param props día inicial, turno a editar (opcional) y callbacks al guardar y al eliminar
  * @returns el formulario
  */
-export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
-  const { mascotas, agregarTurno, editarTurno } = useApp();
+export function TurnoForm({ diaInicial, turno, onGuardado, onBorrado }: Props) {
+  const { mascotas, agregarTurno, editarTurno, borrarTurno } = useApp();
+  const { borrando, pedirBorrado } = useConfirmarBorrado();
   /** Fecha y hora originales del turno que se edita, en el formato de los campos. */
   const original = turno
     ? { fecha: fechaATexto(parsearFecha(turno.fecha)), hora: horaATexto(parsearFecha(turno.fecha)) }
@@ -151,6 +157,17 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
     } finally {
       setGuardando(false);
     }
+  };
+
+  /** Confirma y elimina el turno que se está editando. */
+  const handleEliminar = () => {
+    if (!turno) return;
+    pedirBorrado({
+      titulo: '¿Eliminar este turno?',
+      mensaje: 'Se borra de la agenda. No se puede deshacer.',
+      borrar: () => borrarTurno(turno.id),
+      onBorrado,
+    });
   };
 
   // --- Render ---
@@ -267,8 +284,20 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
         icon={turno ? 'check' : 'event-available'}
         onPress={handleGuardar}
         loading={guardando}
+        disabled={borrando}
         style={styles.boton}
       />
+      {turno && (
+        <PrimaryButton
+          title="Eliminar turno"
+          icon="delete-outline"
+          iconLeft
+          variant="danger"
+          onPress={handleEliminar}
+          loading={borrando}
+          disabled={guardando}
+        />
+      )}
     </View>
   );
 }

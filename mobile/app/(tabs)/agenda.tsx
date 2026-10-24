@@ -4,7 +4,8 @@
  * El calendario marca con puntos de color los días con turnos (una categoría
  * por color). Al elegir un día se listan sus turnos debajo. "Nuevo turno"
  * abre un formulario que agrega el turno al contexto y selecciona su día; el
- * lápiz de cada turno abre el mismo formulario con sus datos para editarlo.
+ * lápiz de cada turno abre el mismo formulario con sus datos para editarlo
+ * (o eliminarlo). Deslizar un turno a la izquierda también deja eliminarlo.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -187,6 +188,7 @@ export default function AgendaScreen() {
           diaInicial={seleccionado}
           turno={editando ?? undefined}
           onGuardado={handleGuardado}
+          onBorrado={cerrarFormulario}
         />
       </FormModal>
     </View>

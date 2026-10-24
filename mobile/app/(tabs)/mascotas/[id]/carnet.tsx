@@ -6,7 +6,8 @@
  * (sale de la `proximaDosis` de las aplicaciones) y el historial, donde todos
  * los registros son aplicaciones hechas. El FAB abre un formulario para
  * sumar un registro, y el lápiz de cada card abre el mismo formulario con
- * los datos cargados para corregirlo.
+ * los datos cargados para corregirlo (o eliminarlo). Deslizar una card a
+ * la izquierda también deja eliminarla.
  */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -177,6 +178,7 @@ export default function CarnetSanitarioScreen() {
           tipoInicial={tipo}
           registro={editando ?? undefined}
           onGuardado={handleGuardado}
+          onBorrado={cerrarFormulario}
         />
       </FormModal>
     </View>

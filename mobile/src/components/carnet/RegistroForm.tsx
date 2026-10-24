@@ -7,7 +7,8 @@
  * pendientes). Se muestra dentro de un FormModal.
  *
  * Sirve para dar de alta y para corregir: si recibe `registro`, arranca con
- * sus datos y al guardar lo reemplaza; si no, crea uno nuevo.
+ * sus datos y al guardar lo reemplaza; si no, crea uno nuevo. Al corregir
+ * suma el botón "Eliminar", la alternativa tocable al swipe de la `RegistroCard`.
  * Nombre y profesional tienen largo máximo y caracteres permitidos (ver
  * `validaciones.ts`).
  */
@@ -15,6 +16,7 @@ import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
+import { useConfirmarBorrado } from '@/hooks/useConfirmarBorrado';
 import { colors, spacing, typography } from '@/theme';
 import type { NuevoRegistro, RegistroSanitario, TipoRegistro } from '@/types/models';
 import { TIPOS_REGISTRO } from '@/utils/etiquetas';
@@ -39,6 +41,8 @@ type Props = {
   registro?: RegistroSanitario;
   /** Se llama con el registro ya guardado. */
   onGuardado: (registro: RegistroSanitario) => void;
+  /** Se llama cuando el registro que se corregía se eliminó. */
+  onBorrado: () => void;
 };
 
 type Campo = 'nombre' | 'fecha' | 'profesional' | 'proximaDosis';
@@ -56,8 +60,9 @@ const EJEMPLOS: Record<TipoRegistro, string> = {
  * @param props ver `Props`
  * @returns el formulario
  */
-export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: Props) {
-  const { agregarRegistro, editarRegistro } = useApp();
+export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado, onBorrado }: Props) {
+  const { agregarRegistro, editarRegistro, borrarRegistro } = useApp();
+  const { borrando, pedirBorrado } = useConfirmarBorrado();
 
   // --- Estado ---
   // Las fechas se editan como dd/mm/aaaa: las del registro se pasan a ese formato.
@@ -136,6 +141,17 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
     } finally {
       setGuardando(false);
     }
+  };
+
+  /** Confirma y elimina el registro que se está corrigiendo. */
+  const handleEliminar = () => {
+    if (!registro) return;
+    pedirBorrado({
+      titulo: `¿Eliminar ${registro.nombre}?`,
+      mensaje: 'Se borra esta aplicación del carnet. No se puede deshacer.',
+      borrar: () => borrarRegistro(registro.id),
+      onBorrado,
+    });
   };
 
   // --- Render ---
@@ -231,8 +247,20 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
         icon="check"
         onPress={handleGuardar}
         loading={guardando}
+        disabled={borrando}
         style={styles.boton}
       />
+      {registro && (
+        <PrimaryButton
+          title="Eliminar registro"
+          icon="delete-outline"
+          iconLeft
+          variant="danger"
+          onPress={handleEliminar}
+          loading={borrando}
+          disabled={guardando}
+        />
+      )}
     </View>
   );
 }
