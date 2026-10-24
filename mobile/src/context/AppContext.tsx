@@ -46,6 +46,7 @@ import type {
   DatosUsuario,
   Invitacion,
   Mascota,
+  MascotaPublica,
   NuevaMascota,
   NuevoRegistro,
   NuevoReporte,
@@ -86,6 +87,8 @@ type AppContextValue = {
   cerrarSesion: () => Promise<void>;
   agregarMascota: (datos: NuevaMascota) => Promise<Mascota>;
   editarMascota: (id: number, cambios: Partial<NuevaMascota>) => Promise<Mascota>;
+  /** Busca cualquier mascota por el código de su QR (null si no existe). No toca el estado. */
+  buscarMascotaPorCodigo: (codigo: string) => Promise<MascotaPublica | null>;
   crearReporte: (datos: NuevoReporte) => Promise<ReportePerdida>;
   editarReporte: (id: number, cambios: CambiosReporte) => Promise<ReportePerdida>;
   /** Cierra un reporte porque la mascota apareció: sale del mapa. */
@@ -373,6 +376,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return actualizado;
   }, []);
 
+  /**
+   * Busca una mascota por el código de su chapita en el servidor, no en
+   * `mascotas`: quien encuentra un perro casi nunca está asignado a él.
+   */
+  const buscarMascotaPorCodigo = useCallback(
+    (codigo: string) => mascotasService.buscarMascotaPorCodigo(codigo),
+    [],
+  );
+
   /** Genera un código de asignación (solo si el usuario es dueño de la mascota). */
   const generarInvitacion = useCallback(
     (mascota: Mascota, rol: RolMascota) => cuidadoresService.crearInvitacion(mascota, rol),
@@ -434,6 +446,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cerrarSesion,
       agregarMascota,
       editarMascota,
+      buscarMascotaPorCodigo,
       crearReporte,
       editarReporte,
       cerrarReporte,
@@ -465,6 +478,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cerrarSesion,
       agregarMascota,
       editarMascota,
+      buscarMascotaPorCodigo,
       crearReporte,
       editarReporte,
       cerrarReporte,

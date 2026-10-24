@@ -2,10 +2,11 @@
  * Service de mascotas del usuario.
  *
  * El servidor devuelve solo las mascotas a las que está asignado el usuario
- * (como dueño o invitado) y solo deja modificar esas.
+ * (como dueño o invitado) y solo deja modificar esas. La excepción es la
+ * búsqueda por el código del QR, que trae los datos públicos de cualquiera.
  */
-import type { Mascota, NuevaMascota } from '@/types/models';
-import { conCuerpo, pedirJson } from './http';
+import type { Mascota, MascotaPublica, NuevaMascota } from '@/types/models';
+import { conCuerpo, ErrorApi, pedirJson } from './http';
 
 /**
  * Lista las mascotas a las que está asignado el usuario.
@@ -14,6 +15,23 @@ import { conCuerpo, pedirJson } from './http';
  */
 export async function obtenerMascotas(): Promise<Mascota[]> {
   return pedirJson<Mascota[]>('/api/mascotas');
+}
+
+/**
+ * Busca una mascota por el código del QR de su chapita, aunque el usuario no
+ * esté asignado a ella (quien encuentra un perro casi nunca es su dueño).
+ * Endpoint: GET /api/mascotas/codigo/:codigo -> 200 MascotaPublica | 400 | 404
+ * @param codigo código DOGGY-XXXX-NOMBRE (el servidor acepta minúsculas y espacios alrededor)
+ * @returns los datos públicos de la mascota, o null si no hay ninguna con ese código
+ * @throws `ErrorApi` si el servidor respondió otro error, o `Error` si no hubo conexión
+ */
+export async function buscarMascotaPorCodigo(codigo: string): Promise<MascotaPublica | null> {
+  try {
+    return await pedirJson<MascotaPublica>(`/api/mascotas/codigo/${encodeURIComponent(codigo.trim())}`);
+  } catch (error) {
+    if (error instanceof ErrorApi && error.status === 404) return null;
+    throw error;
+  }
 }
 
 /**

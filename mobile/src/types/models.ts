@@ -33,6 +33,12 @@ export type Mascota = {
   foto: string | null;
 };
 
+/**
+ * Lo que devuelve el servidor de una mascota buscada por el código de su
+ * chapita: solo lo necesario para identificarla, aunque sea de otra familia.
+ */
+export type MascotaPublica = Pick<Mascota, 'id' | 'nombre' | 'raza' | 'senas' | 'foto' | 'codigo'>;
+
 export type TipoRegistro = 'vacuna' | 'desparasitacion' | 'otro';
 /**
  * Entrada del carnet sanitario de una mascota. Todo registro es una
