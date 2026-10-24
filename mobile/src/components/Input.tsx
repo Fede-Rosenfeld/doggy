@@ -2,8 +2,9 @@
  * Campo de texto de la app.
  *
  * Label arriba, ícono a la izquierda, borde teal claro con foco y mensaje de
- * error debajo. Con `password` oculta el texto y agrega el botón de
- * mostrar/ocultar. Con `multiline` crece para textos largos (señas, descripciones)
+ * error debajo. Con `password` oculta el texto, agrega el botón de
+ * mostrar/ocultar y apaga la mayúscula automática y el corrector (el teclado
+ * de iOS los aplica aunque el texto esté oculto); el padre igual puede pisarlos. Con `multiline` crece para textos largos (señas, descripciones)
  * y, si tiene `maxLength`, muestra debajo cuántos caracteres van del máximo.
  * Acepta el resto de las props de TextInput.
  */
@@ -22,6 +23,9 @@ import {
 import { colors, radius, sizes, spacing, typography } from '@/theme';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
+
+/** Defaults de un campo de contraseña: se manda tal cual se escribió. */
+const PROPS_CONTRASENA: TextInputProps = { autoCapitalize: 'none', autoCorrect: false, spellCheck: false };
 
 type Props = Omit<TextInputProps, 'secureTextEntry' | 'style'> & {
   /** Texto arriba del campo; si no viene (por ejemplo, un buscador) se usa el placeholder como nombre accesible. */
@@ -92,6 +96,7 @@ export const Input = forwardRef<TextInputInstance, Props>(function Input(
           onFocus={handleFocus}
           onBlur={handleBlur}
           accessibilityLabel={label ?? inputProps.placeholder}
+          {...(password && PROPS_CONTRASENA)}
           {...inputProps}
         />
         {password && (
