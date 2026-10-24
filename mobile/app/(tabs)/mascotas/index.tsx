@@ -2,7 +2,8 @@
  * Pantalla Mis Mascotas (primera tab).
  *
  * Lista las mascotas del usuario que vienen del contexto global. Tocar una
- * card abre su perfil y el FAB mostaza lleva al alta de una mascota nueva.
+ * card abre su perfil, mantenerla presionada abre un menú de acciones
+ * rápidas (ver `PetCard`) y el FAB mostaza lleva al alta de una mascota nueva.
  */
 import { router } from 'expo-router';
 import { useCallback } from 'react';
