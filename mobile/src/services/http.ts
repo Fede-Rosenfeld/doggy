@@ -3,6 +3,8 @@
  *
  * `pedirJson` es para las respuestas con body (GET, POST, PATCH) y
  * `pedirSinRespuesta` para los 204 de los DELETE, que no traen nada para leer.
+ * Si el body es un FormData (subir una foto), no se pone `Content-Type`:
+ * fetch lo arma solo con el boundary del multipart.
  * Los dos lanzan un `Error` con el mensaje del servidor si algo sale mal.
  *
  * Sesión: si hay un token, cada pedido lo manda en `Authorization: Bearer`.
@@ -40,12 +42,14 @@ export function registrarAlVencerSesion(fn: (() => void) | null): void {
 }
 
 /**
- * Arma los headers de un pedido: JSON y, si hay sesión, el token.
+ * Arma los headers de un pedido: JSON (salvo que el body sea un FormData) y,
+ * si hay sesión, el token.
  * @param token token de la sesión, o null
+ * @param body body del pedido
  * @returns los headers
  */
-function armarHeaders(token: string | null): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+function armarHeaders(token: string | null, body: RequestInit['body']): Record<string, string> {
+  const headers: Record<string, string> = body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
@@ -54,18 +58,19 @@ function armarHeaders(token: string | null): Record<string, string> {
  * Hace un pedido a la API y revisa que haya salido bien.
  * @param ruta ruta de la API, por ejemplo "/api/mascotas"
  * @param opciones método, headers y body del fetch
+ * @param tiempoMaximoMs cuánto esperar la respuesta (más para subir una foto)
  * @returns la respuesta, sin leer el body
  * @throws con el `{ error }` del servidor, o con un mensaje de conexión si no
- *   respondió dentro de `TIEMPO_MAXIMO_MS`
+ *   respondió dentro de `tiempoMaximoMs`
  */
-async function pedir(ruta: string, opciones?: RequestInit): Promise<Response> {
+async function pedir(ruta: string, opciones?: RequestInit, tiempoMaximoMs = TIEMPO_MAXIMO_MS): Promise<Response> {
   const token = tokenDeSesion();
   const controlador = new AbortController();
-  const temporizador = setTimeout(() => controlador.abort(), TIEMPO_MAXIMO_MS);
+  const temporizador = setTimeout(() => controlador.abort(), tiempoMaximoMs);
   let response: Response;
   try {
     response = await fetch(`${API_URL}${ruta}`, {
-      headers: armarHeaders(token),
+      headers: armarHeaders(token, opciones?.body),
       ...opciones,
       signal: controlador.signal,
     });
@@ -110,11 +115,12 @@ async function sesionVencida(token: string): Promise<never> {
  * Hace un pedido a la API y devuelve el JSON.
  * @param ruta ruta de la API, por ejemplo "/api/mascotas"
  * @param opciones método, headers y body del fetch
+ * @param tiempoMaximoMs cuánto esperar la respuesta (por defecto `TIEMPO_MAXIMO_MS`)
  * @returns el cuerpo de la respuesta ya parseado
  * @throws igual que `pedir`
  */
-export async function pedirJson<T>(ruta: string, opciones?: RequestInit): Promise<T> {
-  const response = await pedir(ruta, opciones);
+export async function pedirJson<T>(ruta: string, opciones?: RequestInit, tiempoMaximoMs?: number): Promise<T> {
+  const response = await pedir(ruta, opciones, tiempoMaximoMs);
   return (await response.json()) as T;
 }
 
