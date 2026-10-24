@@ -5,7 +5,8 @@
  * `pedirSinRespuesta` para los 204 de los DELETE, que no traen nada para leer.
  * Si el body es un FormData (subir una foto), no se pone `Content-Type`:
  * fetch lo arma solo con el boundary del multipart.
- * Los dos lanzan un `Error` con el mensaje del servidor si algo sale mal.
+ * Los dos lanzan un `ErrorApi` (con el status) si el servidor respondió con
+ * un error, o un `Error` común si no se pudo llegar al servidor.
  *
  * Sesión: si hay un token, cada pedido lo manda en `Authorization: Bearer`.
  * Si el servidor responde 401 (la sesión venció o se cerró), se borra el
@@ -29,6 +30,25 @@ const MENSAJE_SIN_CONEXION = 'No pudimos conectarnos con el servidor. Revisá tu
  * un token que ya estaba cerrado (igual se borra el token local).
  */
 const RUTAS_CON_401_PROPIO = ['/api/auth/login', '/api/auth/logout'];
+
+/**
+ * Error que respondió el servidor: trae el status para los casos en que la
+ * app tiene que distinguirlo (por ejemplo, un 404 al buscar por código). Si
+ * no se pudo llegar al servidor se lanza un `Error` común, no este.
+ */
+export class ErrorApi extends Error {
+  /**
+   * @param status status HTTP de la respuesta
+   * @param mensaje el `{ error }` del servidor
+   */
+  constructor(
+    readonly status: number,
+    mensaje: string,
+  ) {
+    super(mensaje);
+    this.name = 'ErrorApi';
+  }
+}
 
 /** Qué hacer cuando la sesión vence. Lo registra el `AppContext`. */
 let alVencerSesion: (() => void) | null = null;
@@ -60,8 +80,8 @@ function armarHeaders(token: string | null, body: RequestInit['body']): Record<s
  * @param opciones método, headers y body del fetch
  * @param tiempoMaximoMs cuánto esperar la respuesta (más para subir una foto)
  * @returns la respuesta, sin leer el body
- * @throws con el `{ error }` del servidor, o con un mensaje de conexión si no
- *   respondió dentro de `tiempoMaximoMs`
+ * @throws `ErrorApi` con el status y el `{ error }` del servidor, o un `Error`
+ *   con un mensaje de conexión si no respondió dentro de `tiempoMaximoMs`
  */
 async function pedir(ruta: string, opciones?: RequestInit, tiempoMaximoMs = TIEMPO_MAXIMO_MS): Promise<Response> {
   const token = tokenDeSesion();
@@ -87,7 +107,7 @@ async function pedir(ruta: string, opciones?: RequestInit, tiempoMaximoMs = TIEM
   }
   if (!response.ok) {
     const cuerpo = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(cuerpo.error ?? `Error ${response.status} al llamar a ${ruta}`);
+    throw new ErrorApi(response.status, cuerpo.error ?? `Error ${response.status} al llamar a ${ruta}`);
   }
   return response;
 }
