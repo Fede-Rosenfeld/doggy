@@ -17,11 +17,15 @@
  * - Solo se vuelve al hilo de JS (`scheduleOnRN`) cuando el fling se activa.
  *
  * Alternativa tocable: las flechas del encabezado.
+ *
+ * En pantallas angostas (menos de 360 de ancho) el título va más chico y sin
+ * el ícono, así "Septiembre 2026" entra entero también en la web, donde
+ * `adjustsFontSizeToFit` no hace nada.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import {
   Directions,
   GestureDetector,
@@ -51,6 +55,8 @@ type Props = {
 const CELDA = 44;
 /** Máximo de puntos por día (uno por categoría). */
 const MAX_PUNTOS = 3;
+/** Ancho de pantalla por debajo del cual el título se achica y pierde el ícono. */
+const ANCHO_COMPACTO = 360;
 
 /**
  * Calendario con navegación entre meses.
@@ -68,6 +74,7 @@ export function Calendario({
 }: Props) {
   // La grilla solo se recalcula al cambiar de mes.
   const dias = useMemo(() => generarMes(anio, mes), [anio, mes]);
+  const compacto = useWindowDimensions().width < ANCHO_COMPACTO;
 
   /**
    * Cambia de mes desde el fling, con una vibración de selección. Corre en el
@@ -111,9 +118,11 @@ export function Calendario({
       <View style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titulo}>
-            <MaterialIcons name="calendar-month" size={sizes.iconMd - 2} color={colors.primary} />
+            {!compacto && (
+              <MaterialIcons name="calendar-month" size={sizes.iconMd - 2} color={colors.primary} />
+            )}
             <Text
-              style={styles.tituloTexto}
+              style={[styles.tituloTexto, compacto && styles.tituloCompacto]}
               numberOfLines={1}
               // En pantallas chicas "Septiembre 2026" se achica en vez de pisar las flechas.
               adjustsFontSizeToFit
@@ -256,6 +265,10 @@ const styles = StyleSheet.create({
     fontFamily: typography.headlineLg.fontFamily,
     color: colors.onSurface,
     flexShrink: 1,
+  },
+  tituloCompacto: {
+    fontSize: typography.bodyLg.fontSize,
+    lineHeight: typography.bodyLg.lineHeight,
   },
   flechas: {
     flexDirection: 'row',
