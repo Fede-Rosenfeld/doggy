@@ -12,7 +12,7 @@
  * `validaciones.ts`).
  */
 import { useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
 import { colors, spacing, typography } from '@/theme';
@@ -71,9 +71,9 @@ export function RegistroForm({ mascotaId, tipoInicial, registro, onGuardado }: P
   const [fotoEtiqueta, setFotoEtiqueta] = useState<string | null>(registro?.fotoEtiqueta ?? null);
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
-  const fechaRef = useRef<TextInput>(null);
-  const profesionalRef = useRef<TextInput>(null);
-  const proximaDosisRef = useRef<TextInput>(null);
+  const fechaRef = useRef<TextInputInstance>(null);
+  const profesionalRef = useRef<TextInputInstance>(null);
+  const proximaDosisRef = useRef<TextInputInstance>(null);
 
   /** Textos del tipo elegido ("Próximo refuerzo", "Próxima dosis"...). */
   const textos = TIPOS_REGISTRO.find((t) => t.valor === tipo) ?? TIPOS_REGISTRO[0];

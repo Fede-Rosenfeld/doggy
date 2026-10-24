@@ -13,7 +13,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { BackButton } from '@/components/BackButton';
 import { Input } from '@/components/Input';
@@ -78,10 +78,10 @@ export default function RegistroScreen() {
   const [form, setForm] = useState<Formulario>(FORM_INICIAL);
   const [errores, setErrores] = useState<Errores>({});
   const [enviando, setEnviando] = useState(false);
-  const apellidoRef = useRef<TextInput>(null);
-  const emailRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const confirmacionRef = useRef<TextInput>(null);
+  const apellidoRef = useRef<TextInputInstance>(null);
+  const emailRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
+  const confirmacionRef = useRef<TextInputInstance>(null);
 
   // --- Handlers ---
   /**

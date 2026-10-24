@@ -9,7 +9,7 @@
  * `onGuardar` corre, el botón muestra el estado de carga.
  */
 import { useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { AvisoPermisoFoto } from '@/components/AvisoPermisoFoto';
 import { FotoEditable } from '@/components/FotoEditable';
@@ -95,9 +95,9 @@ export function MascotaForm({ inicial, textoBoton = 'Guardar', onGuardar }: Prop
   const [form, setForm] = useState<Formulario>(() => aFormulario(inicial));
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
-  const razaRef = useRef<TextInput>(null);
-  const edadRef = useRef<TextInput>(null);
-  const senasRef = useRef<TextInput>(null);
+  const razaRef = useRef<TextInputInstance>(null);
+  const edadRef = useRef<TextInputInstance>(null);
+  const senasRef = useRef<TextInputInstance>(null);
 
   // --- Handlers ---
   /**

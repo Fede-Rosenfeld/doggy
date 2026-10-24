@@ -9,7 +9,15 @@
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import { ComponentProps, forwardRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextInputInstance,
+  TextInputProps,
+  View,
+} from 'react-native';
 
 import { colors, radius, sizes, spacing, typography } from '@/theme';
 
@@ -29,7 +37,7 @@ type Props = Omit<TextInputProps, 'secureTextEntry' | 'style'> & {
  * Input con label, ícono, foco, error y modo contraseña.
  * Se expone la ref del TextInput para poder pasar el foco al siguiente campo.
  */
-export const Input = forwardRef<TextInput, Props>(function Input(
+export const Input = forwardRef<TextInputInstance, Props>(function Input(
   { label, icon, error, password = false, onFocus, onBlur, ...inputProps },
   ref,
 ) {

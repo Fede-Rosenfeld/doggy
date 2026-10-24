@@ -9,7 +9,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useRef, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { Input } from '@/components/Input';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -42,7 +42,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errores, setErrores] = useState<Errores>({});
   const [enviando, setEnviando] = useState(false);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
 
   // --- Handlers ---
   /** Actualiza el email y limpia su error mientras el usuario corrige. */

@@ -8,7 +8,7 @@
  * puede estar a más de 2 años (ver `validaciones.ts`).
  */
 import { useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { useApp } from '@/context/AppContext';
 import { colors, spacing, typography } from '@/theme';
@@ -83,9 +83,9 @@ export function TurnoForm({ diaInicial, turno, onGuardado }: Props) {
   const [lugar, setLugar] = useState(turno?.lugar ?? '');
   const [errores, setErrores] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
-  const horaRef = useRef<TextInput>(null);
-  const motivoRef = useRef<TextInput>(null);
-  const lugarRef = useRef<TextInput>(null);
+  const horaRef = useRef<TextInputInstance>(null);
+  const motivoRef = useRef<TextInputInstance>(null);
+  const lugarRef = useRef<TextInputInstance>(null);
 
   // --- Handlers ---
   /**
