@@ -11,6 +11,11 @@
  * Cada acción llama primero al service (la API) y recién con la respuesta
  * actualiza el estado, siempre creando arrays nuevos. Si el servidor responde
  * con un error, la acción lo deja pasar para que la pantalla muestre el mensaje.
+ *
+ * Fotos: las acciones que guardan una foto (mascota, perfil, reporte y
+ * registro) pasan antes los datos por `conFotoSubida`, que sube la foto si es
+ * un archivo local del celular y manda la ruta del servidor. Si la subida
+ * falla, la acción lanza el error y no se guarda nada.
  */
 import {
   createContext,
@@ -27,6 +32,7 @@ import { router } from 'expo-router';
 import * as authService from '@/services/auth';
 import type { DatosRegistro, SesionAbierta } from '@/services/auth';
 import * as cuidadoresService from '@/services/cuidadores';
+import { conFotoSubida } from '@/services/fotos';
 import * as mascotasService from '@/services/mascotas';
 import * as registrosService from '@/services/registros';
 import * as reportesService from '@/services/reportes';
@@ -287,7 +293,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /** Crea una mascota, la suma al final de la lista y trae su asignación (el usuario como dueño). */
   const agregarMascota = useCallback(async (datos: NuevaMascota) => {
-    const nueva = await mascotasService.crearMascota(datos);
+    const nueva = await mascotasService.crearMascota(await conFotoSubida(datos, 'foto'));
     setMascotas((prev) => [...prev, nueva]);
     setCuidadores(await cuidadoresService.obtenerCuidadores());
     return nueva;
@@ -295,21 +301,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /** Modifica los datos de una mascota y la reemplaza en la lista. */
   const editarMascota = useCallback(async (id: number, cambios: Partial<NuevaMascota>) => {
-    const actualizada = await mascotasService.actualizarMascota(id, cambios);
+    const actualizada = await mascotasService.actualizarMascota(id, await conFotoSubida(cambios, 'foto'));
     setMascotas((prev) => prev.map((m) => (m.id === id ? actualizada : m)));
     return actualizada;
   }, []);
 
   /** Publica un reporte de mascota perdida o encontrada. */
   const crearReporte = useCallback(async (datos: NuevoReporte) => {
-    const nuevo = await reportesService.crearReporte(datos);
+    const nuevo = await reportesService.crearReporte(await conFotoSubida(datos, 'foto'));
     setReportes((prev) => [...prev, nuevo]);
     return nuevo;
   }, []);
 
   /** Modifica un reporte publicado y lo reemplaza en la lista. */
   const editarReporte = useCallback(async (id: number, cambios: CambiosReporte) => {
-    const actualizado = await reportesService.actualizarReporte(id, cambios);
+    const actualizado = await reportesService.actualizarReporte(id, await conFotoSubida(cambios, 'foto'));
     setReportes((prev) => prev.map((r) => (r.id === id ? actualizado : r)));
     return actualizado;
   }, []);
@@ -322,14 +328,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /** Agrega un registro al carnet sanitario. */
   const agregarRegistro = useCallback(async (datos: NuevoRegistro) => {
-    const nuevo = await registrosService.crearRegistro(datos);
+    const nuevo = await registrosService.crearRegistro(await conFotoSubida(datos, 'fotoEtiqueta'));
     setRegistros((prev) => [...prev, nuevo]);
     return nuevo;
   }, []);
 
   /** Corrige un registro del carnet y lo reemplaza en la lista. */
   const editarRegistro = useCallback(async (id: number, datos: NuevoRegistro) => {
-    const actualizado = await registrosService.actualizarRegistro(id, datos);
+    const actualizado = await registrosService.actualizarRegistro(id, await conFotoSubida(datos, 'fotoEtiqueta'));
     setRegistros((prev) => prev.map((r) => (r.id === id ? actualizado : r)));
     return actualizado;
   }, []);
@@ -362,7 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /** Actualiza los datos personales del usuario. */
   const actualizarUsuario = useCallback(async (datos: DatosUsuario) => {
-    const actualizado = await usuarioService.actualizarUsuario(datos);
+    const actualizado = await usuarioService.actualizarUsuario(await conFotoSubida(datos, 'foto'));
     setUsuario(actualizado);
     return actualizado;
   }, []);
