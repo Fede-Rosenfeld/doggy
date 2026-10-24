@@ -4,11 +4,31 @@
  * Recibe el mes a mostrar y las categorías de turnos de cada día (para los
  * puntos de color). La lógica de fechas está en utils/calendario.ts; acá solo
  * se dibuja la grilla, el día seleccionado, el de hoy y la leyenda.
+ *
+ * Gestos (react-native-gesture-handler 3):
+ * - Un fling (deslizar rápido) a la izquierda pasa al mes siguiente y a la
+ *   derecha vuelve al anterior, con una vibración de selección
+ *   (`expo-haptics`, el motor de vibración del celular, que no pide permiso).
+ * - Son dos `useFlingGesture`, uno por dirección, combinados en carrera con
+ *   `useCompetingGestures`: el primero que se activa gana.
+ * - El fling solo se activa con un movimiento rápido, así que no le gana a un
+ *   toque sobre un día; y cuando se activa, gesture-handler cancela el toque
+ *   que había empezado, así que un swipe sobre un día no lo selecciona.
+ * - Solo se vuelve al hilo de JS (`scheduleOnRN`) cuando el fling se activa.
+ *
+ * Alternativa tocable: las flechas del encabezado.
  */
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Directions,
+  GestureDetector,
+  useCompetingGestures,
+  useFlingGesture,
+} from 'react-native-gesture-handler';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { colors, radius, shadows, sizes, spacing, typography } from '@/theme';
 import type { CategoriaTurno } from '@/types/models';
@@ -50,6 +70,34 @@ export function Calendario({
   const dias = useMemo(() => generarMes(anio, mes), [anio, mes]);
 
   /**
+   * Cambia de mes desde el fling, con una vibración de selección. Corre en el
+   * hilo de JS: se llama con `scheduleOnRN`.
+   * @param delta 1 para el mes siguiente, -1 para el anterior
+   */
+  const cambiarMesConGesto = (delta: number) => {
+    Haptics.selectionAsync();
+    onCambiarMes(delta);
+  };
+
+  /** Fling a la izquierda: mes siguiente. */
+  const flingIzquierda = useFlingGesture({
+    direction: Directions.LEFT,
+    onActivate: () => {
+      scheduleOnRN(cambiarMesConGesto, 1);
+    },
+  });
+
+  /** Fling a la derecha: mes anterior. */
+  const flingDerecha = useFlingGesture({
+    direction: Directions.RIGHT,
+    onActivate: () => {
+      scheduleOnRN(cambiarMesConGesto, -1);
+    },
+  });
+
+  const gesto = useCompetingGestures(flingIzquierda, flingDerecha);
+
+  /**
    * Selecciona un día con una vibración sutil.
    * @param fecha día tocado
    */
@@ -59,94 +107,100 @@ export function Calendario({
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.titulo}>
-          <MaterialIcons name="calendar-month" size={sizes.iconMd - 2} color={colors.primary} />
-          <Text
-            style={styles.tituloTexto}
-            numberOfLines={1}
-            // En pantallas chicas "Septiembre 2026" se achica en vez de pisar las flechas.
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {tituloMes(anio, mes)}
-          </Text>
+    <GestureDetector gesture={gesto}>
+      <View style={styles.card}>
+        <View style={styles.header}>
+          <View style={styles.titulo}>
+            <MaterialIcons name="calendar-month" size={sizes.iconMd - 2} color={colors.primary} />
+            <Text
+              style={styles.tituloTexto}
+              numberOfLines={1}
+              // En pantallas chicas "Septiembre 2026" se achica en vez de pisar las flechas.
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
+              {tituloMes(anio, mes)}
+            </Text>
+          </View>
+          <View style={styles.flechas}>
+            <BotonMes icon="chevron-left" label="Mes anterior" onPress={() => onCambiarMes(-1)} />
+            <BotonMes icon="chevron-right" label="Mes siguiente" onPress={() => onCambiarMes(1)} />
+          </View>
         </View>
-        <View style={styles.flechas}>
-          <BotonMes icon="chevron-left" label="Mes anterior" onPress={() => onCambiarMes(-1)} />
-          <BotonMes icon="chevron-right" label="Mes siguiente" onPress={() => onCambiarMes(1)} />
+
+        <View style={styles.semana}>
+          {DIAS_SEMANA.map((dia) => (
+            <Text key={dia} style={styles.diaSemana}>
+              {dia}
+            </Text>
+          ))}
         </View>
-      </View>
 
-      <View style={styles.semana}>
-        {DIAS_SEMANA.map((dia) => (
-          <Text key={dia} style={styles.diaSemana}>
-            {dia}
-          </Text>
-        ))}
-      </View>
+        <View style={styles.grilla}>
+          {dias.map((dia) => {
+            const esSeleccionado = dia.delMes && mismoDia(dia.fecha, seleccionado);
+            const esHoy = dia.delMes && mismoDia(dia.fecha, hoy);
+            const categorias = dia.delMes ? (categoriasPorDia[dia.clave] ?? []) : [];
 
-      <View style={styles.grilla}>
-        {dias.map((dia) => {
-          const esSeleccionado = dia.delMes && mismoDia(dia.fecha, seleccionado);
-          const esHoy = dia.delMes && mismoDia(dia.fecha, hoy);
-          const categorias = dia.delMes ? (categoriasPorDia[dia.clave] ?? []) : [];
-
-          return (
-            <View key={dia.clave} style={styles.celda}>
-              <Pressable
-                onPress={() => handleDia(dia.fecha)}
-                disabled={!dia.delMes}
-                accessibilityRole="button"
-                accessibilityState={{ selected: esSeleccionado }}
-                accessibilityLabel={`${dia.fecha.getDate()}${categorias.length ? `, ${categorias.length} turnos` : ''}`}
-                style={({ pressed }) => [
-                  styles.dia,
-                  esHoy && !esSeleccionado && styles.diaHoy,
-                  esSeleccionado && styles.diaSeleccionado,
-                  pressed && !esSeleccionado && styles.diaPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.numero,
-                    !dia.delMes && styles.numeroFuera,
-                    esHoy && styles.numeroHoy,
-                    esSeleccionado && styles.numeroSeleccionado,
+            return (
+              <View key={dia.clave} style={styles.celda}>
+                <Pressable
+                  onPress={() => handleDia(dia.fecha)}
+                  disabled={!dia.delMes}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: esSeleccionado }}
+                  accessibilityLabel={`${dia.fecha.getDate()}${categorias.length ? `, ${categorias.length} turnos` : ''}`}
+                  style={({ pressed }) => [
+                    styles.dia,
+                    esHoy && !esSeleccionado && styles.diaHoy,
+                    esSeleccionado && styles.diaSeleccionado,
+                    pressed && !esSeleccionado && styles.diaPressed,
                   ]}
                 >
-                  {dia.fecha.getDate()}
-                </Text>
-                <View style={styles.puntos}>
-                  {categorias.slice(0, MAX_PUNTOS).map((categoria) => {
-                    const info = categoriaTurno(categoria);
-                    return (
-                      <View
-                        key={categoria}
-                        style={[
-                          styles.punto,
-                          { backgroundColor: esSeleccionado ? info.colorSobreSeleccion : info.color },
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
-              </Pressable>
-            </View>
-          );
-        })}
-      </View>
+                  <Text
+                    style={[
+                      styles.numero,
+                      !dia.delMes && styles.numeroFuera,
+                      esHoy && styles.numeroHoy,
+                      esSeleccionado && styles.numeroSeleccionado,
+                    ]}
+                  >
+                    {dia.fecha.getDate()}
+                  </Text>
+                  <View style={styles.puntos}>
+                    {categorias.slice(0, MAX_PUNTOS).map((categoria) => {
+                      const info = categoriaTurno(categoria);
+                      return (
+                        <View
+                          key={categoria}
+                          style={[
+                            styles.punto,
+                            {
+                              backgroundColor: esSeleccionado
+                                ? info.colorSobreSeleccion
+                                : info.color,
+                            },
+                          ]}
+                        />
+                      );
+                    })}
+                  </View>
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
 
-      <View style={styles.leyenda}>
-        {CATEGORIAS_TURNO.map((categoria) => (
-          <View key={categoria.valor} style={styles.leyendaItem}>
-            <View style={[styles.leyendaPunto, { backgroundColor: categoria.color }]} />
-            <Text style={styles.leyendaTexto}>{categoria.label}</Text>
-          </View>
-        ))}
+        <View style={styles.leyenda}>
+          {CATEGORIAS_TURNO.map((categoria) => (
+            <View key={categoria.valor} style={styles.leyendaItem}>
+              <View style={[styles.leyendaPunto, { backgroundColor: categoria.color }]} />
+              <Text style={styles.leyendaTexto}>{categoria.label}</Text>
+            </View>
+          ))}
+        </View>
       </View>
-    </View>
+    </GestureDetector>
   );
 }
 
