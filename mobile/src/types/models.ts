@@ -13,7 +13,7 @@ export type Usuario = {
   email: string;
   /** Barrio y ciudad, por ejemplo "Palermo, Buenos Aires". */
   ubicacion: string;
-  /** Clave de foto local o URI remota; null si no cargó foto. */
+  /** Clave de una foto del seed o ruta en el servidor ("/uploads/abc.jpg"); null si no cargó foto. */
   foto: string | null;
   telefonoEmergencia: string;
 };
@@ -55,7 +55,7 @@ export type RegistroSanitario = {
   /**
    * Foto de la etiqueta de la vacuna (el sticker con marca, lote y
    * vencimiento que se pega en la libreta), como constancia. Opcional y solo
-   * en vacunas. Clave de foto local o URI, como el resto de las fotos.
+   * en vacunas. Clave del seed o ruta "/uploads/...", como el resto de las fotos.
    */
   fotoEtiqueta?: string;
 };
