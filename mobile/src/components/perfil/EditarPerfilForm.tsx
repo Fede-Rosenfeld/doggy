@@ -76,7 +76,7 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   };
 
-  /** Valida y guarda los cambios (en el Sprint 2: PATCH /api/usuarios/me). */
+  /** Valida y guarda los cambios (PATCH /api/usuarios/me). */
   const handleGuardar = async () => {
     const nuevos = validar(form);
     setErrores(nuevos);

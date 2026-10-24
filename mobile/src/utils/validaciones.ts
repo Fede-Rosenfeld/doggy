@@ -132,17 +132,6 @@ export function validarTexto(texto: string, opciones: OpcionesTexto): string | u
 }
 
 /**
- * Valida que un campo de texto no esté vacío.
- * @param valor texto ingresado
- * @param mensaje error a mostrar si está vacío
- * @returns mensaje de error o undefined
- */
-export function validarRequerido(valor: string, mensaje: string): string | undefined {
-  if (!valor.trim()) return mensaje;
-  return undefined;
-}
-
-/**
  * Valida el nombre o el apellido de una persona.
  * @param texto texto ingresado
  * @param mensaje error a mostrar si está vacío
