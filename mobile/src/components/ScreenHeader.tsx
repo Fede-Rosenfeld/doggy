@@ -3,11 +3,14 @@
  * Se usa en las pantallas que se apilan sobre una tab (alta, carnet, etc.).
  * La variante `bar` es una barra fija arriba (con safe area y sombra leve) y
  * el título en teal, como en el carnet sanitario.
+ * Dentro de un modal (`enModal`), en iOS no suma el inset de arriba: la hoja
+ * del modal ya arranca debajo de la barra de estado y el espacio quedaba
+ * duplicado. En Android el modal ocupa toda la pantalla y el inset hace falta.
  * A la derecha va siempre el avatar del usuario (`AvatarPerfil`), igual que
  * en `AppHeader`, para que el acceso al perfil esté en todas las pantallas.
  */
 import type { Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing, typography } from '@/theme';
@@ -20,6 +23,8 @@ type Props = {
   /** Ruta de respaldo si no hay historial para volver. */
   fallback?: Href;
   variant?: 'plain' | 'bar';
+  /** true si la pantalla se abre como modal (`presentation: 'modal'`). */
+  enModal?: boolean;
 };
 
 /**
@@ -27,12 +32,20 @@ type Props = {
  * @param props ver `Props`
  * @returns el encabezado
  */
-export function ScreenHeader({ title, subtitle, fallback = '/mascotas', variant = 'plain' }: Props) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  fallback = '/mascotas',
+  variant = 'plain',
+  enModal = false,
+}: Props) {
   const insets = useSafeAreaInsets();
   const esBarra = variant === 'bar';
+  // La hoja de un modal en iOS ya deja libre la barra de estado.
+  const insetArriba = enModal && Platform.OS === 'ios' ? 0 : insets.top;
 
   return (
-    <View style={[styles.header, esBarra && [styles.bar, { paddingTop: insets.top + spacing.sm }]]}>
+    <View style={[styles.header, esBarra && [styles.bar, { paddingTop: insetArriba + spacing.sm }]]}>
       <BackButton fallback={fallback} />
       <View style={styles.texts}>
         <Text style={[styles.title, esBarra && styles.titleBar]} numberOfLines={1}>

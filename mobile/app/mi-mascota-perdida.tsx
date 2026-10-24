@@ -222,7 +222,7 @@ export default function MiMascotaPerdidaScreen() {
   if (editando && (!editado || !mascota)) {
     return (
       <View style={styles.screen}>
-        <ScreenHeader title={titulo} variant="bar" fallback="/perdidos" />
+        <ScreenHeader title={titulo} variant="bar" fallback="/perdidos" enModal />
         <EstadoVacio
           icon="search-off"
           titulo="Este reporte ya no está activo"
@@ -236,7 +236,7 @@ export default function MiMascotaPerdidaScreen() {
   if (!mascota) {
     return (
       <View style={styles.screen}>
-        <ScreenHeader title="Se perdió mi mascota" variant="bar" fallback="/perdidos" />
+        <ScreenHeader title="Se perdió mi mascota" variant="bar" fallback="/perdidos" enModal />
         <EstadoVacio
           icon="pets"
           titulo="Todavía no cargaste mascotas"
@@ -249,7 +249,7 @@ export default function MiMascotaPerdidaScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title={titulo} variant="bar" fallback="/perdidos" />
+      <ScreenHeader title={titulo} variant="bar" fallback="/perdidos" enModal />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

@@ -224,7 +224,7 @@ export default function ReportarScreen() {
   // --- Render ---
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Encontré una mascota" variant="bar" fallback="/perdidos" />
+      <ScreenHeader title="Encontré una mascota" variant="bar" fallback="/perdidos" enModal />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

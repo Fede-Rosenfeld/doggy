@@ -164,7 +164,7 @@ export default function AsignarScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Asignación de mascota" variant="bar" fallback="/mascotas" />
+      <ScreenHeader title="Asignación de mascota" variant="bar" fallback="/mascotas" enModal />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.stackLg }]}
         showsVerticalScrollIndicator={false}
