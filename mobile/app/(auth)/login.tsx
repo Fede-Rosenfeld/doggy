@@ -121,6 +121,7 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
+          textContentType="emailAddress"
           autoCorrect={false}
           maxLength={LIMITES.email}
           returnKeyType="next"
@@ -137,7 +138,9 @@ export default function LoginScreen() {
           onChangeText={handlePasswordChange}
           error={errores.password}
           autoCapitalize="none"
+          autoCorrect={false}
           autoComplete="password"
+          textContentType="password"
           maxLength={LIMITES.password}
           returnKeyType="go"
           onSubmitEditing={handleIngresar}

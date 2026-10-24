@@ -193,6 +193,7 @@ export default function RegistroScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
+          textContentType="emailAddress"
           autoCorrect={false}
           maxLength={LIMITES.email}
           returnKeyType="next"
@@ -209,7 +210,9 @@ export default function RegistroScreen() {
           onChangeText={handleChange('password')}
           error={errores.password}
           autoCapitalize="none"
+          autoCorrect={false}
           autoComplete="new-password"
+          textContentType="newPassword"
           maxLength={LIMITES.password}
           returnKeyType="next"
           onSubmitEditing={() => confirmacionRef.current?.focus()}
@@ -225,7 +228,9 @@ export default function RegistroScreen() {
           onChangeText={handleChange('confirmacion')}
           error={errores.confirmacion}
           autoCapitalize="none"
+          autoCorrect={false}
           autoComplete="new-password"
+          textContentType="newPassword"
           maxLength={LIMITES.password}
           returnKeyType="go"
           onSubmitEditing={handleCrearCuenta}

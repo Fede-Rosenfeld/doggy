@@ -142,6 +142,8 @@ export function EditarPerfilForm({ usuario, onGuardado }: Props) {
         error={errores.email}
         keyboardType="email-address"
         autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
         autoCorrect={false}
         maxLength={LIMITES.email}
       />
