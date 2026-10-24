@@ -6,11 +6,12 @@
  * lo escanea y la app identifica a la mascota y a su tutor.
  */
 import { MaterialIcons } from '@expo/vector-icons';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 import { colors, radius, sizes, spacing, typography } from '@/theme';
 import type { Mascota } from '@/types/models';
+import { compartirQr } from '@/utils/compartir';
 import { Badge } from './Badge';
 import { SectionCard } from './SectionCard';
 
@@ -39,18 +40,7 @@ export function QrIdentificacion({ mascota }: Props) {
   };
 
   /** Abre la hoja de compartir del sistema con el ID de la mascota. */
-  const handleCompartir = async () => {
-    try {
-      await Share.share({
-        message:
-          `${mascota.nombre} tiene su identificación en Doggy. ` +
-          `ID único: ${mascota.codigo}. ` +
-          `Si encontrás a ${mascota.nombre}, escaneá el QR de su collar con la app para contactar a su tutor.`,
-      });
-    } catch {
-      Alert.alert('No se pudo compartir', 'Probá de nuevo en unos segundos.');
-    }
-  };
+  const handleCompartir = () => compartirQr(mascota);
 
   // --- Render ---
   return (
