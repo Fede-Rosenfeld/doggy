@@ -8,6 +8,13 @@
  * modificarlos. Al cerrar la sesión, o si el servidor responde 401, se borra
  * el token y se vacía todo, así otro usuario no ve datos del anterior.
  *
+ * Sesión vencida: `http.ts` deja colgada la promesa del pedido que dio 401,
+ * así la pantalla que lo hizo no muestra un error encima del aviso (se
+ * desmonta al volver al login). Las cargas de datos que siguen en vuelo de
+ * la sesión anterior (otros pedidos del `Promise.all` que fallan o responden
+ * tarde) no escriben en el estado: `sesionActual` cambia al vaciarlo y la
+ * carga compara con el valor con el que empezó.
+ *
  * Cada acción llama primero al service (la API) y recién con la respuesta
  * actualiza el estado, siempre creando arrays nuevos. Si el servidor responde
  * con un error, la acción lo deja pasar para que la pantalla muestre el mensaje.
@@ -24,6 +31,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { Alert } from 'react-native';
@@ -173,6 +181,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [cuidadores, setCuidadores] = useState<Cuidador[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Número de la sesión actual: aumenta cada vez que se vacía el estado
+   * (logout o sesión vencida). Una carga que empezó con otro número es de la
+   * sesión anterior y no toca el estado.
+   */
+  const sesionActual = useRef(0);
 
   // --- Carga de datos ---
   /**
@@ -190,6 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /** Vacía todos los datos y deja la sesión cerrada (logout o sesión vencida). */
   const limpiarEstado = useCallback(() => {
+    sesionActual.current += 1;
     setSesion('cerrada');
     setUsuario(null);
     setMascotas([]);
@@ -203,14 +218,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /** Vuelve a cargar todo desde cero (después del login o con "Reintentar"). */
   const recargar = useCallback(async () => {
+    const sesionDeLaCarga = sesionActual.current;
+    /** true si mientras se esperaba no se cerró la sesión ni venció. */
+    const sigueVigente = () => sesionDeLaCarga === sesionActual.current;
     setCargando(true);
     setError(null);
     try {
-      aplicarDatos(await pedirTodo());
+      const datos = await pedirTodo();
+      if (sigueVigente()) aplicarDatos(datos);
     } catch (e) {
-      setError(mensajeDeError(e));
+      if (sigueVigente()) setError(mensajeDeError(e));
     } finally {
-      setCargando(false);
+      if (sigueVigente()) setCargando(false);
     }
   }, [aplicarDatos]);
 
@@ -219,14 +238,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // desmontó antes de que respondan.
   useEffect(() => {
     let vigente = true;
+    const sesionDeLaCarga = sesionActual.current;
     restaurarSesion()
       .then((datos) => {
-        if (!vigente) return;
+        if (!vigente || sesionDeLaCarga !== sesionActual.current) return;
         if (datos) aplicarDatos(datos);
         setSesion(datos ? 'abierta' : 'cerrada');
       })
       .catch((e: unknown) => {
-        if (!vigente) return;
+        // Si el token venció, `limpiarEstado` ya cerró la sesión: no se pisa.
+        if (!vigente || sesionDeLaCarga !== sesionActual.current) return;
         // Con token pero sin servidor (sin red, API apagada) se entra igual:
         // las pantallas muestran el error con "Reintentar".
         setError(mensajeDeError(e));

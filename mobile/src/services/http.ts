@@ -118,7 +118,8 @@ async function pedir(ruta: string, opciones?: RequestInit, tiempoMaximoMs = TIEM
  *
  * Devuelve una promesa que nunca termina: la pantalla que hizo el pedido se
  * desmonta al volver al login, y así no muestra un error encima del aviso de
- * sesión vencida.
+ * sesión vencida. Las cargas del `AppContext` que siguen en vuelo de esa
+ * sesión no tocan el estado (ver `sesionActual`).
  * @param token token con el que salió el pedido
  * @returns una promesa que no se resuelve ni se rechaza
  */
