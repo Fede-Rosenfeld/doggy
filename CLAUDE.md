@@ -46,6 +46,7 @@ Cada función de `services/` tiene comentado su endpoint, con la ruta y el cuerp
 | Reportes | `GET /api/reportes`, `POST /api/reportes`, `PATCH /api/reportes/:id` (también para cerrarlo) |
 | Cuidadores | `GET /api/cuidadores`, `DELETE /api/mascotas/:id/cuidadores/me` |
 | Invitaciones | `POST /api/mascotas/:id/invitaciones`, `GET /api/invitaciones/:token`, `POST /api/invitaciones/:token/aceptar` |
+| Fotos | `POST /api/fotos` (multipart), `GET /uploads/<nombre>` (público) |
 
 - Los modelos de `mobile/src/types/models.ts` son la forma del JSON que viaja: ids numéricos, fechas como string ISO y relaciones por id.
 - Para modificar se usa **PATCH, nunca PUT**: un campo que no viene no se toca.
@@ -55,6 +56,15 @@ Cada función de `services/` tiene comentado su endpoint, con la ruta y el cuerp
 - **Quién edita o cierra un reporte:** quien lo publicó o cualquier usuario asignado a la mascota del reporte. Un reporte sin `mascotaId` solo lo edita o cierra su autor. Si no, 403.
 - Una mascota tiene como mucho un reporte `perdido` activo (409 si ya tiene uno).
 - Las reglas de `mobile/src/utils/validaciones.ts` (`LIMITES`, caracteres permitidos, formatos y rangos de fechas) son las mismas que aplica el servidor. Si una cambia acá, cambia allá.
+
+### Fotos
+
+- **`POST /api/fotos`** (con token): `multipart/form-data` con el archivo en el campo `foto` → 201 `{ foto: "/uploads/<nombre>.jpg" }`. 400 si no vino o no es JPG, PNG ni WEBP (el servidor mira el contenido, no el nombre); 413 si pesa más de 5 MB. Lo hace `subirFoto(uri)` en `mobile/src/services/fotos.ts`: arma un FormData con `{ uri, name, type }` (en web, un Blob sacado de la URI `blob:`) y no pone `Content-Type` a mano (`http.ts` lo omite si el body es un FormData). Espera hasta 30 s en vez de 10.
+- **`GET /uploads/<nombre>`** es público (sin token), así `Image` carga la foto sin headers.
+- **En los modelos se guarda la ruta relativa** (`/uploads/abc.jpg`), no la URL completa, porque la IP de la PC cambia. `fuenteFoto` (`mobile/src/data/fotos.ts`) la convierte en `{ uri: API_URL + foto }`. Las claves de las fotos del seed (`luna`, `sofia`, …) siguen resolviéndose a las imágenes empaquetadas.
+- **Los campos de foto** (`foto` de mascota, usuario y reporte; `fotoEtiqueta` de registro) solo aceptan `null`, una clave del seed o una ruta `/uploads/` que exista. Una URI del celular (`file://`, `content://`, `blob:`) da 400: es un archivo temporal que se pierde al cerrar la app y nadie más ve.
+- **Subir antes de guardar, en un solo lugar:** las acciones del `AppContext` que guardan fotos (`agregarMascota`, `editarMascota`, `actualizarUsuario`, `crearReporte`, `editarReporte`, `agregarRegistro`, `editarRegistro`) pasan los datos por `conFotoSubida(datos, campo)`. Si la foto es local la sube y manda la ruta que devolvió el servidor; si no cambió (ya es `/uploads/...` o una clave del seed) no sube nada. Si la subida falla, la acción lanza el error: el formulario lo muestra y no se cierra, y el botón de guardar queda deshabilitado mientras dura (es el mismo estado `guardando`/`enviando` del formulario; en el perfil, la foto muestra el spinner).
+- Cuando una foto se reemplaza o se borra, el servidor borra el archivo viejo si ningún otro registro lo usa.
 
 ### Sesión
 
@@ -80,6 +90,7 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 | 404 | no existe |
 | 409 | conflicto con el estado actual: email ya registrado, ya asignado a la mascota, único dueño que quiere desasignarse |
 | 410 | código de asignación vencido o ya usado |
+| 413 | la foto subida pesa más de 5 MB |
 | 500 | error imprevisto |
 
 - Todo error llega como `{ error: "mensaje en español" }`. La app muestra ese mensaje tal cual, sin armar textos propios por status, salvo en casos puntuales (por ejemplo, un 401 lleva al login).
@@ -94,6 +105,7 @@ La tabla de la práctica Prisma muestra los códigos que usó esa práctica, per
 - **Resuelta (Etapa 3B): `PATCH` en vez de `PUT`.** `actualizarRegistro` y `actualizarTurno` usan `PATCH` con todos los datos del formulario; en el registro, los opcionales que no vienen se mandan como `null` para que se borren.
 - **Resuelta (Etapa 3B): flujos que escribían en el mock y leían de la API.** Alta de mascota y aceptar un código de asignación van contra la API (`POST /api/mascotas`, `GET /api/invitaciones/:token` y `POST /api/invitaciones/:token/aceptar`). Se borraron `mobile/src/data/mock.ts`, `simularRespuesta`, `siguienteId`, `idsMascotasDe` y `asignarCreador`; los datos de ejemplo viven en el seed de `doggy-backend`.
 - **Resuelta (Etapa 3B): 204 sin body.** `pedirSinRespuesta` (`services/http.ts`) solo revisa `response.ok` y no lee JSON. La usan los DELETE.
+- **Resuelta (Etapa 4C): fotos en el servidor.** Antes la foto se guardaba como la URI local del celular y se perdía al cerrar la app. Ahora se sube con `POST /api/fotos` antes de guardar y viaja la ruta `/uploads/...`. La subida va en el `AppContext` (`conFotoSubida`) y no en cada formulario, para no repetirla. La única pantalla que cambió es el perfil (`app/(tabs)/perfil.tsx`): la foto se guarda apenas se elige, sin formulario, y necesitaba su propio estado de carga.
 
 ### Código
 
